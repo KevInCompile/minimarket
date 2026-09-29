@@ -1,0 +1,114 @@
+// Prisma schema para minimarket
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CAJERO
+}
+
+enum PagadoCon {
+  CAJA
+  EFECTIVO
+}
+
+enum SaleDe {
+  EFECTIVO
+  NEQUI
+  CAJA
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nombre       String
+  role         Role     @default(CAJERO)
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  gastos        Gasto[]
+  retiros       Retiro[]
+  nequiUpdates  NequiDelDia[]
+  cierres       CierreDiario[]
+}
+
+model Proveedor {
+  id        String   @id @default(cuid())
+  nombre    String   @unique
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  gastos  Gasto[]
+  pedidos PedidoNota[]
+}
+
+model Gasto {
+  id          String    @id @default(cuid())
+  fecha       DateTime  @db.Date
+  proveedorId String
+  proveedor   Proveedor @relation(fields: [proveedorId], references: [id])
+  valor       Int
+  pagadoCon   PagadoCon
+  nota        String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@index([fecha])
+  @@index([proveedorId])
+  @@index([userId])
+}
+
+model Retiro {
+  id       String   @id @default(cuid())
+  fecha    DateTime @db.Date
+  concepto String
+  valor    Int
+  saleDe   SaleDe
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([fecha])
+  @@index([userId])
+}
+
+model NequiDelDia {
+  id        String   @id @default(cuid())
+  fecha     DateTime @unique @db.Date
+  total     Int
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  updatedAt DateTime @updatedAt
+}
+
+model CierreDiario {
+  id                  String   @id @default(cuid())
+  fecha               DateTime @unique @db.Date
+  cajaApertura        Int      @default(0)
+  cajaCierre          Int      @default(0)
+  efectivoGuardado    Int      @default(0)
+  efectivoRealContado Int?
+  userIdCierre        String
+  user                User     @relation(fields: [userIdCierre], references: [id])
+  updatedAt           DateTime @updatedAt
+}
+
+model PedidoNota {
+  id          String   @id @default(cuid())
+  proveedorId String
+  proveedor   Proveedor @relation(fields: [proveedorId], references: [id])
+  valor       Int
+  dia         String
+  estado      String?
+  nota        String?
+  createdAt   DateTime @default(now())
+}

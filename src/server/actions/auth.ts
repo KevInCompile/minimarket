@@ -1,0 +1,39 @@
+"use server";
+
+import { signIn, signOut } from "@/auth";
+import { AuthError } from "next-auth";
+import { redirect } from "next/navigation";
+
+export type LoginState = { error?: string };
+
+export async function loginAction(
+  _prev: LoginState,
+  formData: FormData,
+): Promise<LoginState> {
+  const email = formData.get("email")?.toString() ?? "";
+  const password = formData.get("password")?.toString() ?? "";
+  const from = formData.get("from")?.toString() || "/";
+
+  try {
+    await signIn("credentials", {
+      email,
+      password,
+      redirectTo: from,
+    });
+  } catch (e) {
+    if (e instanceof AuthError) {
+      if (e.type === "CredentialsSignin") {
+        return { error: "Email o contraseña incorrectos." };
+      }
+      return { error: "No se pudo iniciar sesión. Intentá de nuevo." };
+    }
+    // signIn redirige con NEXT_REDIRECT cuando es exitoso — hay que relanzar.
+    throw e;
+  }
+  return {};
+}
+
+export async function logoutAction() {
+  await signOut({ redirectTo: "/login" });
+  redirect("/login");
+}
