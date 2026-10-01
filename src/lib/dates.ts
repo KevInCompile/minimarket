@@ -1,9 +1,5 @@
 /**
  * Helpers de fechas.
- *
- * Trabajamos SIEMPRE con fechas en UTC para evitar saltos por zona horaria.
- * Internamente, una "fecha" sin hora se representa como Date con UTC midnight
- * (getUTCHours() === 0). Para mostrar al usuario, convertimos a local en el formateo.
  */
 
 export const DIAS_SEMANA = [
