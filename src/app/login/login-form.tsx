@@ -3,15 +3,13 @@
 import { useActionState } from "react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { signIn } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AuthError } from "next-auth";
-import { okState, errState, type ActionState } from "@/server/actions/_state";
+import { loginAction, type LoginState } from "@/server/actions/auth";
 
-const initial: ActionState = { ok: true, ts: 0 };
+const initial: LoginState = { ok: true, ts: 0 };
 
 export function LoginForm({ from }: { from: string }) {
   const [state, action, pending] = useActionState(loginAction, initial);
@@ -63,31 +61,4 @@ export function LoginForm({ from }: { from: string }) {
       </form>
     </Card>
   );
-}
-
-export async function loginAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const email = formData.get("email")?.toString() ?? "";
-  const password = formData.get("password")?.toString() ?? "";
-  const from = formData.get("from")?.toString() || "/";
-
-  try {
-    await signIn("credentials", {
-      email,
-      password,
-      redirectTo: from,
-    });
-  } catch (e) {
-    if (e instanceof AuthError) {
-      if (e.type === "CredentialsSignin") {
-        return errState("Email o contraseña incorrectos.");
-      }
-      return errState("No se pudo iniciar sesión. Intentá de nuevo.");
-    }
-    // signIn redirige con NEXT_REDIRECT cuando es exitoso: hay que re-lanzar.
-    throw e;
-  }
-  return okState();
 }

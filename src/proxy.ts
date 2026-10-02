@@ -1,38 +1,12 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/auth.config";
 
-const ADMIN_ONLY_PREFIXES = [
-  "/retiros",
-  "/pedidos",
-  "/proveedores",
-  "/usuarios",
-  "/importar",
-];
-
-export default auth((req) => {
-  const { pathname } = req.nextUrl;
-  const isLogin = pathname.startsWith("/login");
-
-  // Permitir assets y la API de auth siempre
-  if (isLogin) return NextResponse.next();
-
-  const session = req.auth;
-  if (!session?.user) {
-    const url = new URL("/login", req.nextUrl);
-    url.searchParams.set("from", pathname);
-    return NextResponse.redirect(url);
-  }
-
-  // Cajero no puede acceder a rutas solo-admin
-  if (session.user.role !== "ADMIN") {
-    if (ADMIN_ONLY_PREFIXES.some((p) => pathname.startsWith(p))) {
-      const url = new URL("/forbidden", req.nextUrl);
-      return NextResponse.redirect(url);
-    }
-  }
-
-  return NextResponse.next();
-});
+/**
+ * Proxy edge-safe: solo usa authConfig (sin Prisma, sin bcrypt).
+ * Si la sesión apunta a un user que ya no existe, requireValidUser
+ * en server actions redirige al login.
+ */
+export default NextAuth(authConfig).auth;
 
 export const config = {
   matcher: [
