@@ -13,7 +13,6 @@ import {
   Users,
   Menu,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -56,7 +55,7 @@ export function MobileSidebar({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
 
   return (
-    <div className="md:hidden sticky top-0 z-40 bg-sidebar border-b border-sidebar-border">
+    <div className="md:hidden sticky top-0 z-40 bg-background border-b border-background-border">
       <div className="flex items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center gap-2">
           <div className="size-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold">
@@ -64,11 +63,9 @@ export function MobileSidebar({ items }: { items: NavItem[] }) {
           </div>
           <span className="font-bold tracking-tight">minimarket</span>
         </Link>
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger>
-            <Button variant="ghost" size="icon">
-              <Menu />
-            </Button>
+<Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger className="inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground size-9">
+            <Menu />
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0 bg-sidebar">
             <SheetHeader className="p-5 bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 text-white">
