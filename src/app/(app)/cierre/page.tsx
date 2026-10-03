@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { startOfDayUTC } from "@/lib/dates";
 import { serieCierres } from "@/lib/calc";
 import { CierreCards } from "./cierre-cards";
-import { ResumenPeriodo } from "./resumen-periodo";
+// import { ResumenPeriodo } from "./resumen-periodo";
 import { CrearCierreForm } from "./crear-cierre-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClipboardCheck, Plus } from "lucide-react";
