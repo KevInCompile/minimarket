@@ -64,8 +64,8 @@ const ITEMS_FN = (bg: BalanceGeneral): Item[] => [
     description: `Caja: ${formatCOP(bg.gastosCaja)} · Efectivo: ${formatCOP(bg.gastosEfectivo)}`,
     icon: TrendingDown,
     gradient:
-      "border-violet-200 bg-linear-to-br from-violet-50 to-fuchsia-50/60 dark:border-violet-800 dark:from-violet-950/30 dark:to-fuchsia-950/30",
-    iconBg: "bg-linear-to-br from-violet-500 to-fuchsia-500 text-white",
+      "border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30",
+    iconBg: "bg-linear-to-br from-sky-500 to-cyan-500 text-white",
   },
   {
     title: "Retiros del periodo",
