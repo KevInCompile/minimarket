@@ -26,8 +26,8 @@ const ITEMS_FN = (bg: BalanceGeneral): Item[] => [
     icon: Banknote,
     highlight: true,
     gradient:
-      "border-emerald-300 bg-gradient-to-br from-emerald-50 via-emerald-50/80 to-teal-50 dark:border-emerald-700 dark:from-emerald-950/40 dark:via-emerald-950/30 dark:to-teal-950/40",
-    iconBg: "bg-gradient-to-br from-emerald-500 to-teal-500 text-white",
+      "border-emerald-300 bg-linear-to-br from-emerald-50 via-emerald-50/80 to-teal-50 dark:border-emerald-700 dark:from-emerald-950/40 dark:via-emerald-950/30 dark:to-teal-950/40",
+    iconBg: "bg-linear-to-br from-emerald-500 to-teal-500 text-white",
   },
   {
     title: "Efectivo guardado",
@@ -35,8 +35,8 @@ const ITEMS_FN = (bg: BalanceGeneral): Item[] => [
     description: `Punto mas bajo: ${formatCOP(bg.puntoMasBajoEfectivo)}`,
     icon: Coins,
     gradient:
-      "border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30",
-    iconBg: "bg-gradient-to-br from-sky-500 to-cyan-500 text-white",
+      "border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30",
+    iconBg: "bg-linear-to-br from-sky-500 to-cyan-500 text-white",
   },
   {
     title: "Saldo Nequi",
@@ -44,8 +44,8 @@ const ITEMS_FN = (bg: BalanceGeneral): Item[] => [
     description: `Recibido en el periodo: ${formatCOP(bg.nequiRecibidoPeriodo)}`,
     icon: Smartphone,
     gradient:
-      "border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50/60 dark:border-violet-800 dark:from-violet-950/30 dark:to-fuchsia-950/30",
-    iconBg: "bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white",
+      "border-violet-200 bg-linear-to-br from-violet-50 to-fuchsia-50/60 dark:border-violet-800 dark:from-violet-950/30 dark:to-fuchsia-950/30",
+    iconBg: "bg-linear-to-br from-violet-500 to-fuchsia-500 text-white",
   },
   {
     title: "Ultimo cierre de caja",
@@ -55,8 +55,8 @@ const ITEMS_FN = (bg: BalanceGeneral): Item[] => [
       : undefined,
     icon: Wallet,
     gradient:
-      "border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50/60 dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/30",
-    iconBg: "bg-gradient-to-br from-amber-500 to-orange-500 text-white",
+      "border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30",
+    iconBg: "bg-linear-to-br from-sky-500 to-cyan-500 text-white",
   },
   {
     title: "Gastos del periodo",
@@ -64,8 +64,8 @@ const ITEMS_FN = (bg: BalanceGeneral): Item[] => [
     description: `Caja: ${formatCOP(bg.gastosCaja)} · Efectivo: ${formatCOP(bg.gastosEfectivo)}`,
     icon: TrendingDown,
     gradient:
-      "border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50/60 dark:border-rose-800 dark:from-rose-950/30 dark:to-pink-950/30",
-    iconBg: "bg-gradient-to-br from-rose-500 to-pink-500 text-white",
+      "border-violet-200 bg-linear-to-br from-violet-50 to-fuchsia-50/60 dark:border-violet-800 dark:from-violet-950/30 dark:to-fuchsia-950/30",
+    iconBg: "bg-linear-to-br from-violet-500 to-fuchsia-500 text-white",
   },
   {
     title: "Retiros del periodo",
@@ -73,8 +73,8 @@ const ITEMS_FN = (bg: BalanceGeneral): Item[] => [
     description: `Efectivo: ${formatCOP(bg.retirosEfectivo)} · Nequi: ${formatCOP(bg.retirosNequi)}`,
     icon: TrendingUp,
     gradient:
-      "border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50/60 dark:border-orange-800 dark:from-orange-950/30 dark:to-amber-950/30",
-    iconBg: "bg-gradient-to-br from-orange-500 to-amber-500 text-white",
+      "border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30",
+    iconBg: "bg-linear-to-br from-sky-500 to-cyan-500 text-white",
   },
 ];
 

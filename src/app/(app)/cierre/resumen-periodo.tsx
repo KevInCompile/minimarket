@@ -47,16 +47,16 @@ export function ResumenPeriodo({ serie }: ResumenProps) {
           sub={`Punto mas bajo: ${formatCOP(
             puntoMasBajo === Number.POSITIVE_INFINITY ? 0 : puntoMasBajo,
           )}`}
-          gradient="border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30"
-          iconBg="bg-gradient-to-br from-sky-500 to-cyan-500 text-white"
+          gradient="border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30"
+          iconBg="bg-linear-to-br from-sky-500 to-cyan-500 text-white"
         />
         <Stat
           icon={Smartphone}
           label="Nequi acumulado"
           value={formatCOP(ultimo?.nequiAcumulado ?? 0)}
           sub={`Último día: ${ultimo ? formatCOP(ultimo.nequiDelDia) : "—"} recibido`}
-          gradient="border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50/60 dark:border-violet-800 dark:from-violet-950/30 dark:to-fuchsia-950/30"
-          iconBg="bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white"
+          gradient="border-violet-200 bg-linear-to-br from-violet-50 to-fuchsia-50/60 dark:border-violet-800 dark:from-violet-950/30 dark:to-fuchsia-950/30"
+          iconBg="bg-linear-to-br from-violet-500 to-fuchsia-500 text-white"
         />
         <Stat
           icon={Coins}
@@ -67,16 +67,16 @@ export function ResumenPeriodo({ serie }: ResumenProps) {
               ? `Conteo real: ${formatCOP(ultimo.efectivoRealContado)}`
               : "Sin conteo real"
           }
-          gradient="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50/60 dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/30"
-          iconBg="bg-gradient-to-br from-amber-500 to-orange-500 text-white"
+          gradient="border-amber-200 bg-linear-to-br from-amber-50 to-orange-50/60 dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/30"
+          iconBg="bg-linear-to-br from-amber-500 to-orange-500 text-white"
         />
         <Stat
           icon={TrendingDown}
           label="Total gastos del periodo"
           value={formatCOP(totalGastos)}
           sub={`Entrada estimada: ${formatCOP(totalEntradaEstimada)}`}
-          gradient="border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50/60 dark:border-rose-800 dark:from-rose-950/30 dark:to-pink-950/30"
-          iconBg="bg-gradient-to-br from-rose-500 to-pink-500 text-white"
+          gradient="border-rose-200 bg-linear-to-br from-rose-50 to-pink-50/60 dark:border-rose-800 dark:from-rose-950/30 dark:to-pink-950/30"
+          iconBg="bg-linear-to-br from-rose-500 to-pink-500 text-white"
         />
       </div>
     </div>
