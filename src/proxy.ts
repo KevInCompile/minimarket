@@ -27,13 +27,23 @@ async function getRoleFromJWT(req: Request): Promise<{
   userId: string;
 } | null> {
   const cookieHeader = req.headers.get("cookie") ?? "";
-  const match = cookieHeader.match(/authjs\.session-token=([^;]+)/);
+
+  // En HTTPS (producción), NextAuth usa `__Secure-authjs.session-token`.
+  // En HTTP (dev), usa `authjs.session-token`. Aceptamos ambas.
+  const match = cookieHeader.match(/(?:__Secure-)?authjs\.session-token=([^;]+)/);
   const token = match?.[1];
   if (!token) return null;
+
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    console.error("[proxy] AUTH_SECRET no definido");
+    return null;
+  }
+
   try {
     const decoded = await decode({
       token,
-      secret: process.env.AUTH_SECRET!,
+      secret,
       salt: "authjs.session-token",
     });
     if (!decoded?.role) return null;
@@ -41,7 +51,8 @@ async function getRoleFromJWT(req: Request): Promise<{
       role: decoded.role as "ADMIN" | "CAJERO",
       userId: (decoded.uid as string) ?? "",
     };
-  } catch {
+  } catch (e) {
+    console.error("[proxy] error decodificando JWT:", e);
     return null;
   }
 }
