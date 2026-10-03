@@ -170,8 +170,7 @@ export function computeCierreDiario(args: {
 
   // Total "venta" del día: efectivo guardado + retiros con saleDe=EFECTIVO
   // + gastos pagados con caja. Es la plata que se movió del negocio en el día.
-  const totalVentaDelDia =
-    cierre.efectivoGuardado + retirosEfectivo + gastosCaja;
+  const totalVentaDelDia = (cierre.efectivoGuardado + gastosCaja + nequiDelDia) - gastosEfectivo;
 
   return {
     ...cierre,

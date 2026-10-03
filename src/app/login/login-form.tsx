@@ -26,7 +26,7 @@ export function LoginForm({ from }: { from: string }) {
     <Card>
       <CardHeader>
         <CardTitle>Iniciar sesión</CardTitle>
-        <CardDescription>Ingresá tu email y contraseña.</CardDescription>
+        <CardDescription>Ingrese suH email y contraseña.</CardDescription>
       </CardHeader>
       <form action={action}>
         <CardContent className="space-y-4">
