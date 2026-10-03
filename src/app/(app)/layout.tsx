@@ -5,6 +5,7 @@ import { logoutAction } from "@/server/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { MobileSidebar } from "@/components/mobile-sidebar";
 import {
   LayoutDashboard,
   Receipt,
@@ -71,9 +72,13 @@ export default async function AppLayout({
 
   const items = NAV.filter((i) => isAdmin || !i.adminOnly);
 
+  const mobileItems = items.map((i) => ({ href: i.href, label: i.label }));
+
   return (
     <div className="min-h-screen flex bg-background text-foreground">
-      <aside className="w-60 shrink-0 border-r border-sidebar-border bg-background flex flex-col">
+      <MobileSidebar items={mobileItems} />
+
+      <aside className="hidden md:flex w-60 shrink-0 border-r border-sidebar-border bg-sidebar flex flex-col">
         <div className="p-5  text-white">
           <Link href="/" className="block">
             <div className="flex items-center gap-2">

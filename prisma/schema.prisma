@@ -25,6 +25,16 @@ enum SaleDe {
   CAJA
 }
 
+enum TipoRetiro {
+  ARRIENDO
+  NOMINA
+  SERVICIOS
+  IMPUESTOS
+  PRESTAMO
+  RETIRO_PERSONAL
+  OTRO
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -70,15 +80,18 @@ model Gasto {
 model Retiro {
   id       String   @id @default(cuid())
   fecha    DateTime @db.Date
+  tipo     TipoRetiro @default(OTRO)
   concepto String
   valor    Int
   saleDe   SaleDe
+  nota     String?
   userId   String
   user     User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
 
   @@index([fecha])
   @@index([userId])
+  @@index([tipo])
 }
 
 model NequiDelDia {

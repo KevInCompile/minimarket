@@ -3,24 +3,17 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { formatCOP, formatShortDate } from "@/lib/format";
-import { diaSemana } from "@/lib/dates";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
+import { formatCOP, formatShortDate } from "@/lib/format";
+import { diaSemana } from "@/lib/dates";
 import {
   eliminarGastoAction,
   restaurarGastoAction,
   type GastoState,
 } from "@/server/actions/gastos";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ResponsiveTable } from "@/components/responsive-table";
 
 type GastoView = {
   id: string;
@@ -32,57 +25,133 @@ type GastoView = {
 };
 
 export function GastosTable({ gastos }: { gastos: GastoView[] }) {
-  if (gastos.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground py-6 text-center">
-        No hay gastos en este periodo.
-      </p>
-    );
-  }
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Fecha</TableHead>
-          <TableHead>Proveedor</TableHead>
-          <TableHead>Tipo</TableHead>
-          <TableHead className="text-right">Valor</TableHead>
-          <TableHead></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {gastos.map((g) => (
-          <TableRow key={g.id}>
-            <TableCell>
+    <ResponsiveTable
+      rows={gastos}
+      rowKey={(g) => g.id}
+      emptyMessage="No hay gastos en este periodo."
+      columns={[
+        {
+          key: "fecha",
+          header: "Fecha",
+          cell: (g) => (
+            <div>
               <div className="text-sm">{diaSemana(new Date(g.fecha))}</div>
               <div className="text-xs text-muted-foreground">
                 {formatShortDate(new Date(g.fecha))}
               </div>
-            </TableCell>
-            <TableCell>
+            </div>
+          ),
+        },
+        {
+          key: "proveedor",
+          header: "Proveedor",
+          cell: (g) => (
+            <div>
               <div className="font-medium">{g.proveedor}</div>
               {g.nota && (
                 <div className="text-xs text-muted-foreground">{g.nota}</div>
               )}
-            </TableCell>
-            <TableCell>
-              <Badge
-                variant={g.pagadoCon === "CAJA" ? "secondary" : "outline"}
-                className="font-normal"
-              >
-                {g.pagadoCon}
-              </Badge>
-            </TableCell>
-            <TableCell className="text-right tabular-nums font-semibold">
+            </div>
+          ),
+        },
+        {
+          key: "tipo",
+          header: "Tipo",
+          cell: (g) => (
+            <Badge
+              variant={g.pagadoCon === "CAJA" ? "secondary" : "outline"}
+              className="font-normal"
+            >
+              {g.pagadoCon}
+            </Badge>
+          ),
+        },
+        {
+          key: "valor",
+          header: "Valor",
+          align: "right",
+          cell: (g) => (
+            <span className="tabular-nums font-semibold">
               {formatCOP(g.valor)}
-            </TableCell>
-            <TableCell>
-              <DeleteGastoButton id={g.id} proveedor={g.proveedor} valor={g.valor} />
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+            </span>
+          ),
+        },
+        {
+          key: "actions",
+          header: "",
+          align: "right",
+          cell: (g) => (
+            <DeleteGastoButton
+              id={g.id}
+              proveedor={g.proveedor}
+              valor={g.valor}
+            />
+          ),
+        },
+      ]}
+      fields={[
+        {
+          key: "fecha",
+          label: "Fecha",
+          render: (g) => (
+            <div className="text-right">
+              <div>{diaSemana(new Date(g.fecha))}</div>
+              <div className="text-xs text-muted-foreground">
+                {formatShortDate(new Date(g.fecha))}
+              </div>
+            </div>
+          ),
+        },
+        {
+          key: "proveedor",
+          label: "Proveedor",
+          render: (g) => (
+            <div className="text-right">
+              <div className="font-medium">{g.proveedor}</div>
+              {g.nota && (
+                <div className="text-xs text-muted-foreground">{g.nota}</div>
+              )}
+            </div>
+          ),
+        },
+        {
+          key: "tipo",
+          label: "Tipo",
+          render: (g) => (
+            <Badge
+              variant={g.pagadoCon === "CAJA" ? "secondary" : "outline"}
+              className="font-normal"
+            >
+              {g.pagadoCon}
+            </Badge>
+          ),
+        },
+        {
+          key: "valor",
+          label: "Valor",
+          render: (g) => (
+            <span className="tabular-nums font-semibold">
+              {formatCOP(g.valor)}
+            </span>
+          ),
+          fullWidth: true,
+        },
+        {
+          key: "actions",
+          label: "",
+          render: (g) => (
+            <div className="flex justify-end">
+              <DeleteGastoButton
+                id={g.id}
+                proveedor={g.proveedor}
+                valor={g.valor}
+              />
+            </div>
+          ),
+        },
+      ]}
+    />
   );
 }
 
