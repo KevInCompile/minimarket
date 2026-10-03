@@ -30,9 +30,10 @@ async function getRoleFromJWT(req: Request): Promise<{
 
   // En HTTPS (producción), NextAuth usa `__Secure-authjs.session-token`.
   // En HTTP (dev), usa `authjs.session-token`. Aceptamos ambas.
-  const match = cookieHeader.match(/(?:__Secure-)?authjs\.session-token=([^;]+)/);
-  const token = match?.[1];
-  if (!token) return null;
+  const match = cookieHeader.match(/((?:__Secure-)?authjs\.session-token)=([^;]+)/);
+  const cookieName = match?.[1];
+  const token = match?.[2];
+  if (!token || !cookieName) return null;
 
   const secret = process.env.AUTH_SECRET;
   if (!secret) {
@@ -41,10 +42,12 @@ async function getRoleFromJWT(req: Request): Promise<{
   }
 
   try {
+    // El salt para descifrar es el nombre completo del cookie.
+    // (__Secure-authjs.session-token en prod, authjs.session-token en dev)
     const decoded = await decode({
       token,
       secret,
-      salt: "authjs.session-token",
+      salt: cookieName,
     });
     if (!decoded?.role) return null;
     return {
