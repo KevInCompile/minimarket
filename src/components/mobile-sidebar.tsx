@@ -46,32 +46,24 @@ const ICON_STYLE: Record<string, string> = {
   "/usuarios": "text-teal-600 dark:text-teal-400",
 };
 
-/**
- * Sidebar hamburguesa para mobile. Se muestra solo en `md:` y abajo.
- * El sidebar desktop sigue siendo su ruta normal.
- */
 export function MobileSidebar({ items }: { items: NavItem[] }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
   return (
     <div className="md:hidden sticky top-0 z-40 bg-background border-b border-background-border">
-      <div className="flex items-center justify-between px-4 py-3">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="size-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold">
-            m
-          </div>
-          <span className="font-bold tracking-tight">minimarket</span>
-        </Link>
-<Sheet open={open} onOpenChange={setOpen}>
+      <div className="flex items-center justify-between px-1 py-3">
+        <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger className="inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground size-9">
             <Menu />
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0 bg-sidebar">
-            <SheetHeader className="p-5 bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 text-white">
+            <SheetHeader className="p-5 bg-linear-to-br from-emerald-500 via-emerald-600 to-teal-600 text-white">
               <SheetTitle className="text-white flex items-center gap-2">
                 <div className="size-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold">
-                  m
+                  <Link href="/" onClick={() => setOpen(false)}>
+                    m
+                  </Link>
                 </div>
                 minimarket
               </SheetTitle>

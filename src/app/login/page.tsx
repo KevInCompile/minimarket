@@ -19,13 +19,13 @@ export default async function LoginPage({ searchParams }: Props) {
         ? "Tu usuario fue desactivado. Contactá al administrador."
         : null;
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-teal-50/60 to-cyan-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-cyan-950/40 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-emerald-50 via-teal-50/60 to-cyan-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-cyan-950/40 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto size-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg mb-4">
+          <div className="mx-auto size-16 rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg mb-4">
             m
           </div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-br from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight bg-linear-to-br from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
             minimarket
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
