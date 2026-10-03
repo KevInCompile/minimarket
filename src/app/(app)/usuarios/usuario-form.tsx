@@ -13,14 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Plus } from "lucide-react";
 import {
   crearUsuarioAction,
@@ -28,6 +20,7 @@ import {
   type UsuarioState,
 } from "@/server/actions/usuarios";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ResponsiveTable } from "@/components/responsive-table";
 
 const INITIAL: UsuarioState = { ok: true, ts: 0 };
 
@@ -102,34 +95,104 @@ export function UsuarioList({
   usuarios: UsuarioView[];
   currentUserId: string;
 }) {
-  if (usuarios.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground py-6 text-center">
-        Sin usuarios todavía.
-      </p>
-    );
-  }
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nombre</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Rol</TableHead>
-          <TableHead>Estado</TableHead>
-          <TableHead></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {usuarios.map((u) => (
-          <UsuarioRow key={u.id} u={u} esActual={u.id === currentUserId} />
-        ))}
-      </TableBody>
-    </Table>
+    <ResponsiveTable
+      rows={usuarios}
+      rowKey={(u) => u.id}
+      rowClassName={(u) => (u.activo ? undefined : "opacity-60")}
+      emptyMessage="Sin usuarios todavía."
+      columns={[
+        {
+          key: "nombre",
+          header: "Nombre",
+          cell: (u) => <span className="font-medium">{u.nombre}</span>,
+        },
+        {
+          key: "email",
+          header: "Email",
+          cell: (u) => (
+            <span className="text-sm text-muted-foreground">{u.email}</span>
+          ),
+        },
+        {
+          key: "rol",
+          header: "Rol",
+          cell: (u) => (
+            <Badge
+              variant={u.role === "ADMIN" ? "default" : "secondary"}
+              className="font-normal"
+            >
+              {u.role}
+            </Badge>
+          ),
+        },
+        {
+          key: "estado",
+          header: "Estado",
+          cell: (u) =>
+            u.activo ? (
+              <Badge variant="secondary" className="font-normal">activo</Badge>
+            ) : (
+              <Badge variant="outline" className="font-normal">inactivo</Badge>
+            ),
+        },
+        {
+          key: "actions",
+          header: "",
+          align: "right",
+          cell: (u) => <UsuarioToggleButton u={u} esActual={u.id === currentUserId} />,
+        },
+      ]}
+      fields={[
+        {
+          key: "nombre",
+          label: "Nombre",
+          render: (u) => <span className="font-medium">{u.nombre}</span>,
+        },
+        {
+          key: "email",
+          label: "Email",
+          render: (u) => (
+            <span className="text-sm text-muted-foreground">{u.email}</span>
+          ),
+        },
+        {
+          key: "rol",
+          label: "Rol",
+          render: (u) => (
+            <Badge
+              variant={u.role === "ADMIN" ? "default" : "secondary"}
+              className="font-normal"
+            >
+              {u.role}
+            </Badge>
+          ),
+        },
+        {
+          key: "estado",
+          label: "Estado",
+          render: (u) =>
+            u.activo ? (
+              <Badge variant="secondary" className="font-normal">activo</Badge>
+            ) : (
+              <Badge variant="outline" className="font-normal">inactivo</Badge>
+            ),
+        },
+        {
+          key: "actions",
+          label: "",
+          render: (u) => (
+            <div className="flex justify-end">
+              <UsuarioToggleButton u={u} esActual={u.id === currentUserId} />
+            </div>
+          ),
+        },
+      ]}
+    />
   );
 }
 
-function UsuarioRow({ u, esActual }: { u: UsuarioView; esActual: boolean }) {
+function UsuarioToggleButton({ u, esActual }: { u: UsuarioView; esActual: boolean }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -143,37 +206,17 @@ function UsuarioRow({ u, esActual }: { u: UsuarioView; esActual: boolean }) {
   }
 
   return (
-    <TableRow className={u.activo ? undefined : "opacity-60"}>
-      <TableCell className="font-medium">{u.nombre}</TableCell>
-      <TableCell className="text-sm text-muted-foreground">{u.email}</TableCell>
-      <TableCell>
-        <Badge
-          variant={u.role === "ADMIN" ? "default" : "secondary"}
-          className="font-normal"
-        >
-          {u.role}
-        </Badge>
-      </TableCell>
-      <TableCell>
-        {u.activo ? (
-          <Badge variant="secondary" className="font-normal">activo</Badge>
-        ) : (
-          <Badge variant="outline" className="font-normal">inactivo</Badge>
-        )}
-      </TableCell>
-      <TableCell>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setOpen(true)}
-          disabled={esActual}
-          title={esActual ? "No podés desactivarte a vos mismo" : undefined}
-        >
-          {u.activo ? "Desactivar" : "Activar"}
-        </Button>
-      </TableCell>
-
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => setOpen(true)}
+        disabled={esActual}
+        title={esActual ? "No podés desactivarte a vos mismo" : undefined}
+      >
+        {u.activo ? "Desactivar" : "Activar"}
+      </Button>
       <ConfirmDialog
         open={open}
         onOpenChange={setOpen}
@@ -188,6 +231,6 @@ function UsuarioRow({ u, esActual }: { u: UsuarioView; esActual: boolean }) {
         onConfirm={handleConfirm}
         pending={pending}
       />
-    </TableRow>
+    </>
   );
 }

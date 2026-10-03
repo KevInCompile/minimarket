@@ -5,14 +5,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import {
@@ -21,6 +13,7 @@ import {
   type ProveedorState,
 } from "@/server/actions/proveedores";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ResponsiveTable } from "@/components/responsive-table";
 
 const INITIAL: ProveedorState = { ok: true, ts: 0 };
 
@@ -58,33 +51,81 @@ export function ProveedorForm() {
 }
 
 export function ProveedorList({ proveedores }: { proveedores: ProveedorView[] }) {
-  if (proveedores.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground py-6 text-center">
-        Sin proveedores todavía.
-      </p>
-    );
-  }
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nombre</TableHead>
-          <TableHead className="text-right">Gastos</TableHead>
-          <TableHead>Estado</TableHead>
-          <TableHead></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {proveedores.map((p) => (
-          <ProveedorRow key={p.id} p={p} />
-        ))}
-      </TableBody>
-    </Table>
+    <ResponsiveTable
+      rows={proveedores}
+      rowKey={(p) => p.id}
+      rowClassName={(p) => (p.activo ? undefined : "opacity-60")}
+      emptyMessage="Sin proveedores todavía."
+      columns={[
+        {
+          key: "nombre",
+          header: "Nombre",
+          cell: (p) => <span className="font-medium">{p.nombre}</span>,
+        },
+        {
+          key: "gastos",
+          header: "Gastos",
+          align: "right",
+          cell: (p) => (
+            <span className="tabular-nums">{p.cantidadGastos}</span>
+          ),
+        },
+        {
+          key: "estado",
+          header: "Estado",
+          cell: (p) =>
+            p.activo ? (
+              <Badge variant="secondary" className="font-normal">activo</Badge>
+            ) : (
+              <Badge variant="outline" className="font-normal">inactivo</Badge>
+            ),
+        },
+        {
+          key: "actions",
+          header: "",
+          align: "right",
+          cell: (p) => <ProveedorToggleButton p={p} />,
+        },
+      ]}
+      fields={[
+        {
+          key: "nombre",
+          label: "Nombre",
+          render: (p) => <span className="font-medium">{p.nombre}</span>,
+        },
+        {
+          key: "gastos",
+          label: "Gastos",
+          render: (p) => (
+            <span className="tabular-nums">{p.cantidadGastos}</span>
+          ),
+        },
+        {
+          key: "estado",
+          label: "Estado",
+          render: (p) =>
+            p.activo ? (
+              <Badge variant="secondary" className="font-normal">activo</Badge>
+            ) : (
+              <Badge variant="outline" className="font-normal">inactivo</Badge>
+            ),
+        },
+        {
+          key: "actions",
+          label: "",
+          render: (p) => (
+            <div className="flex justify-end">
+              <ProveedorToggleButton p={p} />
+            </div>
+          ),
+        },
+      ]}
+    />
   );
 }
 
-function ProveedorRow({ p }: { p: ProveedorView }) {
+function ProveedorToggleButton({ p }: { p: ProveedorView }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const bloqueadoPorGastos = p.activo && p.cantidadGastos > 0;
@@ -99,33 +140,21 @@ function ProveedorRow({ p }: { p: ProveedorView }) {
   }
 
   return (
-    <TableRow className={p.activo ? undefined : "opacity-60"}>
-      <TableCell className="font-medium">{p.nombre}</TableCell>
-      <TableCell className="text-right tabular-nums">{p.cantidadGastos}</TableCell>
-      <TableCell>
-        {p.activo ? (
-          <Badge variant="secondary" className="font-normal">activo</Badge>
-        ) : (
-          <Badge variant="outline" className="font-normal">inactivo</Badge>
-        )}
-      </TableCell>
-      <TableCell>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setOpen(true)}
-          disabled={bloqueadoPorGastos}
-          title={
-            bloqueadoPorGastos
-              ? `No se puede desactivar: tiene ${p.cantidadGastos} gasto(s) asociado(s)`
-              : undefined
-          }
-        >
-          {p.activo ? "Desactivar" : "Activar"}
-        </Button>
-      </TableCell>
-
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => setOpen(true)}
+        disabled={bloqueadoPorGastos}
+        title={
+          bloqueadoPorGastos
+            ? `No se puede desactivar: tiene ${p.cantidadGastos} gasto(s) asociado(s)`
+            : undefined
+        }
+      >
+        {p.activo ? "Desactivar" : "Activar"}
+      </Button>
       <ConfirmDialog
         open={open}
         onOpenChange={setOpen}
@@ -139,6 +168,6 @@ function ProveedorRow({ p }: { p: ProveedorView }) {
         onConfirm={handleConfirm}
         pending={pending}
       />
-    </TableRow>
+    </>
   );
 }
