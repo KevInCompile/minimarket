@@ -247,15 +247,13 @@ function CierreCard({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Metric label="Gastos caja" value={row.gastosCaja} />
             <Metric label="Gastos efvo" value={row.gastosEfectivo} />
-            <Metric label="Total gastos" value={row.totalGastos} bold />
-            <Metric label="Entrada est." value={row.entradaEstimada} muted />
+            <Metric label="Total gastos" value={row.totalGastos} />
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Metric label="Retiros efvo" value={row.retirosEfectivo} />
             <Metric label="Retiros Nequi" value={row.retirosNequi} />
             <Metric label="Nequi recibido" value={row.nequiDelDia} />
-            <Metric label="Nequi acum." value={row.nequiAcumulado} bold />
           </div>
 
           {tieneDescuadre && (
