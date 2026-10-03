@@ -78,7 +78,7 @@ export default async function AppLayout({
     <div className="min-h-screen flex bg-background text-foreground">
       <MobileSidebar items={mobileItems} />
 
-      <aside className="hidden md:flex w-60 shrink-0 border-r border-sidebar-border bg-sidebar flex flex-col">
+      <aside className="hidden md:flex w-60 shrink-0 border-r border-sidebar-border bg-background flex-col">
         <div className="p-5  text-white">
           <Link href="/" className="block">
             <div className="flex items-center gap-2">
