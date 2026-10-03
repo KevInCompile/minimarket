@@ -51,19 +51,23 @@ export function MobileSidebar({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
 
   return (
-    <div className="md:hidden sticky top-0 z-40 bg-background border-b border-background-border">
-      <div className="flex items-center justify-between px-1 py-3">
+    <div className="md:hidden sticky top-0 z-40 bg-sidebar border-b border-sidebar-border shadow-sm">
+      <div className="flex items-center justify-between px-4 py-3">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="size-8 rounded-lg bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shadow-sm">
+            m
+          </div>
+          <span className="font-bold tracking-tight">minimarket</span>
+        </Link>
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger className="inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground size-9">
+          <SheetTrigger className="inline-flex items-center justify-center rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground size-9 border border-sidebar-border">
             <Menu />
           </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0 bg-sidebar">
+          <SheetContent side="left" className="w-64 p-0 bg-sidebar border-r border-sidebar-border">
             <SheetHeader className="p-5 bg-linear-to-br from-emerald-500 via-emerald-600 to-teal-600 text-white">
               <SheetTitle className="text-white flex items-center gap-2">
                 <div className="size-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold">
-                  <Link href="/" onClick={() => setOpen(false)}>
-                    m
-                  </Link>
+                  m
                 </div>
                 minimarket
               </SheetTitle>
