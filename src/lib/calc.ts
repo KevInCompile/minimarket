@@ -55,6 +55,12 @@ export type CierreDiarioComputed = CierreInput & {
   nequiAcumulado: number;
   nequiDelDia: number;
   descuadre: number | null;
+  /**
+   * Total "venta" del día: efectivo guardado + retiros del día (efectivo) +
+   * gastos del día pagados con caja. Es una estimación de la plata que se
+   * movió del negocio en el día.
+   */
+  totalVentaDelDia: number;
 };
 
 export type BalanceGeneral = {
@@ -162,6 +168,11 @@ export function computeCierreDiario(args: {
       ? null
       : cierre.efectivoRealContado - efectivoAcumulado;
 
+  // Total "venta" del día: efectivo guardado + retiros con saleDe=EFECTIVO
+  // + gastos pagados con caja. Es la plata que se movió del negocio en el día.
+  const totalVentaDelDia =
+    cierre.efectivoGuardado + retirosEfectivo + gastosCaja;
+
   return {
     ...cierre,
     gastosCaja,
@@ -175,6 +186,7 @@ export function computeCierreDiario(args: {
     nequiAcumulado,
     nequiDelDia,
     descuadre,
+    totalVentaDelDia,
   };
 }
 

@@ -39,6 +39,7 @@ type RowView = {
   efectivoAcumulado: number;
   nequiAcumulado: number;
   descuadre: number | null;
+  totalVentaDelDia: number;
 };
 
 export function CierreCards({
@@ -205,6 +206,12 @@ function CierreCard({
               Guardado:{" "}
               <span className="font-semibold text-foreground tabular-nums">
                 {formatCOP(row.efectivoGuardado)}
+              </span>
+            </span>
+            <span title="efectivo guardado + retiros del dia (efectivo) + gastos de caja">
+              Total venta:{" "}
+              <span className="font-semibold text-foreground tabular-nums">
+                {formatCOP(row.totalVentaDelDia)}
               </span>
             </span>
             {tieneDescuadre && (

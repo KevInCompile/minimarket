@@ -125,6 +125,7 @@ export default async function CierrePage({ searchParams }: Props) {
           efectivoAcumulado: s.efectivoAcumulado,
           nequiAcumulado: s.nequiAcumulado,
           descuadre: s.descuadre,
+          totalVentaDelDia: s.totalVentaDelDia,
         }))}
         pendientes={pendientes}
       />
