@@ -18,52 +18,63 @@ descuadres), pero como aplicación web con roles, auditoría y motor de cálculo
 
 ## Empezar
 
-### 1. Postgres local (macOS con Homebrew)
+### Opción A: Postgres local (desarrollo en tu Mac)
 
 ```bash
 brew install postgresql@16
 brew services start postgresql@16
 createdb minimarket    # o: psql -U $USER -d postgres -c "CREATE DATABASE minimarket;"
-```
-
-### 2. Variables de entorno
-
-```bash
 cp .env.example .env
-# Editá .env si tu Postgres tiene otro usuario/contraseña.
-# Por defecto: DATABASE_URL="postgresql://$USER@localhost:5432/minimarket?schema=public"
-```
-
-Generá un `AUTH_SECRET` con:
-
-```bash
-openssl rand -base64 32
-```
-
-### 3. Instalar dependencias, migrar y sembrar
-
-```bash
+# Editá DATABASE_URL: "postgresql://$USER@localhost:5432/minimarket?schema=public"
 pnpm install
-pnpm exec prisma migrate deploy   # crea las tablas
-pnpm db:seed                       # carga los datos del Excel
-```
-
-### 4. Levantar la app
-
-```bash
+pnpm exec prisma migrate deploy
+pnpm db:seed
 pnpm dev
 ```
 
 Abrí <http://localhost:3000>.
 
-### Credenciales seed
+### Opción B: Neon (desarrollo y producción, recomendado)
 
-| Rol   | Email                       | Contraseña |
-| ----- | --------------------------- | ---------- |
-| ADMIN  | `admin@minimarket.local`    | `admin123` |
-| CAJERO | `cajero@minimarket.local`   | `cajero123`|
+**1. Crear proyecto en Neon**
 
-> Cambiá estas contraseñas en producción.
+- Ir a <https://console.neon.tech> y crear cuenta (gratis)
+- Click "Create a project" (region US East o AWS cercano a tu Vercel)
+- Neon crea una DB `neondb` con un usuario `neondb_owner`
+
+**2. Obtener connection string**
+
+En Neon → Project Dashboard → "Connection Details":
+- Copiar la **pooled connection string** (la que tiene `-pooler` en el hostname)
+- Formato: `postgresql://neondb_owner:XXXXX@ep-XXXXX-pooler.XXXXX.aws.neon.tech/neondb?sslmode=require`
+
+**3. Configurar variables de entorno**
+
+```bash
+cp .env.example .env
+# Pegar la URL de Neon en DATABASE_URL (NO commitear .env)
+# Generar AUTH_SECRET:
+openssl rand -base64 32
+```
+
+**4. Aplicar migraciones y seed**
+
+```bash
+pnpm install
+pnpm exec prisma migrate deploy
+pnpm db:seed
+pnpm dev
+```
+
+### Variables de entorno
+
+| Variable | Descripción | Ejemplo |
+|---|---|---|
+| `DATABASE_URL` | Connection string de Postgres (local o Neon) | `postgresql://user:pwd@host/db?sslmode=require` |
+| `AUTH_SECRET` | String aleatorio de 32+ chars para firmar JWTs | Generar con `openssl rand -base64 32` |
+| `AUTH_TRUST_HOST` | Requerido en deploys no-locales (Vercel, etc.) | `true` |
+
+> **Importante:** `.env` está en `.gitignore`. NO commitear las credenciales.
 
 ## Estructura
 
@@ -208,13 +219,16 @@ chequear el rol antes de mutar la base.
 
 ## Deploy a Vercel
 
-1. Subí el repo a GitHub.
-2. Creá una base de datos en **Vercel Postgres** (o Neon / Supabase).
-3. Configurá las env vars en Vercel: `DATABASE_URL`, `AUTH_SECRET`, `AUTH_TRUST_HOST=true`.
-4. Deploy. Vercel ejecuta automáticamente `prisma migrate deploy` si tenés un `postinstall` script; si no, agregalo:
-
-   ```json
-   "postinstall": "prisma generate && prisma migrate deploy"
+1. **Repo en GitHub** (ya está).
+2. **Crear proyecto en Neon** ([console.neon.tech](https://console.neon.tech)) y obtener la pooled connection string.
+3. **Configurar variables en Vercel** (Settings → Environment Variables):
+   - `DATABASE_URL` → pooled connection string
+   - `AUTH_SECRET` → generá con `openssl rand -base64 32`
+   - `AUTH_TRUST_HOST` → `true`
+4. **Deploy.** Vercel corre `pnpm install` (que ejecuta `postinstall: prisma generate`) y luego `pnpm run build`.
+5. **Primera vez:** correr el seed apuntando a Neon:
+   ```bash
+   DATABASE_URL="postgresql://neondb_owner:XXXX@ep-XXXX-pooler..." pnpm db:seed
    ```
 
-5. Corré `pnpm db:seed` localmente apuntando a la base de prod para tener los datos iniciales.
+> El `postinstall: "prisma generate"` ya está en `package.json`, así Vercel genera el cliente Prisma correctamente aunque tenga los build scripts deshabilitados.
