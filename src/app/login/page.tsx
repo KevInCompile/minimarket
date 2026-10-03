@@ -14,12 +14,12 @@ export default async function LoginPage({ searchParams }: Props) {
   }
   const notice =
     expired === "1"
-      ? "Tu sesión quedó desactualizada (la base de datos fue reiniciada). Volvé a iniciar sesión."
+      ? "Su sesión quedó desactualizada (la base de datos fue reiniciada). Vuelva a iniciar sesión."
       : inactive === "1"
-        ? "Tu usuario fue desactivado. Contactá al administrador."
+        ? "Su usuario fue desactivado. Contacte al administrador."
         : null;
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-emerald-50 via-teal-50/60 to-cyan-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-cyan-950/40 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="mx-auto size-16 rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg mb-4">
@@ -39,7 +39,7 @@ export default async function LoginPage({ searchParams }: Props) {
         )}
         <LoginForm from={from ?? "/"} />
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          ¿Problemas para entrar? Contactá al administrador.
+          ¿Problemas para entrar? Contacte al administrador.
         </p>
       </div>
     </div>

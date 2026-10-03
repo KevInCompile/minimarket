@@ -66,7 +66,7 @@ export default async function GastosPage({ searchParams }: Props) {
         <Card>
           <CardHeader>
             <CardTitle>Nuevo gasto</CardTitle>
-            <CardDescription>Registrá una compra de mercancía.</CardDescription>
+            <CardDescription>Registre una compra de mercancía.</CardDescription>
           </CardHeader>
           <CardContent>
             <GastoForm proveedores={proveedores} />

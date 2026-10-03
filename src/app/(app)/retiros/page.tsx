@@ -82,8 +82,8 @@ export default async function RetirosPage({ searchParams }: Props) {
             icon={Wallet}
             label="Salido de la caja del día"
             value={porSaleDe.CAJA}
-            color="border-amber-200 bg-linear-to-br from-amber-50 to-orange-50/60 dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/30"
-            iconColor="bg-linear-to-br from-amber-500 to-orange-500 text-white"
+            color="border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30"
+            iconColor="bg-linear-to-br from-sky-500 to-cyan-500 text-white"
           />
         </div>
       )}

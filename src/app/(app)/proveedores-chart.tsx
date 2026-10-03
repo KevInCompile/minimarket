@@ -43,14 +43,14 @@ export function ProveedoresChart({ data }: { data: RankingProveedor[] }) {
             type="number"
             tickFormatter={(v) => formatCOP(v)}
             tick={{ fontSize: 11 }}
-            stroke="hsl(var(--muted-foreground))"
+            stroke="#ffffff"
           />
           <YAxis
             type="category"
             dataKey="proveedor"
             width={110}
             tick={{ fontSize: 11 }}
-            stroke="hsl(var(--muted-foreground))"
+            stroke="#ffffff"
           />
           <Tooltip
             content={({ active, payload }) => {

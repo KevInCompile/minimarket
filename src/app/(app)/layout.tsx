@@ -27,10 +27,10 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { href: "/", label: "Balance", icon: LayoutDashboard },
+  { href: "/cierre", label: "Cierre diario", icon: ClipboardCheck },
+  { href: "/nequi", label: "Nequi", icon: Smartphone },
   { href: "/gastos", label: "Gastos", icon: Receipt },
   { href: "/retiros", label: "Retiros", icon: Wallet, adminOnly: true },
-  { href: "/nequi", label: "Nequi", icon: Smartphone },
-  { href: "/cierre", label: "Cierre diario", icon: ClipboardCheck },
   { href: "/pedidos", label: "Pedidos (nota)", icon: StickyNote, adminOnly: true },
   { href: "/proveedores", label: "Proveedores", icon: Truck, adminOnly: true },
   { href: "/usuarios", label: "Usuarios", icon: Users, adminOnly: true },

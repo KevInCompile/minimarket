@@ -81,10 +81,6 @@ export default async function DashboardPage({ searchParams }: Props) {
     <div className="p-6 lg:p-10 space-y-8 max-w-7xl">
       <header className="flex items-end justify-between flex-wrap gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-950/40 dark:to-teal-950/40 text-emerald-800 dark:text-emerald-300 text-xs font-medium uppercase tracking-wide mb-2">
-            <span className="size-1.5 rounded-full bg-emerald-500" />
-            Resumen del periodo
-          </div>
           <h1 className="text-3xl font-bold tracking-tight">
             Balance general
           </h1>

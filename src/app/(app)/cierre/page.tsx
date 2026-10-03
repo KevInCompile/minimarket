@@ -90,7 +90,7 @@ export default async function CierrePage({ searchParams }: Props) {
         </p>
       </header>
 
-      <ResumenPeriodo serie={serie} />
+      {/*<ResumenPeriodo serie={serie} />*/}
 
       <Card>
         <CardHeader>
@@ -99,8 +99,8 @@ export default async function CierrePage({ searchParams }: Props) {
             Crear cierre para un día sin datos
           </CardTitle>
           <CardDescription>
-            Útil si querés registrar un día festivo o con caja inicial $0 antes
-            de que lleguen los gastos. Una vez creado, editá los valores abajo.
+            Útil si quiere registrar un día festivo o con caja inicial $0 antes
+            de que lleguen los gastos. Una vez creado, edite los valores abajo.
           </CardDescription>
         </CardHeader>
         <CardContent>

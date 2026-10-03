@@ -8,8 +8,8 @@ export default function ForbiddenPage() {
         <p className="text-sm font-medium text-muted-foreground">403</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">Sin permisos</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          No tenés permiso para ver esta sección. Si creés que es un error,
-          contactá al administrador.
+          No tiene permiso para ver esta sección. Si cree que es un error,
+          contacte al administrador.
         </p>
         <div className="mt-6">
           <Link href="/" className={buttonVariants({ variant: "default" })}>

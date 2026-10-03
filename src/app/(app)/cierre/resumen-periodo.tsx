@@ -32,7 +32,7 @@ export function ResumenPeriodo({ serie }: ResumenProps) {
                 : `Hay ${diasConDescuadre} días con descuadre`}
             </p>
             <p className="text-xs text-amber-800/90 dark:text-amber-300/90 mt-1">
-              El conteo físico de efectivo no coincide con el acumulado. Revisá
+              El conteo físico de efectivo no coincide con el acumulado. Revise
               abajo los días marcados en amarillo.
             </p>
           </div>
@@ -67,16 +67,16 @@ export function ResumenPeriodo({ serie }: ResumenProps) {
               ? `Conteo real: ${formatCOP(ultimo.efectivoRealContado)}`
               : "Sin conteo real"
           }
-          gradient="border-amber-200 bg-linear-to-br from-amber-50 to-orange-50/60 dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/30"
-          iconBg="bg-linear-to-br from-amber-500 to-orange-500 text-white"
+          gradient="border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30"
+          iconBg="bg-linear-to-br from-sky-500 to-cyan-500 text-white"
         />
         <Stat
           icon={TrendingDown}
           label="Total gastos del periodo"
           value={formatCOP(totalGastos)}
           sub={`Entrada estimada: ${formatCOP(totalEntradaEstimada)}`}
-          gradient="border-rose-200 bg-linear-to-br from-rose-50 to-pink-50/60 dark:border-rose-800 dark:from-rose-950/30 dark:to-pink-950/30"
-          iconBg="bg-linear-to-br from-rose-500 to-pink-500 text-white"
+          gradient="border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30"
+          iconBg="bg-linear-to-br from-sky-500 to-cyan-500 text-white"
         />
       </div>
     </div>

@@ -54,7 +54,7 @@ export function CierreCards({
     <div className="space-y-3">
       {rows.length === 0 && pendientes.length === 0 && (
         <p className="text-sm text-muted-foreground py-6 text-center">
-          Sin cierres en el periodo. Usá el form de arriba para crear el primero.
+          Sin cierres en el periodo. Use el form de arriba para crear el primero.
         </p>
       )}
 
@@ -103,8 +103,8 @@ function PendienteCard({ fecha }: { fecha: string }) {
         <CardContent className="pt-0 pb-4">
           <Separator className="my-3" />
           <p className="text-sm text-muted-foreground">
-            Para hacer el cierre de este día, primero cargá los gastos / retiros /
-            Nequi en sus respectivas páginas. Después volvé acá y creá el cierre
+            Para hacer el cierre de este día, primero cargue los gastos / retiros /
+            Nequi en sus respectivas páginas. Después regrese acá y cree el cierre
             con el botón de arriba.
           </p>
         </CardContent>
@@ -267,7 +267,7 @@ function CierreCard({
               <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
                 Conteo físico: {formatCOP(row.efectivoRealContado ?? 0)} vs
                 acumulado: {formatCOP(row.efectivoAcumulado)}.
-                Revisá si faltan gastos o retiros con Efectivo.
+                Revise si faltan gastos o retiros con Efectivo.
               </p>
             </div>
           )}
@@ -355,7 +355,7 @@ function CierreCard({
                   className="tabular-nums max-w-xs"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Si lo completás, se calcula el descuadre vs el acumulado.
+                  Si lo completa, se calcula el descuadre vs el acumulado.
                 </p>
               </div>
 
@@ -384,7 +384,7 @@ function CierreCard({
         title="Eliminar cierre"
         description={
           hasMovimiento
-            ? "No se puede eliminar este cierre porque tiene gastos, retiros o Nequi registrados. Borrá los movimientos primero."
+            ? "No se puede eliminar este cierre porque tiene gastos, retiros o Nequi registrados. Borre los movimientos primero."
             : `¿Eliminar el cierre del ${formatShortDate(date)}? Esta acción no se puede deshacer.`
         }
         confirmLabel="Eliminar"
