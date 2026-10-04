@@ -52,15 +52,9 @@ export function MobileSidebar({ items }: { items: NavItem[] }) {
 
   return (
     <div className="md:hidden sticky top-0 z-40 bg-sidebar border-b border-sidebar-border shadow-sm">
-      <div className="flex items-center justify-between px-4 py-3">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="size-8 rounded-lg bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shadow-sm">
-            m
-          </div>
-          <span className="font-bold tracking-tight">minimarket</span>
-        </Link>
+      <div className="flex items-center justify-between px-3 py-2">
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger className="inline-flex items-center justify-center rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground size-9 border border-sidebar-border">
+          <SheetTrigger className="inline-flex items-center justify-center rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground size-9 border border-sidebar-border shrink-0">
             <Menu />
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0 bg-sidebar border-r border-sidebar-border">
@@ -102,6 +96,13 @@ export function MobileSidebar({ items }: { items: NavItem[] }) {
             </nav>
           </SheetContent>
         </Sheet>
+        <Link
+          href="/"
+          className="size-8 rounded-lg bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shrink-0"
+          aria-label="Inicio"
+        >
+          m
+        </Link>
       </div>
     </div>
   );
