@@ -16,21 +16,21 @@ async function main() {
   const cajeroPassword = await hash("cajero123", 10);
 
   await prisma.user.upsert({
-    where: { email: "admin@minimarket.local" },
+    where: { email: "admin@ejemplo.com" },
     update: {},
     create: {
-      email: "admin@minimarket.local",
+      email: "admin@ejemplo.com",
       passwordHash: adminPassword,
-      nombre: "Dueño",
+      nombre: "Administrador",
       role: "ADMIN",
     },
   });
 
   await prisma.user.upsert({
-    where: { email: "cajero@minimarket.local" },
+    where: { email: "cajero@ejemplo.com" },
     update: {},
     create: {
-      email: "cajero@minimarket.local",
+      email: "cajero@ejemplo.com",
       passwordHash: cajeroPassword,
       nombre: "Cajero",
       role: "CAJERO",
@@ -39,8 +39,8 @@ async function main() {
 
   console.log(`\n✓ Seed completo. Tablas transaccionales vacías — cargá datos desde la app.`);
   console.log(`  Usuarios:`);
-  console.log(`    ADMIN  → admin@minimarket.local / admin123`);
-  console.log(`    CAJERO → cajero@minimarket.local / cajero123`);
+  console.log(`    ADMIN  → admin@ejemplo.com / admin123`);
+  console.log(`    CAJERO → cajero@ejemplo.com / cajero123`);
 }
 
 main()

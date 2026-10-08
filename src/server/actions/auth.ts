@@ -24,7 +24,7 @@ export async function loginAction(
   } catch (e) {
     if (e instanceof AuthError) {
       if (e.type === "CredentialsSignin") {
-        return { ok: false, error: "Email o contraseña incorrectos.", ts: Date.now() };
+        return { ok: false, error: "Correo o contraseña incorrectos.", ts: Date.now() };
       }
       return { ok: false, error: "No se pudo iniciar sesión. Intentá de nuevo.", ts: Date.now() };
     }

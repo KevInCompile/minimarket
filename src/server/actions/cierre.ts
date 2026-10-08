@@ -100,7 +100,7 @@ export async function crearCierreVacioAction(
   if (Number.isNaN(fecha.getTime())) return errState("Fecha inválida.");
 
   const hoy = startOfDayUTC(new Date());
-  if (fecha > hoy) return errState("No podés crear un cierre para un día futuro.");
+  if (fecha > hoy) return errState("No puede crear un cierre para un día futuro.");
 
   const existe = await prisma.cierreDiario.findUnique({ where: { fecha } });
   if (existe) return errState("Ya existe un cierre para esa fecha.");

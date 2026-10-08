@@ -26,7 +26,7 @@ export function LoginForm({ from }: { from: string }) {
     <Card>
       <CardHeader>
         <CardTitle>Iniciar sesión</CardTitle>
-        <CardDescription>Ingrese suH email y contraseña.</CardDescription>
+        <CardDescription>Ingrese su correo y contraseña.</CardDescription>
       </CardHeader>
       <form action={action}>
         <CardContent className="space-y-4">
@@ -39,7 +39,7 @@ export function LoginForm({ from }: { from: string }) {
               type="email"
               autoComplete="email"
               required
-              placeholder="vos@minimarket.local"
+              placeholder="su-correo@ejemplo.com"
             />
           </div>
           <div className="space-y-2">

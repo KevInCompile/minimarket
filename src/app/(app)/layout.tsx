@@ -132,7 +132,7 @@ export default async function AppLayout({
                 className="w-full justify-start hover:text-rose-600 dark:hover:text-rose-400"
               >
                 <LogOut className="size-4" />
-                Salir
+                Cerrar sesión
               </Button>
             </form>
           </div>

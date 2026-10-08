@@ -39,7 +39,7 @@ export default async function LoginPage({ searchParams }: Props) {
         )}
         <LoginForm from={from ?? "/"} />
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          ¿Problemas para entrar? Contacte al administrador.
+          ¿Tiene problemas para acceder? Contacte al administrador.
         </p>
       </div>
     </div>

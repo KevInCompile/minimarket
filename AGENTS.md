@@ -35,8 +35,8 @@ pnpm lint           # ESLint
 
 ## Datos del seed
 
-- 1 ADMIN (`admin@minimarket.local` / `admin123`)
-- 1 CAJERO (`cajero@minimarket.local` / `cajero123`)
+- 1 ADMIN (`admin@ejemplo.com` / `admin123`)
+- 1 CAJERO (`cajero@ejemplo.com` / `cajero123`)
 - 37 proveedores, 56 gastos, 3 retiros, 13 Nequi, 18 cierres, 7 pedidos (nota)
 
 Período: 02/09/2026 al 19/09/2026.
