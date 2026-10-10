@@ -30,8 +30,39 @@ pnpm test           # tests Vitest (paridad con el Excel)
 pnpm db:seed        # ejecuta prisma/seed.ts
 pnpm db:studio      # Prisma Studio
 pnpm db:reset       # drop + recreate + seed
+pnpm db:backup      # backup de los datos a prisma/backups/ (CSV por tabla)
 pnpm lint           # ESLint
 ```
+
+## Backups de la base de datos
+
+**SIEMPRE hacer backup antes de cualquier wipe o migrate destructivo.** Los datos son reales y representan el trabajo del usuario.
+
+### Hacer backup
+
+```bash
+# Backup en CSV (recomendado, preserva tipos de datos)
+./scripts/backup.sh
+
+# Backup en JSON (vía Prisma)
+pnpm exec tsx prisma/backup.ts
+```
+
+Los archivos se guardan en `prisma/backups/backup-<timestamp>/` con un archivo `.csv` por tabla. El directorio está en `.gitignore` porque los datos son reales y no deben commitearse.
+
+### Restaurar backup
+
+```bash
+# Restaurar una tabla específica
+psql "$DATABASE_URL" -c "\COPY public.\"<tabla>\" FROM 'prisma/backups/backup-<timestamp>/<tabla>.csv' WITH (FORMAT CSV, HEADER TRUE)"
+```
+
+### Time Travel de Neon (último recurso)
+
+Si la DB está vacía o los datos están corruptos, usar el Time Travel de Neon desde la consola web:
+- https://console.neon.tech → proyecto → rama `main` → Time Travel
+- Seleccionar un punto anterior al wipe (Neon guarda hasta **6 horas** en el plan gratuito)
+- Después de restaurar, correr backup inmediatamente
 
 ## Datos del seed
 

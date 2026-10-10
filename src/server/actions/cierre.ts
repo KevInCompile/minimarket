@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { fromISODate, toISODate, startOfDayUTC } from "@/lib/dates";
-import { requireValidUser, requireAdmin } from "@/lib/auth-guard";
+import { requireValidUser, requireAdmin, requireTiendaId } from "@/lib/auth-guard";
 import { okState, errState, type ActionState } from "./_state";
 
 export type CierreState = ActionState;
@@ -32,7 +32,10 @@ export async function guardarCierreAction(
   _prev: CierreState,
   formData: FormData,
 ): Promise<CierreState> {
-  const user = await requireValidUser();
+  const [user, tiendaId] = await Promise.all([
+    requireValidUser(),
+    requireTiendaId(),
+  ]);
 
   const raw = {
     fecha: formData.get("fecha")?.toString() ?? "",
@@ -63,6 +66,7 @@ export async function guardarCierreAction(
       efectivoGuardado,
       efectivoRealContado: real,
       userIdCierre: user.id,
+      tiendaId,
     },
     create: {
       fecha: fechaDate,
@@ -71,6 +75,7 @@ export async function guardarCierreAction(
       efectivoGuardado,
       efectivoRealContado: real,
       userIdCierre: user.id,
+      tiendaId,
     },
   });
 
@@ -89,7 +94,10 @@ export async function crearCierreVacioAction(
   _prev: CrearCierreState,
   formData: FormData,
 ): Promise<CrearCierreState> {
-  const user = await requireValidUser();
+  const [user, tiendaId] = await Promise.all([
+    requireValidUser(),
+    requireTiendaId(),
+  ]);
 
   const parsed = fechaSchema.safeParse({
     fecha: formData.get("fecha")?.toString() ?? "",
@@ -113,6 +121,7 @@ export async function crearCierreVacioAction(
       efectivoGuardado: 0,
       efectivoRealContado: null,
       userIdCierre: user.id,
+      tiendaId,
     },
   });
 
@@ -122,6 +131,7 @@ export async function crearCierreVacioAction(
 
 export async function eliminarCierreAction(formData: FormData): Promise<void> {
   await requireAdmin();
+  const tiendaId = await requireTiendaId();
   const parsed = fechaSchema.safeParse({
     fecha: formData.get("fecha")?.toString() ?? "",
   });
@@ -129,10 +139,14 @@ export async function eliminarCierreAction(formData: FormData): Promise<void> {
 
   const fecha = fromISODate(parsed.data.fecha);
 
+  const cierre = await prisma.cierreDiario.findUnique({ where: { fecha } });
+  if (!cierre) return;
+  if (cierre.tiendaId !== tiendaId) return;
+
   const [gastos, retiros, nequi] = await Promise.all([
-    prisma.gasto.count({ where: { fecha } }),
-    prisma.retiro.count({ where: { fecha } }),
-    prisma.nequiDelDia.count({ where: { fecha } }),
+    prisma.gasto.count({ where: { fecha, tiendaId } }),
+    prisma.retiro.count({ where: { fecha, tiendaId } }),
+    prisma.nequiDelDia.count({ where: { fecha, tiendaId } }),
   ]);
   if (gastos > 0 || retiros > 0 || nequi > 0) return;
 

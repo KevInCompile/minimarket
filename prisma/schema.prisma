@@ -35,6 +35,29 @@ enum TipoRetiro {
   OTRO
 }
 
+/// Una tienda = un cliente de la app. Cada User pertenece a una Tienda,
+/// y todos los datos (Gasto, Retiro, NequiDelDia, CierreDiario,
+/// Proveedor, PedidoNota) están aislados por tienda.
+model Tienda {
+  id        String   @id @default(cuid())
+  nombre    String
+  slug      String   @unique
+  email     String?
+  telefono  String?
+  direccion String?
+  activa    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       User[]
+  proveedores Proveedor[]
+  gastos      Gasto[]
+  retiros     Retiro[]
+  nequiDias   NequiDelDia[]
+  cierres     CierreDiario[]
+  pedidos     PedidoNota[]
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -42,39 +65,51 @@ model User {
   nombre       String
   role         Role     @default(CAJERO)
   activo       Boolean  @default(true)
+  tiendaId     String
+  tienda       Tienda   @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
 
   gastos        Gasto[]
   retiros       Retiro[]
   nequiUpdates  NequiDelDia[]
   cierres       CierreDiario[]
+
+  @@index([tiendaId])
 }
 
 model Proveedor {
   id        String   @id @default(cuid())
-  nombre    String   @unique
+  nombre    String
   activo    Boolean  @default(true)
+  tiendaId  String
+  tienda    Tienda   @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
   gastos  Gasto[]
   pedidos PedidoNota[]
+
+  @@unique([nombre, tiendaId])
+  @@index([tiendaId])
 }
 
 model Gasto {
   id          String    @id @default(cuid())
   fecha       DateTime  @db.Date
   proveedorId String
-  proveedor   Proveedor @relation(fields: [proveedorId], references: [id])
+  proveedor   Proveedor @relation(fields: [proveedorId], references: [id], onDelete: Cascade)
   valor       Int
   pagadoCon   PagadoCon
   nota        String?
+  tiendaId    String
+  tienda      Tienda    @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
 
   @@index([fecha])
   @@index([proveedorId])
   @@index([userId])
+  @@index([tiendaId])
 }
 
 model Retiro {
@@ -85,22 +120,29 @@ model Retiro {
   valor    Int
   saleDe   SaleDe
   nota     String?
+  tiendaId String
+  tienda   Tienda  @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
   userId   String
-  user     User     @relation(fields: [userId], references: [id])
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
   @@index([fecha])
   @@index([userId])
   @@index([tipo])
+  @@index([tiendaId])
 }
 
 model NequiDelDia {
   id        String   @id @default(cuid())
   fecha     DateTime @unique @db.Date
   total     Int
+  tiendaId  String
+  tienda    Tienda   @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   updatedAt DateTime @updatedAt
+
+  @@index([tiendaId])
 }
 
 model CierreDiario {
@@ -110,18 +152,26 @@ model CierreDiario {
   cajaCierre          Int      @default(0)
   efectivoGuardado    Int      @default(0)
   efectivoRealContado Int?
+  tiendaId            String
+  tienda              Tienda   @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
   userIdCierre        String
-  user                User     @relation(fields: [userIdCierre], references: [id])
+  user                User     @relation(fields: [userIdCierre], references: [id], onDelete: Cascade)
   updatedAt           DateTime @updatedAt
+
+  @@index([tiendaId])
 }
 
 model PedidoNota {
   id          String   @id @default(cuid())
   proveedorId String
-  proveedor   Proveedor @relation(fields: [proveedorId], references: [id])
+  proveedor   Proveedor @relation(fields: [proveedorId], references: [id], onDelete: Cascade)
   valor       Int
   dia         String
   estado      String?
   nota        String?
+  tiendaId    String
+  tienda      Tienda   @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
+
+  @@index([tiendaId])
 }

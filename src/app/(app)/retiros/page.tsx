@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { startOfDayUTC } from "@/lib/dates";
+import { requireTiendaId } from "@/lib/auth-guard";
 import {
   Card,
   CardContent,
@@ -18,6 +19,7 @@ type Props = {
 
 export default async function RetirosPage({ searchParams }: Props) {
   const params = await searchParams;
+  const tiendaId = await requireTiendaId();
   const hoy = startOfDayUTC(new Date());
   const desde = params.desde
     ? new Date(`${params.desde}T00:00:00.000Z`)
@@ -25,7 +27,7 @@ export default async function RetirosPage({ searchParams }: Props) {
   const hasta = params.hasta ? new Date(`${params.hasta}T00:00:00.000Z`) : hoy;
 
   const retiros = await prisma.retiro.findMany({
-    where: { fecha: { gte: desde, lte: hasta } },
+    where: { tiendaId, fecha: { gte: desde, lte: hasta } },
     orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
   });
 

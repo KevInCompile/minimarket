@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { startOfDayUTC } from "@/lib/dates";
+import { requireTiendaId } from "@/lib/auth-guard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { NequiTable } from "./nequi-table";
 import { Smartphone } from "lucide-react";
@@ -10,12 +11,13 @@ type Props = {
 
 export default async function NequiPage({ searchParams }: Props) {
   const params = await searchParams;
+  const tiendaId = await requireTiendaId();
   const hoy = startOfDayUTC(new Date());
   const desde = params.desde ? new Date(`${params.desde}T00:00:00.000Z`) : new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), 1));
   const hasta = params.hasta ? new Date(`${params.hasta}T00:00:00.000Z`) : hoy;
 
   const nequi = await prisma.nequiDelDia.findMany({
-    where: { fecha: { gte: desde, lte: hasta } },
+    where: { tiendaId, fecha: { gte: desde, lte: hasta } },
     orderBy: { fecha: "desc" },
   });
 

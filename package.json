@@ -12,6 +12,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
+    "db:backup": "tsx prisma/backup.ts",
+    "db:restore": "bash scripts/restore.sh",
     "postinstall": "prisma generate --no-hints"
   },
   "prisma": {

@@ -12,10 +12,12 @@ declare module "next-auth" {
     user: {
       id: string;
       role: AppRole;
+      tiendaId: string;
     } & DefaultSession["user"];
   }
   interface User {
     role: AppRole;
+    tiendaId: string;
   }
 }
 
@@ -51,6 +53,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.nombre,
           role: user.role,
+          tiendaId: user.tiendaId,
         };
       },
     }),
@@ -61,14 +64,17 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       if (user) {
         token.uid = user.id as string;
         token.role = user.role;
+        token.tiendaId = (user as { tiendaId?: string }).tiendaId;
       }
       return token;
     },
     async session({ session, token }) {
       const uid = token.uid as string | undefined;
       const role = token.role as AppRole | undefined;
+      const tiendaId = token.tiendaId as string | undefined;
       if (uid) session.user.id = uid;
       if (role) session.user.role = role;
+      if (tiendaId) session.user.tiendaId = tiendaId;
       return session;
     },
   },

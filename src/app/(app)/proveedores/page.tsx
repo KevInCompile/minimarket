@@ -1,10 +1,13 @@
 import { prisma } from "@/lib/db";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProveedorForm, ProveedorList } from "./proveedor-form";
+import { requireTiendaId } from "@/lib/auth-guard";
 import { Truck } from "lucide-react";
 
 export default async function ProveedoresPage() {
+  const tiendaId = await requireTiendaId();
   const proveedores = await prisma.proveedor.findMany({
+    where: { tiendaId },
     orderBy: [{ activo: "desc" }, { nombre: "asc" }],
     include: {
       _count: { select: { gastos: true } },

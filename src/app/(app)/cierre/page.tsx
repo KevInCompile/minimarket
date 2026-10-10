@@ -4,6 +4,7 @@ import { serieCierres } from "@/lib/calc";
 import { CierreCards } from "./cierre-cards";
 // import { ResumenPeriodo } from "./resumen-periodo";
 import { CrearCierreForm } from "./crear-cierre-form";
+import { requireTiendaId } from "@/lib/auth-guard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClipboardCheck, Plus } from "lucide-react";
 
@@ -13,6 +14,7 @@ type Props = {
 
 export default async function CierrePage({ searchParams }: Props) {
   const params = await searchParams;
+  const tiendaId = await requireTiendaId();
   const hoy = startOfDayUTC(new Date());
   const desde = params.desde
     ? new Date(`${params.desde}T00:00:00.000Z`)
@@ -21,17 +23,17 @@ export default async function CierrePage({ searchParams }: Props) {
 
   const [gastos, retiros, nequi, cierres] = await Promise.all([
     prisma.gasto.findMany({
-      where: { fecha: { gte: desde, lte: hasta } },
+      where: { tiendaId, fecha: { gte: desde, lte: hasta } },
       include: { proveedor: { select: { nombre: true } } },
     }),
     prisma.retiro.findMany({
-      where: { fecha: { gte: desde, lte: hasta } },
+      where: { tiendaId, fecha: { gte: desde, lte: hasta } },
     }),
     prisma.nequiDelDia.findMany({
-      where: { fecha: { gte: desde, lte: hasta } },
+      where: { tiendaId, fecha: { gte: desde, lte: hasta } },
     }),
     prisma.cierreDiario.findMany({
-      where: { fecha: { gte: desde, lte: hasta } },
+      where: { tiendaId, fecha: { gte: desde, lte: hasta } },
     }),
   ]);
 

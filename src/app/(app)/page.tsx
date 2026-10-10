@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { balanceGeneral, rankingProveedores } from "@/lib/calc";
 import { startOfDayUTC } from "@/lib/dates";
+import { requireTiendaId } from "@/lib/auth-guard";
 import { BalanceCards } from "./balance-cards";
 import { ProveedoresChart } from "./proveedores-chart";
 import { UltimosGastos } from "./ultimos-gastos";
@@ -14,6 +15,7 @@ type Props = {
 
 export default async function DashboardPage({ searchParams }: Props) {
   await auth();
+  const tiendaId = await requireTiendaId();
   const params = await searchParams;
   const hoy = startOfDayUTC(new Date());
   const desde = params.desde
@@ -23,19 +25,20 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   const [gastos, retiros, nequi, cierres, ultimosGastos] = await Promise.all([
     prisma.gasto.findMany({
-      where: { fecha: { gte: desde, lte: hasta } },
+      where: { tiendaId, fecha: { gte: desde, lte: hasta } },
       include: { proveedor: { select: { nombre: true } } },
     }),
     prisma.retiro.findMany({
-      where: { fecha: { gte: desde, lte: hasta } },
+      where: { tiendaId, fecha: { gte: desde, lte: hasta } },
     }),
     prisma.nequiDelDia.findMany({
-      where: { fecha: { gte: desde, lte: hasta } },
+      where: { tiendaId, fecha: { gte: desde, lte: hasta } },
     }),
     prisma.cierreDiario.findMany({
-      where: { fecha: { gte: desde, lte: hasta } },
+      where: { tiendaId, fecha: { gte: desde, lte: hasta } },
     }),
     prisma.gasto.findMany({
+      where: { tiendaId },
       orderBy: { createdAt: "desc" },
       take: 8,
       include: { proveedor: { select: { nombre: true } } },

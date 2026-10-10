@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { fromISODate } from "@/lib/dates";
-import { requireValidUser } from "@/lib/auth-guard";
+import { requireValidUser, requireTiendaId } from "@/lib/auth-guard";
 import { okState, errState, type ActionState } from "./_state";
 
 export type NequiState = ActionState;
@@ -12,7 +12,10 @@ export async function guardarNequiAction(
   _prev: NequiState,
   formData: FormData,
 ): Promise<NequiState> {
-  const user = await requireValidUser();
+  const [user, tiendaId] = await Promise.all([
+    requireValidUser(),
+    requireTiendaId(),
+  ]);
 
   const fechaStr = formData.get("fecha")?.toString() ?? "";
   const totalStr = formData.get("total")?.toString() ?? "0";
@@ -25,8 +28,8 @@ export async function guardarNequiAction(
 
   await prisma.nequiDelDia.upsert({
     where: { fecha },
-    update: { total, userId: user.id },
-    create: { fecha, total, userId: user.id },
+    update: { total, userId: user.id, tiendaId },
+    create: { fecha, total, userId: user.id, tiendaId },
   });
 
   revalidatePath("/nequi");

@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/auth";
+import { requireTiendaId } from "@/lib/auth-guard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UsuarioForm, UsuarioList } from "./usuario-form";
 import { Users } from "lucide-react";
 
 export default async function UsuariosPage() {
-  const session = await auth();
+  const [session, tiendaId] = await Promise.all([auth(), requireTiendaId()]);
   const usuarios = await prisma.user.findMany({
+    where: { tiendaId },
     orderBy: [{ activo: "desc" }, { nombre: "asc" }],
   });
 

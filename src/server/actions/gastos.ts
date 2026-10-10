@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { fromISODate } from "@/lib/dates";
-import { requireValidUser, requireAdmin } from "@/lib/auth-guard";
+import { requireValidUser, requireAdmin, requireTiendaId } from "@/lib/auth-guard";
 import { okState, errState, type ActionState } from "./_state";
 
 export type GastoState = ActionState;
@@ -12,7 +12,10 @@ export async function crearGastoAction(
   _prev: GastoState,
   formData: FormData,
 ): Promise<GastoState> {
-  const user = await requireValidUser();
+  const [user, tiendaId] = await Promise.all([
+    requireValidUser(),
+    requireTiendaId(),
+  ]);
 
   const fechaStr = formData.get("fecha")?.toString() ?? "";
   const proveedorNombre = formData.get("proveedor")?.toString().trim() ?? "";
@@ -33,9 +36,9 @@ export async function crearGastoAction(
   }
 
   const proveedor = await prisma.proveedor.upsert({
-    where: { nombre: proveedorNombre },
+    where: { nombre_tiendaId: { nombre: proveedorNombre, tiendaId } },
     update: {},
-    create: { nombre: proveedorNombre },
+    create: { nombre: proveedorNombre, tiendaId },
   });
 
   await prisma.gasto.create({
@@ -46,6 +49,7 @@ export async function crearGastoAction(
       pagadoCon,
       nota,
       userId: user.id,
+      tiendaId,
     },
   });
 
@@ -55,9 +59,6 @@ export async function crearGastoAction(
   return okState();
 }
 
-/**
- * Snapshot del gasto eliminado para permitir undo dentro de los 5s.
- */
 type GastoSnapshot = {
   id: string;
   fecha: string;
@@ -66,11 +67,15 @@ type GastoSnapshot = {
   pagadoCon: "CAJA" | "EFECTIVO";
   nota: string | null;
   userId: string;
+  tiendaId: string;
   proveedorNombre: string;
 };
 
-export async function eliminarGastoAction(formData: FormData): Promise<GastoState & { snapshot?: GastoSnapshot }> {
+export async function eliminarGastoAction(
+  formData: FormData,
+): Promise<GastoState & { snapshot?: GastoSnapshot }> {
   await requireAdmin();
+  const tiendaId = await requireTiendaId();
   const id = formData.get("id")?.toString();
   if (!id) return errState("ID requerido.");
 
@@ -79,6 +84,9 @@ export async function eliminarGastoAction(formData: FormData): Promise<GastoStat
     include: { proveedor: { select: { nombre: true } } },
   });
   if (!gasto) return errState("Gasto no encontrado.");
+  if (gasto.tiendaId !== tiendaId) {
+    return errState("No tiene permisos para eliminar este gasto.");
+  }
 
   await prisma.gasto.delete({ where: { id } });
 
@@ -97,21 +105,21 @@ export async function eliminarGastoAction(formData: FormData): Promise<GastoStat
       pagadoCon: gasto.pagadoCon as "CAJA" | "EFECTIVO",
       nota: gasto.nota,
       userId: gasto.userId,
+      tiendaId: gasto.tiendaId,
       proveedorNombre: gasto.proveedor.nombre,
     },
   };
 }
 
-/**
- * Restaura un gasto eliminado. Llamado por el botón "Deshacer" del toast.
- */
-export async function restaurarGastoAction(snapshot: GastoSnapshot): Promise<GastoState> {
+export async function restaurarGastoAction(
+  snapshot: GastoSnapshot,
+): Promise<GastoState> {
   const user = await requireValidUser();
 
   const proveedor = await prisma.proveedor.upsert({
-    where: { nombre: snapshot.proveedorNombre },
+    where: { nombre_tiendaId: { nombre: snapshot.proveedorNombre, tiendaId: snapshot.tiendaId } },
     update: {},
-    create: { nombre: snapshot.proveedorNombre },
+    create: { nombre: snapshot.proveedorNombre, tiendaId: snapshot.tiendaId },
   });
 
   await prisma.gasto.create({
@@ -123,6 +131,7 @@ export async function restaurarGastoAction(snapshot: GastoSnapshot): Promise<Gas
       pagadoCon: snapshot.pagadoCon,
       nota: snapshot.nota,
       userId: snapshot.userId === user.id ? user.id : user.id,
+      tiendaId: snapshot.tiendaId,
     },
   });
 
