@@ -18,7 +18,7 @@ const ADMIN_ONLY_PREFIXES = [
   "/usuarios",
 ];
 
-const PUBLIC_PATHS = ["/login", "/forbidden"];
+const PUBLIC_PATHS = ["/login", "/forbidden", "/registro"];
 
 const { handlers } = NextAuth(authConfig);
 

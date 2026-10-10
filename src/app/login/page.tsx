@@ -1,23 +1,31 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { auth } from "@/auth";
 import { LoginForm } from "./login-form";
 
 type Props = {
-  searchParams: Promise<{ from?: string; expired?: string; inactive?: string }>;
+  searchParams: Promise<{
+    from?: string;
+    expired?: string;
+    inactive?: string;
+    registrado?: string;
+  }>;
 };
 
 export default async function LoginPage({ searchParams }: Props) {
-  const { from, expired, inactive } = await searchParams;
+  const { from, expired, inactive, registrado } = await searchParams;
   const session = await auth();
   if (session?.user) {
     redirect(from || "/");
   }
+
   const notice =
     expired === "1"
       ? "Su sesión quedó desactualizada (la base de datos fue reiniciada). Vuelva a iniciar sesión."
       : inactive === "1"
         ? "Su usuario fue desactivado. Contacte al administrador."
         : null;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
@@ -32,13 +40,31 @@ export default async function LoginPage({ searchParams }: Props) {
             Control de caja
           </p>
         </div>
+
+        {registrado === "1" && (
+          <div className="mb-4 rounded-md border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-700 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-300">
+            Cuenta creada con éxito. Inicie sesión.
+          </div>
+        )}
+
         {notice && (
           <div className="mb-4 rounded-md border border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 dark:border-yellow-700 px-3 py-2 text-sm text-yellow-800 dark:text-yellow-300">
             {notice}
           </div>
         )}
+
         <LoginForm from={from ?? "/"} />
-        <p className="mt-6 text-center text-xs text-muted-foreground">
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          ¿No tiene cuenta?{" "}
+          <Link
+            href="/registro"
+            className="text-emerald-700 dark:text-emerald-300 font-medium hover:underline"
+          >
+            Crear una tienda
+          </Link>
+        </p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
           ¿Tiene problemas para acceder? Contacte al administrador.
         </p>
       </div>
