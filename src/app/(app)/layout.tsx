@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
 import { logoutAction } from "@/server/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -50,7 +51,7 @@ const ROLE_STYLE: Record<string, { bg: string; text: string; label: string }> = 
 };
 
 const ICON_STYLE: Record<string, string> = {
-  "/": "text-emerald-600 dark:text-emerald-400",
+  "/": "text-sky-600 dark:text-sky-400",
   "/gastos": "text-amber-600 dark:text-amber-400",
   "/retiros": "text-rose-600 dark:text-rose-400",
   "/nequi": "text-violet-600 dark:text-violet-400",
@@ -70,24 +71,33 @@ export default async function AppLayout({
   const isAdmin = session.user.role === "ADMIN";
   const roleStyle = ROLE_STYLE[session.user.role] ?? ROLE_STYLE.CAJERO;
 
+  // Traer el nombre de la tienda del user
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { tienda: { select: { nombre: true } } },
+  });
+  const nombreTienda = user?.tienda?.nombre ?? "";
+
   const items = NAV.filter((i) => isAdmin || !i.adminOnly);
 
   const mobileItems = items.map((i) => ({ href: i.href, label: i.label }));
 
   return (
     <div className="min-h-screen flex bg-background text-foreground">
-      <MobileSidebar items={mobileItems} />
+      <MobileSidebar items={mobileItems} nombreTienda={nombreTienda} />
 
       <aside className="hidden md:flex w-60 shrink-0 border-r border-sidebar-border bg-background flex-col">
-        <div className="p-5  text-white">
+        <div className="p-5 text-white bg-linear-to-br from-sky-700 via-blue-800 to-indigo-900">
           <Link href="/" className="block">
             <div className="flex items-center gap-2">
               <div className="size-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold text-lg">
-                m
+                M
               </div>
-              <div>
-                <div className="text-xl font-bold tracking-tight">minimarket</div>
-                <div className="text-xs text-emerald-50/90">control de caja</div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xl font-bold tracking-tight truncate">Mi Caja</div>
+                <div className="text-xs text-sky-50/90 truncate">
+                  {nombreTienda}
+                </div>
               </div>
             </div>
           </Link>

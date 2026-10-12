@@ -27,22 +27,22 @@ export default async function LoginPage({ searchParams }: Props) {
         : null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900/60 dark:to-slate-900/40 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto size-16 rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg mb-4">
-            m
+          <div className="mx-auto size-16 rounded-2xl bg-linear-to-br from-sky-600 to-blue-700 flex items-center justify-center text-white font-bold text-3xl shadow-lg mb-4">
+            M
           </div>
-          <h1 className="text-3xl font-bold tracking-tight bg-linear-to-br from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
-            minimarket
+          <h1 className="text-3xl font-bold tracking-tight bg-linear-to-br from-sky-700 to-blue-800 dark:from-sky-400 dark:to-blue-500 bg-clip-text text-transparent">
+            Mi Caja
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Control de caja
+            Gestión de caja diaria
           </p>
         </div>
 
         {registrado === "1" && (
-          <div className="mb-4 rounded-md border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-700 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-300">
+          <div className="mb-4 rounded-md border border-sky-300 bg-sky-50 dark:bg-sky-950/30 dark:border-sky-700 px-3 py-2 text-sm text-sky-800 dark:text-sky-300">
             Cuenta creada con éxito. Inicie sesión.
           </div>
         )}
@@ -59,7 +59,7 @@ export default async function LoginPage({ searchParams }: Props) {
           ¿No tiene cuenta?{" "}
           <Link
             href="/registro"
-            className="text-emerald-700 dark:text-emerald-300 font-medium hover:underline"
+            className="text-sky-700 dark:text-sky-300 font-medium hover:underline"
           >
             Crear una tienda
           </Link>

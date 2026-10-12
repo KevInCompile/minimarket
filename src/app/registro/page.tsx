@@ -10,21 +10,21 @@ import { RegistroForm } from "./registro-form";
 
 export default function RegistroPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-teal-50/60 to-cyan-50 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/30 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900/60 dark:to-slate-900/40 px-4 py-8">
       <div className="w-full max-w-md">
         <Link
           href="/"
           className="mb-8 text-center block"
         >
           <div className="inline-flex flex-col items-center gap-2">
-            <div className="size-16 rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg">
-              m
+            <div className="size-16 rounded-2xl bg-linear-to-br from-sky-600 to-blue-700 flex items-center justify-center text-white font-bold text-3xl shadow-lg">
+              M
             </div>
-            <h1 className="text-3xl font-bold tracking-tight bg-linear-to-br from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
-              minimarket
+            <h1 className="text-3xl font-bold tracking-tight bg-linear-to-br from-sky-700 to-blue-800 dark:from-sky-400 dark:to-blue-500 bg-clip-text text-transparent">
+              Mi Caja
             </h1>
             <p className="text-sm text-muted-foreground">
-              Control de caja
+              Gestión de caja diaria
             </p>
           </div>
         </Link>

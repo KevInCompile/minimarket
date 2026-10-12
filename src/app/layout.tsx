@@ -11,8 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "minimarket · control de caja",
-  description: "Sistema de control de caja para minimarket",
+  title: "Mi Caja · Gestión de caja diaria",
+  description: "Sistema de gestión de caja diaria para tiendas",
 };
 
 export default function RootLayout({

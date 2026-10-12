@@ -13,8 +13,8 @@ import type { RankingProveedor } from "@/lib/calc";
 import { formatCOP, formatPercent } from "@/lib/format";
 
 const COLORS = [
-  "#10b981", // emerald (primary)
-  "#0ea5e9", // sky
+  "#0284c7", // sky-600 (primary)
+  "#0ea5e9", // sky-500
   "#8b5cf6", // violet
   "#f59e0b", // amber
   "#ec4899", // pink

@@ -26,8 +26,8 @@ const ITEMS_FN = (bg: BalanceGeneral): Item[] => [
     icon: Banknote,
     highlight: true,
     gradient:
-      "border-emerald-300 bg-linear-to-br from-emerald-50 via-emerald-50/80 to-teal-50 dark:border-emerald-700 dark:from-emerald-950/40 dark:via-emerald-950/30 dark:to-teal-950/40",
-    iconBg: "bg-linear-to-br from-emerald-500 to-teal-500 text-white",
+      "border-sky-300 bg-linear-to-br from-sky-50 via-sky-50/80 to-blue-50 dark:border-sky-700 dark:from-sky-950/40 dark:via-sky-950/30 dark:to-blue-950/40",
+    iconBg: "bg-linear-to-br from-sky-700 to-blue-800 text-white",
   },
   {
     title: "Efectivo guardado",
@@ -84,7 +84,7 @@ export function BalanceCards({ bg }: { bg: BalanceGeneral }) {
       {ITEMS_FN(bg).map((item) => (
         <Card
           key={item.title}
-          className={`${item.gradient} ${item.highlight ? "ring-2 ring-emerald-300/60 dark:ring-emerald-700/60" : ""} transition-shadow hover:shadow-md`}
+          className={`${item.gradient} ${item.highlight ? "ring-2 ring-sky-300/60 dark:ring-sky-700/60" : ""} transition-shadow hover:shadow-md`}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardDescription className="font-semibold uppercase tracking-wide text-xs">

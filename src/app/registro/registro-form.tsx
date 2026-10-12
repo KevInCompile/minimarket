@@ -79,8 +79,8 @@ export function RegistroForm() {
         />
       </div>
 
-      <div className="rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20 p-3 space-y-3">
-        <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-sm font-medium">
+      <div className="rounded-md border border-sky-200 dark:border-sky-800 bg-sky-50/40 dark:bg-sky-950/20 p-3 space-y-3">
+        <div className="flex items-center gap-2 text-sky-700 dark:text-sky-300 text-sm font-medium">
           <Store className="size-4" />
           Datos de la tienda
         </div>
@@ -132,7 +132,7 @@ export function RegistroForm() {
 
       <p className="text-center text-sm text-muted-foreground">
         ¿Ya tiene cuenta?{" "}
-        <Link href="/login" className="text-emerald-700 dark:text-emerald-300 font-medium hover:underline">
+        <Link href="/login" className="text-sky-700 dark:text-sky-300 font-medium hover:underline">
           Iniciar sesión
         </Link>
       </p>

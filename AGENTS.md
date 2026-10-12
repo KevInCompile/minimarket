@@ -1,4 +1,4 @@
-# minimarket — notas para agentes
+# Mi Caja — notas para agentes
 
 <!-- BEGIN:nextjs-agent-rules -->
 

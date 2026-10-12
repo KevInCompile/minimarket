@@ -36,7 +36,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 const ICON_STYLE: Record<string, string> = {
-  "/": "text-emerald-600 dark:text-emerald-400",
+  "/": "text-sky-600 dark:text-sky-400",
   "/gastos": "text-amber-600 dark:text-amber-400",
   "/retiros": "text-rose-600 dark:text-rose-400",
   "/nequi": "text-violet-600 dark:text-violet-400",
@@ -46,7 +46,13 @@ const ICON_STYLE: Record<string, string> = {
   "/usuarios": "text-teal-600 dark:text-teal-400",
 };
 
-export function MobileSidebar({ items }: { items: NavItem[] }) {
+export function MobileSidebar({
+  items,
+  nombreTienda,
+}: {
+  items: NavItem[];
+  nombreTienda: string;
+}) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -58,12 +64,17 @@ export function MobileSidebar({ items }: { items: NavItem[] }) {
             <Menu />
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0 bg-sidebar border-r border-sidebar-border">
-            <SheetHeader className="p-5 bg-linear-to-br from-emerald-500 via-emerald-600 to-teal-600 text-white">
+            <SheetHeader className="p-5 bg-linear-to-br from-sky-700 via-blue-800 to-indigo-900 text-white">
               <SheetTitle className="text-white flex items-center gap-2">
                 <div className="size-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold">
-                  m
+                  M
                 </div>
-                minimarket
+                <div className="min-w-0 flex-1">
+                  <div className="truncate">Mi Caja</div>
+                <div className="text-xs font-normal text-sky-50/90 truncate">
+                  {nombreTienda}
+                </div>
+                </div>
               </SheetTitle>
             </SheetHeader>
             <nav className="p-3 space-y-1">
@@ -98,10 +109,10 @@ export function MobileSidebar({ items }: { items: NavItem[] }) {
         </Sheet>
         <Link
           href="/"
-          className="size-8 rounded-lg bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shrink-0"
+          className="size-8 rounded-lg bg-linear-to-br from-sky-600 to-blue-700 flex items-center justify-center text-white font-bold shrink-0"
           aria-label="Inicio"
         >
-          m
+          M
         </Link>
       </div>
     </div>

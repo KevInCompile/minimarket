@@ -1,9 +1,9 @@
-# minimarket
+# Mi Caja
 
 Reemplazo del Excel `Control_Caja_Septiembre_2026.xlsx` para el control de caja
-de un minimarket. Mismo flujo de trabajo que el Excel (gastos pagados de caja / de
+diario de una tienda. Mismo flujo de trabajo que el Excel (gastos pagados de caja / de
 efectivo, retiros, Nequi, cierre diario con acumulado de efectivo y Nequi,
-descuadres), pero como aplicación web con roles, auditoría y motor de cálculo.
+descuadres), pero como aplicación web multi-tenant con roles, auditoría y motor de cálculo.
 
 ## Stack
 

@@ -174,7 +174,7 @@ function CierreCard({
         tieneDescuadre
           ? "border-amber-400 bg-amber-50/40 dark:bg-amber-950/15 dark:border-amber-700"
           : sinDescuadreYContado
-            ? "border-emerald-200 dark:border-emerald-800"
+            ? "border-sky-200 dark:border-sky-800"
             : undefined
       }
     >
@@ -225,7 +225,7 @@ function CierreCard({
             {sinDescuadreYContado && (
               <Badge
                 variant="secondary"
-                className="font-normal bg-emerald-100 dark:bg-emerald-950/40"
+                className="font-normal bg-sky-100 dark:bg-sky-950/40"
               >
                 Cuadra ✓
               </Badge>
