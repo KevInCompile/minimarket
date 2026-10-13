@@ -42,6 +42,10 @@ next-env.d.ts
 
 /src/generated/prisma
 
+# Backups locales (no se commitean)
+*.bak
+prisma/schema.prisma.bak
+
 # Backups de DB (contienen datos reales, no commitear)
 prisma/backups/
 .atl/
