@@ -76,7 +76,7 @@ export function GastoForm({
               <Button
                 type="button"
                 variant="ghost"
-                size="icon-sm"
+                size="icon" className="min-h-11 min-w-11"
                 onClick={() => setOpen(false)}
                 aria-label="Cerrar"
               >

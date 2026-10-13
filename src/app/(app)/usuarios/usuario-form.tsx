@@ -221,7 +221,7 @@ function UsuarioToggleButton({ u, esActual }: { u: UsuarioView; esActual: boolea
       <Button
         type="button"
         variant="ghost"
-        size="sm"
+        size="default"
         onClick={() => setOpen(true)}
         disabled={esActual}
         title={esActual ? "No podés desactivarte a vos mismo" : undefined}

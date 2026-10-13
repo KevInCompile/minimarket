@@ -24,17 +24,28 @@ type ProveedorView = {
   cantidadGastos: number;
 };
 
-export function ProveedorForm() {
+export function ProveedorForm({
+  onClose,
+  onSuccess,
+}: {
+  onClose?: () => void;
+  onSuccess?: () => void;
+}) {
   const [state, action, pending] = useActionState(crearProveedorAction, INITIAL);
   const lastTs = useRef(0);
 
   useEffect(() => {
     if (state.ts && state.ts !== lastTs.current) {
       lastTs.current = state.ts;
-      if (state.error) toast.error(state.error);
-      if (state.ok) toast.success("Proveedor creado");
+      if (state.error) {
+        toast.error(state.error);
+      } else if (state.ok) {
+        toast.success("Proveedor creado");
+        onSuccess?.();
+        onClose?.();
+      }
     }
-  }, [state]);
+  }, [state, onSuccess, onClose]);
 
   return (
     <form action={action} className="flex gap-2">

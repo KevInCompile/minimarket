@@ -204,9 +204,9 @@ function DeleteGastoButton({
       <Button
         type="button"
         variant="ghost"
-        size="icon-sm"
+        size="icon"
+        className="min-h-11 min-w-11 text-muted-foreground hover:text-destructive"
         title="Eliminar"
-        className="text-muted-foreground hover:text-destructive"
         onClick={() => setOpen(true)}
       >
         <Trash2 />

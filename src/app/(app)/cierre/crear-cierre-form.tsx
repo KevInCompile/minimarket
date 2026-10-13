@@ -14,7 +14,13 @@ import { toISODate } from "@/lib/dates";
 
 const INITIAL: CrearCierreState = { ok: true, ts: 0 };
 
-export function CrearCierreForm() {
+export function CrearCierreForm({
+  onClose,
+  onSuccess,
+}: {
+  onClose?: () => void;
+  onSuccess?: () => void;
+}) {
   const [state, action, pending] = useActionState(
     crearCierreVacioAction,
     INITIAL,
@@ -24,10 +30,15 @@ export function CrearCierreForm() {
   useEffect(() => {
     if (state.ts && state.ts !== lastTs.current) {
       lastTs.current = state.ts;
-      if (state.error) toast.error(state.error);
-      if (state.ok) toast.success("Cierre creado. Editá sus valores abajo.");
+      if (state.error) {
+        toast.error(state.error);
+      } else if (state.ok) {
+        toast.success("Cierre creado. Editá sus valores abajo.");
+        onSuccess?.();
+        onClose?.();
+      }
     }
-  }, [state]);
+  }, [state, onSuccess, onClose]);
 
   const today = toISODate(new Date());
 
