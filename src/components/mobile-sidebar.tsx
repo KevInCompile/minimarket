@@ -58,26 +58,30 @@ export function MobileSidebar({
 
   return (
     <div className="md:hidden sticky top-0 z-40 bg-sidebar border-b border-sidebar-border shadow-sm">
-      <div className="flex items-center justify-between px-3 py-2">
+      <div className="flex items-center justify-between px-3 py-1.5">
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger className="inline-flex items-center justify-center rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground size-9 border border-sidebar-border shrink-0">
+          <SheetTrigger
+            aria-label="Abrir menú"
+            className="inline-flex items-center justify-center rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground size-9 border border-sidebar-border shrink-0"
+          >
             <Menu />
           </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0 bg-sidebar border-r border-sidebar-border">
-            <SheetHeader className="p-5 bg-linear-to-br from-sky-700 via-blue-800 to-indigo-900 text-white">
-              <SheetTitle className="text-white flex items-center gap-2">
-                <div className="size-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold">
-                  M
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate">Mi Caja</div>
-                <div className="text-xs font-normal text-sky-50/90 truncate">
+          <SheetContent
+            side="left"
+            className="w-72 md:w-72 p-0 bg-sidebar border-r border-sidebar-border"
+          >
+            <SheetHeader className="px-4 py-3 bg-linear-to-br from-sky-700 via-blue-800 to-indigo-900 text-white flex-row items-center gap-3 space-y-0">
+              <div className="size-9 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold shrink-0">
+                M
+              </div>
+              <SheetTitle className="text-white flex flex-col leading-tight">
+                <span className="text-base font-bold">Mi Caja</span>
+                <span className="text-xs font-normal text-sky-50/90 truncate max-w-[12rem]">
                   {nombreTienda}
-                </div>
-                </div>
+                </span>
               </SheetTitle>
             </SheetHeader>
-            <nav className="p-3 space-y-1">
+            <nav className="p-2 space-y-0.5">
               {items.map((item) => {
                 const Icon = ICONS[item.href];
                 const active =
@@ -88,7 +92,7 @@ export function MobileSidebar({
                     key={item.href}
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+                    className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
                       active
                         ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                         : "hover:bg-sidebar-accent/60"
@@ -107,13 +111,6 @@ export function MobileSidebar({
             </nav>
           </SheetContent>
         </Sheet>
-        <Link
-          href="/"
-          className="size-8 rounded-lg bg-linear-to-br from-sky-600 to-blue-700 flex items-center justify-center text-white font-bold shrink-0"
-          aria-label="Inicio"
-        >
-          M
-        </Link>
       </div>
     </div>
   );
