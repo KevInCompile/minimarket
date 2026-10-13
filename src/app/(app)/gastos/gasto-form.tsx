@@ -1,12 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import {
-  crearGastoAction,
-  eliminarGastoAction,
-  type GastoState,
-} from "@/server/actions/gastos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,30 +14,108 @@ import {
 } from "@/components/ui/select";
 import { toISODate } from "@/lib/dates";
 import { Plus } from "lucide-react";
+import { crearGastoAction, type GastoState } from "@/server/actions/gastos";
 
 const INITIAL: GastoState = { ok: true, ts: 0 };
 
+type Proveedor = { id: string; nombre: string };
+
 export function GastoForm({
   proveedores,
+  onClose,
+  onSuccess,
 }: {
-  proveedores: { id: string; nombre: string }[];
+  proveedores: Proveedor[];
+  onClose?: () => void;
+  onSuccess?: () => void;
 }) {
   const [state, action, pending] = useActionState(crearGastoAction, INITIAL);
-  const lastTs = useRef(0);
+  const [open, setOpen] = useState(false);
+  const lastOkRef = useRef(false);
 
   useEffect(() => {
-    if (state.ts && state.ts !== lastTs.current) {
-      lastTs.current = state.ts;
-      if (state.error) toast.error(state.error);
-      // El éxito se maneja desde el padre (lista) con un toast de undo
+    if (state.ts && state.ts !== INITIAL.ts) {
+      if (state.error) {
+        toast.error(state.error);
+      } else if (state.ok && !lastOkRef.current) {
+        toast.success("Gasto registrado");
+        setOpen(false);
+        onSuccess?.();
+        onClose?.();
+      }
+      lastOkRef.current = state.ok;
     }
-  }, [state]);
+  }, [state, onSuccess, onClose]);
 
+  return (
+    <>
+      {/* FAB: solo en mobile, hidden en md+ */}
+      <div className="md:hidden fixed bottom-6 right-6 z-30">
+        <Button
+          type="button"
+          onClick={() => setOpen(true)}
+          size="icon"
+          className="size-14 rounded-full shadow-lg bg-sky-600 hover:bg-sky-700 text-white"
+          aria-label="Nuevo gasto"
+        >
+          <Plus className="size-6" />
+        </Button>
+      </div>
+
+      {open && (
+        <div
+          className="md:hidden fixed inset-0 z-50 bg-black/50 flex items-end"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="w-full max-h-[90vh] overflow-y-auto bg-background rounded-t-2xl p-4 space-y-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold">Nuevo gasto</h2>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setOpen(false)}
+                aria-label="Cerrar"
+              >
+                ✕
+              </Button>
+            </div>
+            <FormContent proveedores={proveedores} action={action} pending={pending} />
+          </div>
+        </div>
+      )}
+
+      {/* Desktop: form embebido en columna derecha */}
+      <div className="hidden md:block">
+        <FormContent proveedores={proveedores} action={action} pending={pending} />
+      </div>
+    </>
+  );
+}
+
+function FormContent({
+  proveedores,
+  action,
+  pending,
+}: {
+  proveedores: Proveedor[];
+  action: (formData: FormData) => void;
+  pending: boolean;
+}) {
   return (
     <form action={action} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="fecha">Fecha</Label>
-        <Input id="fecha" name="fecha" type="date" defaultValue={toISODate(new Date())} required />
+        <Input
+          id="fecha"
+          name="fecha"
+          type="date"
+          defaultValue={toISODate(new Date())}
+          required
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="proveedor">Proveedor / Concepto</Label>
@@ -93,6 +166,3 @@ export function GastoForm({
     </form>
   );
 }
-
-// Re-export para que la tabla pueda llamar al eliminar con undo
-export { eliminarGastoAction };

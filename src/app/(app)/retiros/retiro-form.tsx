@@ -49,7 +49,13 @@ const SALE_DE = [
   },
 ] as const;
 
-export function RetiroForm() {
+export function RetiroForm({
+  onClose,
+  onSuccess,
+}: {
+  onClose?: () => void;
+  onSuccess?: () => void;
+}) {
   const [state, action, pending] = useActionState(crearRetiroAction, INITIAL);
   const lastTs = useRef(0);
   const [tipo, setTipo] = useState<string>("OTRO");
@@ -62,10 +68,15 @@ export function RetiroForm() {
   useEffect(() => {
     if (state.ts && state.ts !== lastTs.current) {
       lastTs.current = state.ts;
-      if (state.error) toast.error(state.error);
-      if (state.ok) toast.success("Retiro registrado");
+      if (state.error) {
+        toast.error(state.error);
+      } else if (state.ok) {
+        toast.success("Retiro registrado");
+        onSuccess?.();
+        onClose?.();
+      }
     }
-  }, [state]);
+  }, [state, onSuccess, onClose]);
 
   const valorNum = Number(valor.replace(/[^0-9]/g, "")) || 0;
   const saleDeInfo = SALE_DE.find((s) => s.value === saleDe);
