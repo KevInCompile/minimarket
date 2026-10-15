@@ -20,7 +20,7 @@ type GastoView = {
   fecha: string;
   proveedor: string;
   valor: number;
-  pagadoCon: "CAJA" | "EFECTIVO";
+  pagadoCon: "CAJA" | "EFECTIVO" | "TRANSFERENCIA";
   nota: string | null;
 };
 
@@ -60,7 +60,13 @@ export function GastosTable({ gastos }: { gastos: GastoView[] }) {
           header: "Tipo",
           cell: (g) => (
             <Badge
-              variant={g.pagadoCon === "CAJA" ? "secondary" : "outline"}
+              variant={
+                g.pagadoCon === "CAJA"
+                  ? "secondary"
+                  : g.pagadoCon === "TRANSFERENCIA"
+                    ? "default"
+                    : "outline"
+              }
               className="font-normal"
             >
               {g.pagadoCon}
@@ -120,7 +126,13 @@ export function GastosTable({ gastos }: { gastos: GastoView[] }) {
           label: "Tipo",
           render: (g) => (
             <Badge
-              variant={g.pagadoCon === "CAJA" ? "secondary" : "outline"}
+              variant={
+                g.pagadoCon === "CAJA"
+                  ? "secondary"
+                  : g.pagadoCon === "TRANSFERENCIA"
+                    ? "default"
+                    : "outline"
+              }
               className="font-normal"
             >
               {g.pagadoCon}

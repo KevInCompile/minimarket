@@ -242,6 +242,7 @@ describe("calc - balanceGeneral", () => {
     // Totales de gastos (desde la hoja transaccional Gastos del Excel)
     expect(bg.gastosCaja).toBe(1258655);
     expect(bg.gastosEfectivo).toBe(1492223);
+    expect(bg.gastosTransferencia).toBe(0);
     expect(bg.totalGastos).toBe(2750878);
 
     // Retiros
@@ -333,9 +334,38 @@ describe("computeCierreDiario", () => {
 
     expect(c.gastosCaja).toBe(69900);
     expect(c.gastosEfectivo).toBe(113000);
+    expect(c.gastosTransferencia).toBe(0);
     expect(c.totalGastos).toBe(182900);
     expect(c.entradaEstimada).toBe(64300 - 52500 + 69900);
     expect(c.efectivoAcumulado).toBe(423227 + 295000 - 113000 - 0);
     expect(c.transferenciaAcumulado).toBe(182400 + 52000 - 0);
+  });
+
+  it("gasto con pagadoCon=TRANSFERENCIA se resta del saldo de transferencia y suma a totalGastos", () => {
+    const c = computeCierreDiario({
+      cierre: {
+        fecha: excelSerialToDate(46275),
+        cajaApertura: 0,
+        cajaCierre: 0,
+        efectivoGuardado: 0,
+        efectivoRealContado: null,
+      },
+      gastosDelDia: [
+        { fecha: excelSerialToDate(46275), proveedor: "X", valor: 50000, pagadoCon: "TRANSFERENCIA" },
+      ],
+      retirosDelDia: [],
+      transferenciaDia: 100000,
+      prevEfectivoAcumulado: 0,
+      prevTransferenciaAcumulado: 200000,
+    });
+
+    expect(c.gastosCaja).toBe(0);
+    expect(c.gastosEfectivo).toBe(0);
+    expect(c.gastosTransferencia).toBe(50000);
+    expect(c.totalGastos).toBe(50000);
+    // 200000 (prev) + 100000 (recibido) - 0 (retiros) - 50000 (gasto transf) = 250000
+    expect(c.transferenciaAcumulado).toBe(250000);
+    // El efectivo NO se toca
+    expect(c.efectivoAcumulado).toBe(0);
   });
 });

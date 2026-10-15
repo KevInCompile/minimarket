@@ -7,7 +7,7 @@ type GastoView = {
   fecha: string;
   proveedor: string;
   valor: number;
-  pagadoCon: "CAJA" | "EFECTIVO";
+  pagadoCon: "CAJA" | "EFECTIVO" | "TRANSFERENCIA";
 };
 
 export function UltimosGastos({ gastos }: { gastos: GastoView[] }) {
@@ -32,7 +32,13 @@ export function UltimosGastos({ gastos }: { gastos: GastoView[] }) {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <Badge
-                variant={g.pagadoCon === "CAJA" ? "secondary" : "outline"}
+                variant={
+                  g.pagadoCon === "CAJA"
+                    ? "secondary"
+                    : g.pagadoCon === "TRANSFERENCIA"
+                      ? "default"
+                      : "outline"
+                }
                 className="font-normal"
               >
                 {g.pagadoCon}

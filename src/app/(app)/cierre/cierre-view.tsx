@@ -76,6 +76,7 @@ export function CierreView({
           efectivoRealContado: s.efectivoRealContado,
           gastosCaja: s.gastosCaja,
           gastosEfectivo: s.gastosEfectivo,
+          gastosTransferencia: s.gastosTransferencia,
           totalGastos: s.totalGastos,
           entradaEstimada: s.entradaEstimada,
           retirosEfectivo: s.retirosEfectivo,

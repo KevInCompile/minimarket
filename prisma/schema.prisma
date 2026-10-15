@@ -17,6 +17,7 @@ enum Role {
 enum PagadoCon {
   CAJA
   EFECTIVO
+  TRANSFERENCIA
 }
 
 enum SaleDe {

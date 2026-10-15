@@ -152,6 +152,7 @@ function FormContent({
           <SelectContent>
             <SelectItem value="CAJA">Caja (del día)</SelectItem>
             <SelectItem value="EFECTIVO">Efectivo (del guardado)</SelectItem>
+            <SelectItem value="TRANSFERENCIA">Transferencia</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -31,8 +31,8 @@ export async function crearGastoAction(
   if (!Number.isFinite(valor) || valor <= 0) {
     return errState("El valor debe ser un número positivo.");
   }
-  if (pagadoCon !== "CAJA" && pagadoCon !== "EFECTIVO") {
-    return errState("Pagado con debe ser CAJA o EFECTIVO.");
+  if (pagadoCon !== "CAJA" && pagadoCon !== "EFECTIVO" && pagadoCon !== "TRANSFERENCIA") {
+    return errState("Pagado con debe ser CAJA, EFECTIVO o TRANSFERENCIA.");
   }
 
   const proveedor = await prisma.proveedor.upsert({
@@ -64,7 +64,7 @@ type GastoSnapshot = {
   fecha: string;
   proveedorId: string;
   valor: number;
-  pagadoCon: "CAJA" | "EFECTIVO";
+  pagadoCon: "CAJA" | "EFECTIVO" | "TRANSFERENCIA";
   nota: string | null;
   userId: string;
   tiendaId: string;
@@ -102,7 +102,7 @@ export async function eliminarGastoAction(
       fecha: gasto.fecha.toISOString(),
       proveedorId: gasto.proveedorId,
       valor: gasto.valor,
-      pagadoCon: gasto.pagadoCon as "CAJA" | "EFECTIVO",
+      pagadoCon: gasto.pagadoCon as "CAJA" | "EFECTIVO" | "TRANSFERENCIA",
       nota: gasto.nota,
       userId: gasto.userId,
       tiendaId: gasto.tiendaId,

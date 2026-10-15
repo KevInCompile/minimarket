@@ -6,6 +6,8 @@
  * - Gastos con pagadoCon=CAJA salen de la plata que entra durante el día
  *   (no tocan el efectivo guardado).
  * - Gastos con pagadoCon=EFECTIVO salen del efectivo guardado acumulado.
+ * - Gastos con pagadoCon=TRANSFERENCIA salen del saldo de Transferencia
+ *   acumulado (no tocan el efectivo del día ni el guardado).
  * - Retiros con saleDe=EFECTIVO salen del efectivo guardado acumulado.
  * - Retiros con saleDe=NEQUI salen del saldo Transferencia acumulado.
  * - El efectivo guardado nunca queda en negativo (chequeo del Excel).
@@ -46,6 +48,7 @@ export type TransferenciaForCalc = {
 export type CierreDiarioComputed = CierreInput & {
   gastosCaja: number;
   gastosEfectivo: number;
+  gastosTransferencia: number;
   totalGastos: number;
   retirosEfectivo: number;
   retirosTransferencia: number;
@@ -68,6 +71,7 @@ export type BalanceGeneral = {
   hasta: Date;
   gastosCaja: number;
   gastosEfectivo: number;
+  gastosTransferencia: number;
   totalGastos: number;
   retirosEfectivo: number;
   retirosTransferencia: number;
@@ -134,6 +138,11 @@ export function computeCierreDiario(args: {
     (g) => g.pagadoCon === "EFECTIVO",
     (g) => g.valor,
   );
+  const gastosTransferencia = sumBy(
+    gastosDelDia,
+    (g) => g.pagadoCon === "TRANSFERENCIA",
+    (g) => g.valor,
+  );
   const retirosEfectivo = sumBy(
     retirosDelDia,
     (r) => r.saleDe === "EFECTIVO",
@@ -150,7 +159,7 @@ export function computeCierreDiario(args: {
     (r) => r.valor,
   );
 
-  const totalGastos = gastosCaja + gastosEfectivo;
+  const totalGastos = gastosCaja + gastosEfectivo + gastosTransferencia;
   const entradaEstimada =
     cierre.cajaCierre - cierre.cajaApertura + gastosCaja;
 
@@ -161,7 +170,10 @@ export function computeCierreDiario(args: {
     retirosEfectivo;
 
   const transferenciaAcumulado =
-    args.prevTransferenciaAcumulado + transferenciaDia - retirosTransferencia;
+    args.prevTransferenciaAcumulado +
+    transferenciaDia -
+    retirosTransferencia -
+    gastosTransferencia;
 
   const descuadre =
     cierre.efectivoRealContado == null
@@ -176,6 +188,7 @@ export function computeCierreDiario(args: {
     ...cierre,
     gastosCaja,
     gastosEfectivo,
+    gastosTransferencia,
     totalGastos,
     retirosEfectivo,
     retirosTransferencia,
@@ -314,6 +327,11 @@ export function balanceGeneral(args: {
     (g) => g.pagadoCon === "EFECTIVO",
     (g) => g.valor,
   );
+  const gastosTransferencia = sumBy(
+    gastosPeriodo,
+    (g) => g.pagadoCon === "TRANSFERENCIA",
+    (g) => g.valor,
+  );
   const retirosEfectivo = sumBy(
     retirosPeriodo,
     (r) => r.saleDe === "EFECTIVO",
@@ -370,7 +388,8 @@ export function balanceGeneral(args: {
     hasta: args.hasta,
     gastosCaja,
     gastosEfectivo,
-    totalGastos: gastosCaja + gastosEfectivo,
+    gastosTransferencia,
+    totalGastos: gastosCaja + gastosEfectivo + gastosTransferencia,
     retirosEfectivo,
     retirosTransferencia,
     retirosCaja,

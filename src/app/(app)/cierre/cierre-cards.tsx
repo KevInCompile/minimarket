@@ -31,6 +31,7 @@ type RowView = {
   efectivoRealContado: number | null;
   gastosCaja: number;
   gastosEfectivo: number;
+  gastosTransferencia: number;
   totalGastos: number;
   entradaEstimada: number;
   retirosEfectivo: number;
@@ -247,6 +248,7 @@ function CierreCard({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Metric label="Gastos caja" value={row.gastosCaja} />
             <Metric label="Gastos efvo" value={row.gastosEfectivo} />
+            <Metric label="Gastos transf." value={row.gastosTransferencia} />
             <Metric label="Total gastos" value={row.totalGastos} />
           </div>
 

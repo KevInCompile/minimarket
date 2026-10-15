@@ -61,7 +61,7 @@ const ITEMS_FN = (bg: BalanceGeneral): Item[] => [
   {
     title: "Gastos del periodo",
     value: formatCOP(bg.totalGastos),
-    description: `Caja: ${formatCOP(bg.gastosCaja)} · Efectivo: ${formatCOP(bg.gastosEfectivo)}`,
+    description: `Caja: ${formatCOP(bg.gastosCaja)} · Efectivo: ${formatCOP(bg.gastosEfectivo)} · Transf.: ${formatCOP(bg.gastosTransferencia)}`,
     icon: TrendingDown,
     gradient:
       "border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30",
