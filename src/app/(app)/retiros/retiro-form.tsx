@@ -96,7 +96,7 @@ export function RetiroForm({
 
       <div className="space-y-2">
         <Label htmlFor="tipo">Tipo</Label>
-        <Select name="tipo" value={tipo} onValueChange={handleTipo}>
+        <Select name="tipo" defaultValue="OTRO">
           <SelectTrigger id="tipo">
             <SelectValue />
           </SelectTrigger>
@@ -108,7 +108,6 @@ export function RetiroForm({
             ))}
           </SelectContent>
         </Select>
-        <input type="hidden" name="tipo" value={tipo} />
       </div>
 
       <div className="space-y-2">
@@ -149,7 +148,6 @@ export function RetiroForm({
             ))}
           </SelectContent>
         </Select>
-        <input type="hidden" name="saleDe" value={saleDe} />
         {saleDeInfo && (
           <p className="text-xs text-muted-foreground">{saleDeInfo.desc}</p>
         )}

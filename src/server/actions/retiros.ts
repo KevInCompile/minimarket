@@ -19,11 +19,12 @@ export async function crearRetiroAction(
   ]);
 
   const fechaStr = formData.get("fecha")?.toString() ?? "";
+  const tipo = formData.get("tipo")?.toString() ?? "";
   const concepto = formData.get("concepto")?.toString().trim() ?? "";
   const valorStr = formData.get("valor")?.toString() ?? "";
   const saleDe = formData.get("saleDe")?.toString() ?? "";
 
-  if (!fechaStr || !concepto || !valorStr || !saleDe) {
+  if (!fechaStr || !tipo || !concepto || !valorStr || !saleDe) {
     return errState("Todos los campos son obligatorios.");
   }
   const valor = Number(valorStr.replace(/[^0-9]/g, ""));
@@ -33,10 +34,18 @@ export async function crearRetiroAction(
   if (!["EFECTIVO", "TRANSFERENCIA", "CAJA"].includes(saleDe)) {
     return errState("Sale de debe ser EFECTIVO, TRANSFERENCIA o CAJA.");
   }
+  if (
+    !["ARRIENDO", "NOMINA", "SERVICIOS", "IMPUESTOS", "PRESTAMO", "RETIRO_PERSONAL", "OTRO"].includes(
+      tipo,
+    )
+  ) {
+    return errState("Tipo de retiro inválido.");
+  }
 
   await prisma.retiro.create({
     data: {
       fecha: fromISODate(fechaStr),
+      tipo: tipo as TipoRetiro,
       concepto,
       valor,
       saleDe: saleDe as SaleDe,
