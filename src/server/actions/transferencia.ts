@@ -6,12 +6,12 @@ import { fromISODate } from "@/lib/dates";
 import { requireValidUser, requireTiendaId } from "@/lib/auth-guard";
 import { okState, errState, type ActionState } from "./_state";
 
-export type NequiState = ActionState;
+export type TransferenciaState = ActionState;
 
-export async function guardarNequiAction(
-  _prev: NequiState,
+export async function guardarTransferenciaAction(
+  _prev: TransferenciaState,
   formData: FormData,
-): Promise<NequiState> {
+): Promise<TransferenciaState> {
   const [user, tiendaId] = await Promise.all([
     requireValidUser(),
     requireTiendaId(),
@@ -26,13 +26,13 @@ export async function guardarNequiAction(
 
   const fecha = fromISODate(fechaStr);
 
-  await prisma.nequiDelDia.upsert({
+  await prisma.transferenciaDia.upsert({
     where: { fecha },
     update: { total, userId: user.id, tiendaId },
     create: { fecha, total, userId: user.id, tiendaId },
   });
 
-  revalidatePath("/nequi");
+  revalidatePath("/transferencia");
   revalidatePath("/");
   revalidatePath("/cierre");
   return okState();

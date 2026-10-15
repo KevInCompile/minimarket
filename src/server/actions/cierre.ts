@@ -143,12 +143,12 @@ export async function eliminarCierreAction(formData: FormData): Promise<void> {
   if (!cierre) return;
   if (cierre.tiendaId !== tiendaId) return;
 
-  const [gastos, retiros, nequi] = await Promise.all([
+  const [gastos, retiros, transferencia] = await Promise.all([
     prisma.gasto.count({ where: { fecha, tiendaId } }),
     prisma.retiro.count({ where: { fecha, tiendaId } }),
-    prisma.nequiDelDia.count({ where: { fecha, tiendaId } }),
+    prisma.transferenciaDia.count({ where: { fecha, tiendaId } }),
   ]);
-  if (gastos > 0 || retiros > 0 || nequi > 0) return;
+  if (gastos > 0 || retiros > 0 || transferencia > 0) return;
 
   await prisma.cierreDiario.delete({ where: { fecha } });
   revalidatePath("/cierre");

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Receipt, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -56,14 +55,9 @@ export function GastosView({
         </div>
         {/* Botón desktop: solo visible en md+ */}
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger>
-            <Button
-              type="button"
-              className="hidden md:inline-flex"
-            >
-              <Plus className="size-4" />
-              Nuevo gasto
-            </Button>
+          <SheetTrigger className="hidden md:inline-flex h-9 px-4 py-2 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="size-4" />
+            Nuevo gasto
           </SheetTrigger>
           <SheetContent
             side="right"

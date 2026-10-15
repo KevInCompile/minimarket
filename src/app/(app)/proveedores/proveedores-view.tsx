@@ -36,11 +36,9 @@ export function ProveedoresView({ proveedores }: { proveedores: ProveedorView[] 
           </p>
         </div>
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger>
-            <Button type="button" className="hidden md:inline-flex">
-              <Plus className="size-4" />
-              Nuevo proveedor
-            </Button>
+          <SheetTrigger className="hidden md:inline-flex h-9 px-4 py-2 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="size-4" />
+            Nuevo proveedor
           </SheetTrigger>
           <SheetContent
             side="right"

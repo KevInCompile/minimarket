@@ -13,7 +13,7 @@ const TABLES = [
   "Proveedor",
   "Gasto",
   "Retiro",
-  "NequiDelDia",
+  "transferenciaDelDia",
   "CierreDiario",
   "PedidoNota",
 ];

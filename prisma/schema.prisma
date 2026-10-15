@@ -21,7 +21,7 @@ enum PagadoCon {
 
 enum SaleDe {
   EFECTIVO
-  NEQUI
+  TRANSFERENCIA
   CAJA
 }
 
@@ -36,7 +36,7 @@ enum TipoRetiro {
 }
 
 /// Una tienda = un cliente de la app. Cada User pertenece a una Tienda,
-/// y todos los datos (Gasto, Retiro, NequiDelDia, CierreDiario,
+/// y todos los datos (Gasto, Retiro, TransferenciaDia, CierreDiario,
 /// Proveedor, PedidoNota) están aislados por tienda.
 model Tienda {
   id        String   @id @default(cuid())
@@ -49,11 +49,11 @@ model Tienda {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users       User[]
+  users        User[]
   proveedores Proveedor[]
   gastos      Gasto[]
   retiros     Retiro[]
-  nequiDias   NequiDelDia[]
+  transferencias  TransferenciaDia[]
   cierres     CierreDiario[]
   pedidos     PedidoNota[]
 }
@@ -71,7 +71,7 @@ model User {
 
   gastos        Gasto[]
   retiros       Retiro[]
-  nequiUpdates  NequiDelDia[]
+  transferencias  TransferenciaDia[]
   cierres       CierreDiario[]
 
   @@index([tiendaId])
@@ -132,7 +132,7 @@ model Retiro {
   @@index([tiendaId])
 }
 
-model NequiDelDia {
+model TransferenciaDia {
   id        String   @id @default(cuid())
   fecha     DateTime @unique @db.Date
   total     Int

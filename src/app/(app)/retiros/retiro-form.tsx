@@ -38,9 +38,9 @@ const SALE_DE = [
     desc: "Descuenta del efectivo acumulado.",
   },
   {
-    value: "NEQUI",
-    label: "Nequi",
-    desc: "Descuenta del saldo Nequi.",
+    value: "TRANSFERENCIA",
+    label: "Transferencia",
+    desc: "Descuenta del saldo Transferencia.",
   },
   {
     value: "CAJA",
@@ -177,8 +177,8 @@ export function RetiroForm({
             <strong>
               {saleDe === "EFECTIVO"
                 ? "efectivo acumulado"
-                : saleDe === "NEQUI"
-                  ? "saldo Nequi"
+                : saleDe === "TRANSFERENCIA"
+                  ? "saldo Transferencia"
                   : "caja del día"}
             </strong>
             .

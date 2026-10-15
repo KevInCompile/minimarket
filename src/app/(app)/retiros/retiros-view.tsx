@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Wallet, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -14,13 +13,14 @@ import {
 import { RetirosTable } from "./retiros-table";
 import { RetiroForm } from "./retiro-form";
 
+
 type RetiroView = {
   id: string;
   fecha: string;
   tipo: "ARRIENDO" | "NOMINA" | "SERVICIOS" | "IMPUESTOS" | "PRESTAMO" | "RETIRO_PERSONAL" | "OTRO";
   concepto: string;
   valor: number;
-  saleDe: "EFECTIVO" | "NEQUI" | "CAJA";
+  saleDe: "EFECTIVO" | "TRANSFERENCIA" | "CAJA";
   nota: string | null;
 };
 
@@ -30,7 +30,7 @@ export function RetirosView({ retiros }: { retiros: RetiroView[] }) {
   const total = retiros.reduce((s, r) => s + r.valor, 0);
   const porSaleDe = {
     EFECTIVO: retiros.filter((r) => r.saleDe === "EFECTIVO").reduce((s, r) => s + r.valor, 0),
-    NEQUI: retiros.filter((r) => r.saleDe === "NEQUI").reduce((s, r) => s + r.valor, 0),
+    NEQUI: retiros.filter((r) => r.saleDe === "TRANSFERENCIA").reduce((s, r) => s + r.valor, 0),
     CAJA: retiros.filter((r) => r.saleDe === "CAJA").reduce((s, r) => s + r.valor, 0),
   };
 
@@ -50,11 +50,9 @@ export function RetirosView({ retiros }: { retiros: RetiroView[] }) {
           </p>
         </div>
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger>
-            <Button type="button" className="hidden md:inline-flex">
-              <Plus className="size-4" />
-              Nuevo retiro
-            </Button>
+          <SheetTrigger className="hidden md:inline-flex h-9 px-4 py-2 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="size-4" />
+            Nuevo retiro
           </SheetTrigger>
           <SheetContent side="right" className="w-full sm:max-w-xl p-0 gap-0">
             <SheetHeader className="px-6 py-4 border-b bg-rose-50/50 dark:bg-rose-950/20">
@@ -80,7 +78,7 @@ export function RetirosView({ retiros }: { retiros: RetiroView[] }) {
             iconColor="bg-linear-to-br from-sky-500 to-cyan-500 text-white"
           />
           <StatCard
-            label="Descontado del saldo Nequi"
+            label="Descontado del saldo Transferencia"
             value={porSaleDe.NEQUI}
             color="border-violet-200 bg-linear-to-br from-violet-50 to-fuchsia-50/60 dark:border-violet-800 dark:from-violet-950/30 dark:to-fuchsia-950/30"
             iconColor="bg-linear-to-br from-violet-500 to-fuchsia-500 text-white"
@@ -100,6 +98,18 @@ export function RetirosView({ retiros }: { retiros: RetiroView[] }) {
           valor: r.valor, saleDe: r.saleDe, nota: r.nota,
         }))}
       />
+
+      {/* FAB para mobile */}
+      <div className="md:hidden fixed bottom-6 right-6 z-30">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Nuevo retiro"
+          className="size-14 rounded-full shadow-lg bg-rose-600 hover:bg-rose-700 text-white inline-flex items-center justify-center min-h-11 min-w-11"
+        >
+          <Plus className="size-6" />
+        </button>
+      </div>
     </div>
   );
 }

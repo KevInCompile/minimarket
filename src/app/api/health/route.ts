@@ -52,11 +52,11 @@ export async function GET() {
 
   // 4. Conexión a la DB + tablas existen
   try {
-    const [users, gastos, cierres, nequi, retiros, pedidos, proveedores] = await Promise.all([
+    const [users, gastos, cierres, transferencia, retiros, pedidos, proveedores] = await Promise.all([
       prisma.user.count(),
       prisma.gasto.count(),
       prisma.cierreDiario.count(),
-      prisma.nequiDelDia.count(),
+      prisma.transferenciaDia.count(),
       prisma.retiro.count(),
       prisma.pedidoNota.count(),
       prisma.proveedor.count(),
@@ -66,7 +66,7 @@ export async function GET() {
       message: `conectado`,
     };
     (checks.database as Record<string, unknown>).counts = {
-      users, gastos, cierres, nequi, retiros, pedidos, proveedores,
+      users, gastos, cierres, transferencia, retiros, pedidos, proveedores,
     };
   } catch (e) {
     checks.database = {

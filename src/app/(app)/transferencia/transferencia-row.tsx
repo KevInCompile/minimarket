@@ -2,29 +2,29 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { guardarNequiAction, type NequiState } from "@/server/actions/nequi";
+import { guardarTransferenciaAction, type TransferenciaState } from "@/server/actions/transferencia";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Save } from "lucide-react";
 
-const INITIAL: NequiState = { ok: true, ts: 0 };
+const INITIAL: TransferenciaState = { ok: true, ts: 0 };
 
-export function NequiRow({
+export function TransferenciaRow({
   fecha,
   initialTotal,
 }: {
   fecha: string;
   initialTotal: number;
 }) {
-  const [state, action, pending] = useActionState(guardarNequiAction, INITIAL);
+  const [state, action, pending] = useActionState(guardarTransferenciaAction, INITIAL);
   const lastTs = useRef(0);
 
   useEffect(() => {
     if (state.ts && state.ts !== lastTs.current) {
       lastTs.current = state.ts;
       if (state.error) toast.error(state.error);
-      if (state.ok) toast.success("Nequi guardado");
+      if (state.ok) toast.success("Transferencia guardado");
     }
   }, [state]);
 

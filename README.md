@@ -2,7 +2,7 @@
 
 Reemplazo del Excel `Control_Caja_Septiembre_2026.xlsx` para el control de caja
 diario de una tienda. Mismo flujo de trabajo que el Excel (gastos pagados de caja / de
-efectivo, retiros, Nequi, cierre diario con acumulado de efectivo y Nequi,
+efectivo, retiros, Transferencia, cierre diario con acumulado de efectivo y Transferencia,
 descuadres), pero como aplicación web multi-tenant con roles, auditoría y motor de cálculo.
 
 ## Stack
@@ -91,7 +91,7 @@ src/
       page.tsx                       dashboard "Balance general"
       gastos/                        tabla + alta de gastos
       retiros/                       tabla + alta de retiros (solo ADMIN)
-      nequi/                         tabla inline de Nequi recibido
+      transferencia/                         tabla inline de Transferencia recibido
       cierre/                        cierre diario con columnas calculadas
       pedidos/                       pedidos (nota), solo referencia
       proveedores/                   CRUD de proveedores
@@ -108,7 +108,7 @@ src/
     excel-staging.ts                 staging dir para uploads antes del commit
   server/actions/                    server actions por entidad
 prisma/
-  schema.prisma                      User, Proveedor, Gasto, Retiro, NequiDelDia,
+  schema.prisma                      User, Proveedor, Gasto, Retiro, transferenciaDelDia,
                                      CierreDiario, PedidoNota, ImportLog
                                      (+ importId, snapshot)
   seed.ts                            lee del Excel y replica los datos
@@ -133,7 +133,7 @@ Solo accesible por ADMIN en `/importar`.
    y todas las advertencias (placeholders creados, días sin cierre, etc.).
 2. El admin revisa el preview. Si algo está mal, puede cancelar y subir otro.
 3. Click "Confirmar y reemplazar datos" → server action `commitImportAction`:
-   - Toma un snapshot de los datos actuales (gastos, retiros, nequi, cierres,
+   - Toma un snapshot de los datos actuales (gastos, retiros, transferencia, cierres,
      pedidos) en el campo `ImportLog.snapshot` (Json).
    - En una transacción Prisma: borra todo (excepto usuarios y proveedores),
      crea el `ImportLog`, upsert de proveedores, inserta los nuevos registros
@@ -149,7 +149,7 @@ Solo accesible por ADMIN en `/importar`.
 
 **Restricciones:**
 - El Excel debe tener las mismas hojas que `Control_Caja_*.xlsx`:
-  Balance general, Gastos, Retiros, Nequi, Cierre diario, Pedidos (nota).
+  Balance general, Gastos, Retiros, Transferencia, Cierre diario, Pedidos (nota).
 - Las hojas que no se encuentran se reportan como warning pero no abortan.
 - Tamaño máximo: 10 MB.
 - Si el archivo temporal expira (se reinicia el servidor), el admin verá
@@ -159,8 +159,8 @@ Solo accesible por ADMIN en `/importar`.
 
 Funciones puras, testeables:
 
-- `computeCierreDiario(cierre, gastos, retiros, nequi, prevEfec, prevNequi)` — calcula todas las columnas de un día.
-- `serieCierres({ desde, hasta, cierres, gastos, retiros, nequi })` — devuelve la serie completa con acumulados.
+- `computeCierreDiario(cierre, gastos, retiros, transferencia, prevEfec, prevNequi)` — calcula todas las columnas de un día.
+- `serieCierres({ desde, hasta, cierres, gastos, retiros, transferencia })` — devuelve la serie completa con acumulados.
 - `balanceGeneral({ desde, hasta, ... })` — resumen del periodo.
 - `rankingProveedores(gastos)` — top por proveedor con porcentaje.
 
@@ -169,7 +169,7 @@ Reglas (copiadas del Excel):
 - Gastos con `pagadoCon=CAJA` salen de la caja del día (no tocan el efectivo guardado).
 - Gastos con `pagadoCon=EFECTIVO` salen del efectivo acumulado.
 - Retiros con `saleDe=EFECTIVO` salen del efectivo acumulado.
-- Retiros con `saleDe=NEQUI` salen del saldo Nequi acumulado.
+- Retiros con `saleDe=NEQUI` salen del saldo Transferencia acumulado.
 - `efectivoAcumulado(día) = anterior + guardado − gastosEfvo − retirosEfvo`.
 - `descuadre = efectivoRealContado − efectivoAcumulado` (solo si hay conteo real).
 
@@ -188,8 +188,8 @@ inconsistencias con las transacciones. El sistema usa las transacciones como
 Totales del seed (verificables con `pnpm test`):
 
 - Total gastos: **$2.750.878**
-- Retiros efectivo: $900.000 · Retiros Nequi: $300.000
-- Nequi recibido: $898.200
+- Retiros efectivo: $900.000 · Retiros Transferencia: $300.000
+- Transferencia recibido: $898.200
 - Punto más bajo del efectivo acumulado: $210.000 (Miércoles 02/09)
 - Descuadre Jueves 17/09: **−$93.777** (sobrante en libros vs conteo real de $438.000)
 
@@ -200,7 +200,7 @@ Totales del seed (verificables con `pnpm test`):
 | Ver dashboard                   |   ✓   |   ✓    |
 | Crear / editar / borrar gastos  |   ✓   | solo del día actual, no borrar |
 | Crear / editar cierre diario    |   ✓   |   ✓    |
-| Crear / editar Nequi del día    |   ✓   |   ✓    |
+| Crear / editar Transferencia del día    |   ✓   |   ✓    |
 | Crear retiros                   |   ✓   |   ✗    |
 | Gestionar proveedores / usuarios|   ✓   |   ✗    |
 | Ver / editar pedidos (nota)     |   ✓   |   ✗    |
@@ -215,7 +215,7 @@ chequear el rol antes de mutar la base.
 - **Fase 1 (MVP):** ✅ Schema, seed, auth, RBAC, CRUD completo, dashboard con cards y chart.
 - **Fase 2 (Importador):** ✅ UI para subir `.xlsx`, preview con totales, transacción atómica, snapshot para revertir.
 - **Fase 3:** Multi-tienda, PWA, export a Excel, reportes.
-- **Fase 4:** Integraciones (Nequi API, facturación electrónica).
+- **Fase 4:** Integraciones (Transferencia API, facturación electrónica).
 
 ## Deploy a Vercel
 

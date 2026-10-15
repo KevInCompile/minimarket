@@ -30,8 +30,8 @@ export async function crearRetiroAction(
   if (!Number.isFinite(valor) || valor <= 0) {
     return errState("El valor debe ser un número positivo.");
   }
-  if (!["EFECTIVO", "NEQUI", "CAJA"].includes(saleDe)) {
-    return errState("Sale de debe ser EFECTIVO, NEQUI o CAJA.");
+  if (!["EFECTIVO", "TRANSFERENCIA", "CAJA"].includes(saleDe)) {
+    return errState("Sale de debe ser EFECTIVO, TRANSFERENCIA o CAJA.");
   }
 
   await prisma.retiro.create({

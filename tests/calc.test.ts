@@ -7,7 +7,7 @@ import {
   type CierreInput,
   type GastoForCalc,
   type RetiroForCalc,
-  type NequiForCalc,
+  type TransferenciaForCalc,
 } from "../src/lib/calc";
 import { excelSerialToDate } from "../src/lib/dates";
 
@@ -15,7 +15,7 @@ import { excelSerialToDate } from "../src/lib/dates";
  * Tests de paridad contra el Excel Control_Caja_Septiembre_2026.xlsx.
  *
  * Los datos sembrados vienen de las hojas TRANSACCIONALES del Excel
- * (Gastos, Retiros, Nequi). Esos totales NO coinciden exactamente con los
+ * (Gastos, Retiros, Transferencia). Esos totales NO coinciden exactamente con los
  * números hardcodeados de la hoja "Balance general" del Excel original —
  * el autor había escrito esos totales a mano y no cuadraban con las
  * transacciones. Nuestro sistema usa las transacciones como única fuente
@@ -24,16 +24,16 @@ import { excelSerialToDate } from "../src/lib/dates";
  * Totales transaccionales sembrados (verificables):
  *   Total gastos          2.750.878 (cuadra con la fila TOTAL de la hoja Gastos)
  *   Retiros efectivo        900.000
- *   Retiros Nequi           300.000 (200.000 + 100.000 del sheet de retiros)
+ *   Retiros Transferencia           300.000 (200.000 + 100.000 del sheet de retiros)
  *   Efectivo guardado     3.452.000
- *   Nequi recibido          898.200
+ *   Transferencia recibido          898.200
  *   Punto más bajo         170.527 (Lunes 14/09)
  *
  * Totales del Excel "Balance general" (NO coinciden — son manuales):
  *   Total gastos          2.908.328
- *   Retiros Nequi           325.000
+ *   Retiros Transferencia           325.000
  *   Saldo efectivo actual   944.827
- *   Saldo Nequi actual      573.200
+ *   Saldo Transferencia actual      573.200
  *   TOTAL DISPONIBLE      1.048.200
  */
 
@@ -117,12 +117,12 @@ const retiros: RetiroForCalc[] = [
   // Lunes 14/09 (46279)
   { fecha: excelSerialToDate(46279), concepto: "Arriendo", valor: 900000, saleDe: "EFECTIVO" },
   // Jueves 17/09 (46282)
-  { fecha: excelSerialToDate(46282), concepto: "Nómina", valor: 200000, saleDe: "NEQUI" },
+  { fecha: excelSerialToDate(46282), concepto: "Nómina", valor: 200000, saleDe: "TRANSFERENCIA" },
   // Viernes 18/09 (46283)
-  { fecha: excelSerialToDate(46283), concepto: "Nómina y pedido", valor: 100000, saleDe: "NEQUI" },
+  { fecha: excelSerialToDate(46283), concepto: "Nómina y pedido", valor: 100000, saleDe: "TRANSFERENCIA" },
 ];
 
-const nequi: NequiForCalc[] = [
+const transferencia: TransferenciaForCalc[] = [
   { fecha: excelSerialToDate(46269), total: 44000 },
   { fecha: excelSerialToDate(46272), total: 59000 },
   { fecha: excelSerialToDate(46273), total: 39400 },
@@ -185,7 +185,7 @@ describe("calc - serieCierres", () => {
       cierres,
       gastos,
       retiros,
-      nequi,
+      transferencia,
     });
 
     const find = (serial: number) =>
@@ -236,7 +236,7 @@ describe("calc - balanceGeneral", () => {
       cierres,
       gastos,
       retiros,
-      nequi,
+      transferencia,
     });
 
     // Totales de gastos (desde la hoja transaccional Gastos del Excel)
@@ -246,14 +246,14 @@ describe("calc - balanceGeneral", () => {
 
     // Retiros
     expect(bg.retirosEfectivo).toBe(900000);
-    expect(bg.retirosNequi).toBe(300000); // 200000 + 100000 del sheet de retiros
+    expect(bg.retirosTransferencia).toBe(300000); // 200000 + 100000 del sheet de retiros
     expect(bg.totalRetiros).toBe(1200000);
 
     // Efectivo guardado periodo
     expect(bg.efectivoGuardadoPeriodo).toBe(3452000);
 
-    // Nequi
-    expect(bg.nequiRecibidoPeriodo).toBe(898200);
+    // Transferencia
+    expect(bg.transferenciaRecibidoPeriodo).toBe(898200);
 
     // Punto más bajo: Miércoles 02/09 = 210000 (calculado sobre transacciones reales;
     // el Excel mostraba 170527 porque arrastraba los errores manuales)
@@ -267,7 +267,7 @@ describe("calc - balanceGeneral", () => {
       cierres,
       gastos,
       retiros,
-      nequi,
+      transferencia,
     });
     expect(bg.ultimoCajaCierre).toBe(53000); // Sáb 19/09
   });
@@ -299,7 +299,7 @@ describe("calc - descuadre", () => {
       cierres,
       gastos,
       retiros,
-      nequi,
+      transferencia,
     });
     const jueves = serie.find(
       (s) => s.fecha.getTime() === excelSerialToDate(46282).getTime(),
@@ -326,9 +326,9 @@ describe("computeCierreDiario", () => {
         { fecha: excelSerialToDate(46275), proveedor: "B", valor: 113000, pagadoCon: "EFECTIVO" },
       ],
       retirosDelDia: [],
-      nequiDelDia: 52000,
+      transferenciaDia: 52000,
       prevEfectivoAcumulado: 423227,
-      prevNequiAcumulado: 182400,
+      prevTransferenciaAcumulado: 182400,
     });
 
     expect(c.gastosCaja).toBe(69900);
@@ -336,6 +336,6 @@ describe("computeCierreDiario", () => {
     expect(c.totalGastos).toBe(182900);
     expect(c.entradaEstimada).toBe(64300 - 52500 + 69900);
     expect(c.efectivoAcumulado).toBe(423227 + 295000 - 113000 - 0);
-    expect(c.nequiAcumulado).toBe(182400 + 52000 - 0);
+    expect(c.transferenciaAcumulado).toBe(182400 + 52000 - 0);
   });
 });

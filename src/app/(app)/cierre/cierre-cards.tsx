@@ -34,10 +34,10 @@ type RowView = {
   totalGastos: number;
   entradaEstimada: number;
   retirosEfectivo: number;
-  retirosNequi: number;
-  nequiDelDia: number;
+  retirosTransferencia: number;
+  transferenciaDia: number;
   efectivoAcumulado: number;
-  nequiAcumulado: number;
+  transferenciaAcumulado: number;
   descuadre: number | null;
   totalVentaDelDia: number;
 };
@@ -104,7 +104,7 @@ function PendienteCard({ fecha }: { fecha: string }) {
           <Separator className="my-3" />
           <p className="text-sm text-muted-foreground">
             Para hacer el cierre de este día, primero cargue los gastos / retiros /
-            Nequi en sus respectivas páginas. Después regrese acá y cree el cierre
+            Transferencia en sus respectivas páginas. Después regrese acá y cree el cierre
             con el botón de arriba.
           </p>
         </CardContent>
@@ -252,8 +252,8 @@ function CierreCard({
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Metric label="Retiros efvo" value={row.retirosEfectivo} />
-            <Metric label="Retiros Nequi" value={row.retirosNequi} />
-            <Metric label="Nequi recibido" value={row.nequiDelDia} />
+            <Metric label="Retiros Transferencia" value={row.retirosTransferencia} />
+            <Metric label="Transferencia recibido" value={row.transferenciaDia} />
           </div>
 
           {tieneDescuadre && (
@@ -382,7 +382,7 @@ function CierreCard({
         title="Eliminar cierre"
         description={
           hasMovimiento
-            ? "No se puede eliminar este cierre porque tiene gastos, retiros o Nequi registrados. Borre los movimientos primero."
+            ? "No se puede eliminar este cierre porque tiene gastos, retiros o Transferencia registrados. Borre los movimientos primero."
             : `¿Eliminar el cierre del ${formatShortDate(date)}? Esta acción no se puede deshacer.`
         }
         confirmLabel="Eliminar"

@@ -68,7 +68,7 @@ Si la DB está vacía o los datos están corruptos, usar el Time Travel de Neon 
 
 - 1 ADMIN (`admin@ejemplo.com` / `admin123`)
 - 1 CAJERO (`cajero@ejemplo.com` / `cajero123`)
-- 37 proveedores, 56 gastos, 3 retiros, 13 Nequi, 18 cierres, 7 pedidos (nota)
+- 37 proveedores, 56 gastos, 3 retiros, 13 Transferencia, 18 cierres, 7 pedidos (nota)
 
 Período: 02/09/2026 al 19/09/2026.
 
@@ -76,13 +76,13 @@ Período: 02/09/2026 al 19/09/2026.
 
 `src/lib/calc.ts` es la fuente de verdad para todos los totales mostrados. NO
 calcular totales en las páginas — siempre pasar por las funciones del módulo.
-Todas las columnas "computadas" (efectivo acumulado, Nequi acumulado, total
+Todas las columnas "computadas" (efectivo acumulado, Transferencia acumulado, total
 gastos del día, entrada estimada, descuadre) salen de
 `computeCierreDiario`/`serieCierres`/`balanceGeneral`.
 
 ## Próximas fases
 
-- **Fase 3**: export a Excel, integración con Nequi API.
+- **Fase 3**: export a Excel, integración con Transferencia API.
 
 ## Importador (Fase 2)
 

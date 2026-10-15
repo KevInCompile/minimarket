@@ -21,7 +21,7 @@ type RetiroView = {
   tipo: "ARRIENDO" | "NOMINA" | "SERVICIOS" | "IMPUESTOS" | "PRESTAMO" | "RETIRO_PERSONAL" | "OTRO";
   concepto: string;
   valor: number;
-  saleDe: "EFECTIVO" | "NEQUI" | "CAJA";
+  saleDe: "EFECTIVO" | "TRANSFERENCIA" | "CAJA";
   nota: string | null;
 };
 

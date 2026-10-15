@@ -22,7 +22,7 @@ const ITEMS_FN = (bg: BalanceGeneral): Item[] => [
   {
     title: "TOTAL DISPONIBLE HOY",
     value: formatCOP(bg.totalDisponible),
-    description: `${formatCOP(bg.saldoEfectivoActual)} efectivo + ${formatCOP(bg.saldoNequiActual)} Nequi`,
+    description: `${formatCOP(bg.saldoEfectivoActual)} efectivo + ${formatCOP(bg.saldoTransferenciaActual)} Transferencia`,
     icon: Banknote,
     highlight: true,
     gradient:
@@ -39,9 +39,9 @@ const ITEMS_FN = (bg: BalanceGeneral): Item[] => [
     iconBg: "bg-linear-to-br from-sky-500 to-cyan-500 text-white",
   },
   {
-    title: "Saldo Nequi",
-    value: formatCOP(bg.saldoNequiActual),
-    description: `Recibido en el periodo: ${formatCOP(bg.nequiRecibidoPeriodo)}`,
+    title: "Saldo Transferencia",
+    value: formatCOP(bg.saldoTransferenciaActual),
+    description: `Recibido en el periodo: ${formatCOP(bg.transferenciaRecibidoPeriodo)}`,
     icon: Smartphone,
     gradient:
       "border-violet-200 bg-linear-to-br from-violet-50 to-fuchsia-50/60 dark:border-violet-800 dark:from-violet-950/30 dark:to-fuchsia-950/30",
@@ -70,7 +70,7 @@ const ITEMS_FN = (bg: BalanceGeneral): Item[] => [
   {
     title: "Retiros del periodo",
     value: formatCOP(bg.totalRetiros),
-    description: `Efectivo: ${formatCOP(bg.retirosEfectivo)} · Nequi: ${formatCOP(bg.retirosNequi)}`,
+    description: `Efectivo: ${formatCOP(bg.retirosEfectivo)} · Transferencia: ${formatCOP(bg.retirosTransferencia)}`,
     icon: TrendingUp,
     gradient:
       "border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30",

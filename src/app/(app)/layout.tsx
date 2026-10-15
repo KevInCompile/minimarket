@@ -29,7 +29,7 @@ type NavItem = {
 const NAV: NavItem[] = [
   { href: "/", label: "Balance", icon: LayoutDashboard },
   { href: "/cierre", label: "Cierre diario", icon: ClipboardCheck },
-  { href: "/nequi", label: "Nequi", icon: Smartphone },
+  { href: "/transferencia", label: "Transferencia", icon: Smartphone },
   { href: "/gastos", label: "Gastos", icon: Receipt },
   { href: "/retiros", label: "Retiros", icon: Wallet, adminOnly: true },
   { href: "/pedidos", label: "Pedidos (nota)", icon: StickyNote, adminOnly: true },
@@ -54,7 +54,7 @@ const ICON_STYLE: Record<string, string> = {
   "/": "text-sky-600 dark:text-sky-400",
   "/gastos": "text-amber-600 dark:text-amber-400",
   "/retiros": "text-rose-600 dark:text-rose-400",
-  "/nequi": "text-violet-600 dark:text-violet-400",
+  "/transferencia": "text-violet-600 dark:text-violet-400",
   "/cierre": "text-sky-600 dark:text-sky-400",
   "/pedidos": "text-pink-600 dark:text-pink-400",
   "/proveedores": "text-orange-600 dark:text-orange-400",

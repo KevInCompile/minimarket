@@ -70,8 +70,8 @@
 | GET | `/retiros?desde=&hasta=` | user | Lista retiros del periodo |
 | POST | `/retiros` | admin | Crea retiro |
 | DELETE | `/retiros/[id]` | admin | Elimina retiro |
-| GET | `/nequi?desde=&hasta=` | user | Lista Nequi por día |
-| PUT | `/nequi` | user | Upsert Nequi del día |
+| GET | `/transferencia?desde=&hasta=` | user | Lista Transferencia por día |
+| PUT | `/transferencia` | user | Upsert Transferencia del día |
 | GET | `/cierre?desde=&hasta=` | user | Lista cierres del periodo |
 | POST | `/cierre` | user | Crea cierre |
 | PUT | `/cierre/[fecha]` | user | Actualiza cierre |
@@ -178,7 +178,7 @@ lib/
     user.dart
     gasto.dart
     retiro.dart
-    nequi.dart
+    transferencia.dart
     cierre.dart
     proveedor.dart
   features/
@@ -194,7 +194,7 @@ lib/
     retiros/
       retiros_list_screen.dart
       retiro_form_screen.dart
-    nequi/
+    transferencia/
       nequi_screen.dart
     cierre/
       cierre_list_screen.dart
@@ -210,7 +210,7 @@ lib/
 
 - `authStateProvider`: `AsyncNotifier<User?>` con login/logout/me
 - `gastosListProvider(family)`: `FutureProvider<List<Gasto>>` filtrado por rango de fechas
-- Similar para retiros, nequi, cierre, proveedores
+- Similar para retiros, transferencia, cierre, proveedores
 
 #### Pantallas (1:1 con la web)
 
@@ -218,7 +218,7 @@ lib/
 2. **Dashboard** — cards con TOTAL DISPONIBLE HOY, EFECTIVO GUARDADO, SALDO NEQUI, etc
 3. **Gastos** — lista + form
 4. **Retiros** — lista + form (solo admin)
-5. **Nequi** — tabla por día
+5. **Transferencia** — tabla por día
 6. **Cierre diario** — cards expandibles
 7. **Pedidos (nota)** — solo lectura
 8. **Proveedores** — lista + activar/desactivar

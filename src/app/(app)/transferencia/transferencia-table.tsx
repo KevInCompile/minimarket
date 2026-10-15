@@ -12,20 +12,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatCOP } from "@/lib/format";
 import { formatShortDate } from "@/lib/format";
 import { diaSemana } from "@/lib/dates";
-import { NequiRow } from "./nequi-row";
+import { TransferenciaRow } from "./transferencia-row";
 
-type NequiView = { id: string; fecha: string; total: number };
+type TransferenciaView = { id: string; fecha: string; total: number };
 
 /**
- * Tabla inline editable de Nequi por día.
+ * Tabla inline editable de Transferencia por día.
  * En mobile cada día se renderiza como una card apilada con el form.
  */
-export function NequiTable({
+export function TransferenciaTable({
   entries,
   desde,
   hasta,
 }: {
-  entries: NequiView[];
+  entries: TransferenciaView[];
   desde: string;
   hasta: string;
 }) {
@@ -61,7 +61,7 @@ export function NequiTable({
                     {formatShortDate(new Date(d))}
                   </TableCell>
                   <TableCell>
-                    <NequiRow fecha={d} initialTotal={entry?.total ?? 0} />
+                    <TransferenciaRow fecha={d} initialTotal={entry?.total ?? 0} />
                     {entry && entry.total > 0 && (
                       <div className="text-xs text-muted-foreground mt-1 tabular-nums">
                         guardado: {formatCOP(entry.total)}
@@ -100,7 +100,7 @@ export function NequiTable({
                   <span className="text-xs uppercase tracking-wide text-muted-foreground block mb-2">
                     Total recibido
                   </span>
-                  <NequiRow fecha={d} initialTotal={entry?.total ?? 0} />
+                  <TransferenciaRow fecha={d} initialTotal={entry?.total ?? 0} />
                 </div>
                 {entry && entry.total > 0 && (
                   <div className="text-xs text-muted-foreground tabular-nums">

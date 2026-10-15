@@ -17,7 +17,7 @@ export default async function CierrePage({ searchParams }: Props) {
     : new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), 1));
   const hasta = params.hasta ? new Date(`${params.hasta}T00:00:00.000Z`) : hoy;
 
-  const [gastos, retiros, nequi, cierres] = await Promise.all([
+  const [gastos, retiros, transferencia, cierres] = await Promise.all([
     prisma.gasto.findMany({
       where: { tiendaId, fecha: { gte: desde, lte: hasta } },
       include: { proveedor: { select: { nombre: true } } },
@@ -25,7 +25,7 @@ export default async function CierrePage({ searchParams }: Props) {
     prisma.retiro.findMany({
       where: { tiendaId, fecha: { gte: desde, lte: hasta } },
     }),
-    prisma.nequiDelDia.findMany({
+    prisma.transferenciaDia.findMany({
       where: { tiendaId, fecha: { gte: desde, lte: hasta } },
     }),
     prisma.cierreDiario.findMany({
@@ -55,7 +55,7 @@ export default async function CierrePage({ searchParams }: Props) {
       valor: r.valor,
       saleDe: r.saleDe,
     })),
-    nequi: nequi.map((n) => ({ fecha: n.fecha, total: n.total })),
+    transferencia: transferencia.map((n) => ({ fecha: n.fecha, total: n.total })),
   });
 
   // Dias con movimiento pero sin cierre - para mostrar como "pendientes"
@@ -69,7 +69,7 @@ export default async function CierrePage({ searchParams }: Props) {
   for (const r of retiros) {
     fechasConMovimiento.add(r.fecha.toISOString().slice(0, 10));
   }
-  for (const n of nequi) {
+  for (const n of transferencia) {
     fechasConMovimiento.add(n.fecha.toISOString().slice(0, 10));
   }
   const pendientes = [...fechasConMovimiento]

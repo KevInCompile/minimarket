@@ -7,7 +7,7 @@
  *   (no tocan el efectivo guardado).
  * - Gastos con pagadoCon=EFECTIVO salen del efectivo guardado acumulado.
  * - Retiros con saleDe=EFECTIVO salen del efectivo guardado acumulado.
- * - Retiros con saleDe=NEQUI salen del saldo Nequi acumulado.
+ * - Retiros con saleDe=NEQUI salen del saldo Transferencia acumulado.
  * - El efectivo guardado nunca queda en negativo (chequeo del Excel).
  * - La entrada estimada del día = (caja cierre - caja apertura) + gastos de caja.
  * - El descuadre = efectivo real contado - efectivo acumulado (solo si hay conteo).
@@ -38,7 +38,7 @@ export type RetiroForCalc = {
   saleDe: SaleDe;
 };
 
-export type NequiForCalc = {
+export type TransferenciaForCalc = {
   fecha: Date;
   total: number;
 };
@@ -48,12 +48,12 @@ export type CierreDiarioComputed = CierreInput & {
   gastosEfectivo: number;
   totalGastos: number;
   retirosEfectivo: number;
-  retirosNequi: number;
+  retirosTransferencia: number;
   retirosCaja: number;
   entradaEstimada: number;
   efectivoAcumulado: number;
-  nequiAcumulado: number;
-  nequiDelDia: number;
+  transferenciaAcumulado: number;
+  transferenciaDia: number;
   descuadre: number | null;
   /**
    * Total "venta" del día: efectivo guardado + retiros del día (efectivo) +
@@ -70,7 +70,7 @@ export type BalanceGeneral = {
   gastosEfectivo: number;
   totalGastos: number;
   retirosEfectivo: number;
-  retirosNequi: number;
+  retirosTransferencia: number;
   retirosCaja: number;
   totalRetiros: number;
   efectivoGuardadoPeriodo: number;
@@ -79,8 +79,8 @@ export type BalanceGeneral = {
   // Los saldos actuales reflejan el estado al final del periodo, usando
   // el ciclo completo desde el primer día con datos.
   saldoEfectivoActual: number;
-  nequiRecibidoPeriodo: number;
-  saldoNequiActual: number;
+  transferenciaRecibidoPeriodo: number;
+  saldoTransferenciaActual: number;
   totalDisponible: number;
   puntoMasBajoEfectivo: number;
   diasConDescuadre: number;
@@ -118,11 +118,11 @@ export function computeCierreDiario(args: {
   cierre: CierreInput;
   gastosDelDia: GastoForCalc[];
   retirosDelDia: RetiroForCalc[];
-  nequiDelDia: number;
+  transferenciaDia: number;
   prevEfectivoAcumulado: number;
-  prevNequiAcumulado: number;
+  prevTransferenciaAcumulado: number;
 }): CierreDiarioComputed {
-  const { cierre, gastosDelDia, retirosDelDia, nequiDelDia } = args;
+  const { cierre, gastosDelDia, retirosDelDia, transferenciaDia } = args;
 
   const gastosCaja = sumBy(
     gastosDelDia,
@@ -139,9 +139,9 @@ export function computeCierreDiario(args: {
     (r) => r.saleDe === "EFECTIVO",
     (r) => r.valor,
   );
-  const retirosNequi = sumBy(
+  const retirosTransferencia = sumBy(
     retirosDelDia,
-    (r) => r.saleDe === "NEQUI",
+    (r) => r.saleDe === "TRANSFERENCIA",
     (r) => r.valor,
   );
   const retirosCaja = sumBy(
@@ -160,8 +160,8 @@ export function computeCierreDiario(args: {
     gastosEfectivo -
     retirosEfectivo;
 
-  const nequiAcumulado =
-    args.prevNequiAcumulado + nequiDelDia - retirosNequi;
+  const transferenciaAcumulado =
+    args.prevTransferenciaAcumulado + transferenciaDia - retirosTransferencia;
 
   const descuadre =
     cierre.efectivoRealContado == null
@@ -170,7 +170,7 @@ export function computeCierreDiario(args: {
 
   // Total "venta" del día: efectivo guardado + retiros con saleDe=EFECTIVO
   // + gastos pagados con caja. Es la plata que se movió del negocio en el día.
-  const totalVentaDelDia = (cierre.efectivoGuardado + gastosCaja + nequiDelDia);
+  const totalVentaDelDia = (cierre.efectivoGuardado + gastosCaja + transferenciaDia);
 
   return {
     ...cierre,
@@ -178,12 +178,12 @@ export function computeCierreDiario(args: {
     gastosEfectivo,
     totalGastos,
     retirosEfectivo,
-    retirosNequi,
+    retirosTransferencia,
     retirosCaja,
     entradaEstimada,
     efectivoAcumulado,
-    nequiAcumulado,
-    nequiDelDia,
+    transferenciaAcumulado,
+    transferenciaDia,
     descuadre,
     totalVentaDelDia,
   };
@@ -203,9 +203,9 @@ export function serieCierres(args: {
   cierres: CierreInput[];
   gastos: GastoForCalc[];
   retiros: RetiroForCalc[];
-  nequi: NequiForCalc[];
+  transferencia: TransferenciaForCalc[];
 }): CierreDiarioComputed[] {
-  const { desde, hasta, cierres, gastos, retiros, nequi } = args;
+  const { desde, hasta, cierres, gastos, retiros, transferencia } = args;
 
   // Mapa fecha -> cierre
   const cierreByFecha = new Map<string, CierreInput>();
@@ -214,7 +214,7 @@ export function serieCierres(args: {
   }
 
   // Construir el conjunto de días a iterar: unión de días con cierre + días
-  // con cualquier movimiento (gasto, retiro o nequi recibido).
+  // con cualquier movimiento (gasto, retiro o transferencia recibido).
   const dayKeys = new Set<string>();
   for (const c of cierres) dayKeys.add(startOfDay(c.fecha).toISOString());
   for (const g of gastos) {
@@ -229,7 +229,7 @@ export function serieCierres(args: {
       dayKeys.add(startOfDay(r.fecha).toISOString());
     }
   }
-  for (const n of nequi) {
+  for (const n of transferencia) {
     const t = startOfDay(n.fecha).getTime();
     if (t >= startOfDay(desde).getTime() && t <= startOfDay(hasta).getTime()) {
       dayKeys.add(startOfDay(n.fecha).toISOString());
@@ -262,7 +262,7 @@ export function serieCierres(args: {
     const retirosDelDia = retiros.filter(
       (r) => startOfDay(r.fecha).getTime() === dayStart,
     );
-    const nequiDelDia = nequi
+    const transferenciaDia = transferencia
       .filter((n) => startOfDay(n.fecha).getTime() === dayStart)
       .reduce((s, n) => s + n.total, 0);
 
@@ -270,14 +270,14 @@ export function serieCierres(args: {
       cierre,
       gastosDelDia,
       retirosDelDia,
-      nequiDelDia,
+      transferenciaDia,
       prevEfectivoAcumulado: prevEfec,
-      prevNequiAcumulado: prevNequi,
+      prevTransferenciaAcumulado: prevNequi,
     });
 
     result.push(computed);
     prevEfec = computed.efectivoAcumulado;
-    prevNequi = computed.nequiAcumulado;
+    prevNequi = computed.transferenciaAcumulado;
   }
 
   return result;
@@ -292,7 +292,7 @@ export function balanceGeneral(args: {
   cierres: CierreInput[];
   gastos: GastoForCalc[];
   retiros: RetiroForCalc[];
-  nequi: NequiForCalc[];
+  transferencia: TransferenciaForCalc[];
 }): BalanceGeneral {
   const serie = serieCierres(args);
   const ultimo = serie[serie.length - 1];
@@ -306,7 +306,7 @@ export function balanceGeneral(args: {
   };
   const gastosPeriodo = args.gastos.filter((g) => inRange(g.fecha));
   const retirosPeriodo = args.retiros.filter((r) => inRange(r.fecha));
-  const nequiPeriodo = args.nequi.filter((n) => inRange(n.fecha));
+  const transferenciaPeriodo = args.transferencia.filter((n) => inRange(n.fecha));
 
   const gastosCaja = sumBy(gastosPeriodo, (g) => g.pagadoCon === "CAJA", (g) => g.valor);
   const gastosEfectivo = sumBy(
@@ -319,9 +319,9 @@ export function balanceGeneral(args: {
     (r) => r.saleDe === "EFECTIVO",
     (r) => r.valor,
   );
-  const retirosNequi = sumBy(
+  const retirosTransferencia = sumBy(
     retirosPeriodo,
-    (r) => r.saleDe === "NEQUI",
+    (r) => r.saleDe === "TRANSFERENCIA",
     (r) => r.valor,
   );
   const retirosCaja = sumBy(
@@ -334,7 +334,7 @@ export function balanceGeneral(args: {
     (s, c) => s + c.efectivoGuardado,
     0,
   );
-  const nequiRecibidoPeriodo = nequiPeriodo.reduce((s, n) => s + n.total, 0);
+  const transferenciaRecibidoPeriodo = transferenciaPeriodo.reduce((s, n) => s + n.total, 0);
 
   // Saldos al final del periodo: usamos el acumulado del último día con datos,
   // NO los del periodo filtrado (para que reflejen TODO el histórico).
@@ -344,12 +344,12 @@ export function balanceGeneral(args: {
     cierres: args.cierres,
     gastos: args.gastos,
     retiros: args.retiros,
-    nequi: args.nequi,
+    transferencia: args.transferencia,
   });
   const ultimoCompleto = serieCompleta[serieCompleta.length - 1];
 
   const saldoEfectivoActual = ultimoCompleto?.efectivoAcumulado ?? 0;
-  const saldoNequiActual = ultimoCompleto?.nequiAcumulado ?? 0;
+  const saldoTransferenciaActual = ultimoCompleto?.transferenciaAcumulado ?? 0;
 
   const ultimoCajaCierre = ultimo?.cajaCierre ?? 0;
   const efectivoRealUltimoConteo = (() => {
@@ -372,16 +372,16 @@ export function balanceGeneral(args: {
     gastosEfectivo,
     totalGastos: gastosCaja + gastosEfectivo,
     retirosEfectivo,
-    retirosNequi,
+    retirosTransferencia,
     retirosCaja,
-    totalRetiros: retirosEfectivo + retirosNequi + retirosCaja,
+    totalRetiros: retirosEfectivo + retirosTransferencia + retirosCaja,
     efectivoGuardadoPeriodo,
     efectivoRealUltimoConteo,
     ultimoCajaCierre,
     saldoEfectivoActual,
-    nequiRecibidoPeriodo,
-    saldoNequiActual,
-    totalDisponible: saldoEfectivoActual + saldoNequiActual,
+    transferenciaRecibidoPeriodo,
+    saldoTransferenciaActual,
+    totalDisponible: saldoEfectivoActual + saldoTransferenciaActual,
     puntoMasBajoEfectivo:
       puntoMasBajoEfecto === Number.POSITIVE_INFINITY ? 0 : puntoMasBajoEfecto,
     diasConDescuadre,

@@ -52,9 +52,9 @@ export function ResumenPeriodo({ serie }: ResumenProps) {
         />
         <Stat
           icon={Smartphone}
-          label="Nequi acumulado"
-          value={formatCOP(ultimo?.nequiAcumulado ?? 0)}
-          sub={`Último día: ${ultimo ? formatCOP(ultimo.nequiDelDia) : "—"} recibido`}
+          label="Transferencia acumulado"
+          value={formatCOP(ultimo?.transferenciaAcumulado ?? 0)}
+          sub={`Último día: ${ultimo ? formatCOP(ultimo.transferenciaDia) : "—"} recibido`}
           gradient="border-violet-200 bg-linear-to-br from-violet-50 to-fuchsia-50/60 dark:border-violet-800 dark:from-violet-950/30 dark:to-fuchsia-950/30"
           iconBg="bg-linear-to-br from-violet-500 to-fuchsia-500 text-white"
         />

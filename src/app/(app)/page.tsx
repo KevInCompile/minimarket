@@ -23,7 +23,7 @@ export default async function DashboardPage({ searchParams }: Props) {
     : startOfMonthUTC();
   const hasta = params.hasta ? new Date(`${params.hasta}T00:00:00.000Z`) : hoy;
 
-  const [gastos, retiros, nequi, cierres, ultimosGastos] = await Promise.all([
+  const [gastos, retiros, transferencia, cierres, ultimosGastos] = await Promise.all([
     prisma.gasto.findMany({
       where: { tiendaId, fecha: { gte: desde, lte: hasta } },
       include: { proveedor: { select: { nombre: true } } },
@@ -31,7 +31,7 @@ export default async function DashboardPage({ searchParams }: Props) {
     prisma.retiro.findMany({
       where: { tiendaId, fecha: { gte: desde, lte: hasta } },
     }),
-    prisma.nequiDelDia.findMany({
+    prisma.transferenciaDia.findMany({
       where: { tiendaId, fecha: { gte: desde, lte: hasta } },
     }),
     prisma.cierreDiario.findMany({
@@ -57,7 +57,7 @@ export default async function DashboardPage({ searchParams }: Props) {
     valor: r.valor,
     saleDe: r.saleDe,
   }));
-  const nequiForCalc = nequi.map((n) => ({
+  const transferenciaForCalc = transferencia.map((n) => ({
     fecha: n.fecha,
     total: n.total,
   }));
@@ -75,7 +75,7 @@ export default async function DashboardPage({ searchParams }: Props) {
     cierres: cierresForCalc,
     gastos: gastosForCalc,
     retiros: retirosForCalc,
-    nequi: nequiForCalc,
+    transferencia: transferenciaForCalc,
   });
 
   const ranking = rankingProveedores(gastosForCalc, 8);
