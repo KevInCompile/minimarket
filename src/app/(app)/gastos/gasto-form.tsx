@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,14 @@ const INITIAL: GastoState = { ok: true, ts: 0 };
 
 type Proveedor = { id: string; nombre: string };
 
+/**
+ * Formulario de gasto. Solo el formulario — sin FAB, sin modal, sin sheet.
+ *
+ * El contenedor (GastosView) decide cómo se muestra: dentro de un Sheet en
+ * desktop, dentro de un modal bottom-sheet en mobile (controlado por el FAB).
+ *
+ * Este componente solo gestiona el estado del submit y notifica el éxito/error.
+ */
 export function GastoForm({
   proveedores,
   onClose,
@@ -30,7 +38,6 @@ export function GastoForm({
   onSuccess?: () => void;
 }) {
   const [state, action, pending] = useActionState(crearGastoAction, INITIAL);
-  const [open, setOpen] = useState(false);
   const lastOkRef = useRef(false);
 
   useEffect(() => {
@@ -39,7 +46,6 @@ export function GastoForm({
         toast.error(state.error);
       } else if (state.ok && !lastOkRef.current) {
         toast.success("Gasto registrado");
-        setOpen(false);
         onSuccess?.();
         onClose?.();
       }
@@ -47,64 +53,6 @@ export function GastoForm({
     }
   }, [state, onSuccess, onClose]);
 
-  return (
-    <>
-      {/* FAB: solo en mobile, hidden en md+ */}
-      <div className="md:hidden fixed bottom-6 right-6 z-30">
-        <Button
-          type="button"
-          onClick={() => setOpen(true)}
-          size="icon"
-          className="size-14 rounded-full shadow-lg bg-sky-600 hover:bg-sky-700 text-white"
-          aria-label="Nuevo gasto"
-        >
-          <Plus className="size-6" />
-        </Button>
-      </div>
-
-      {open && (
-        <div
-          className="md:hidden fixed inset-0 z-50 bg-black/50 flex items-end"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="w-full max-h-[90vh] overflow-y-auto bg-background rounded-t-2xl p-4 space-y-3"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-semibold">Nuevo gasto</h2>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon" className="min-h-11 min-w-11"
-                onClick={() => setOpen(false)}
-                aria-label="Cerrar"
-              >
-                ✕
-              </Button>
-            </div>
-            <FormContent proveedores={proveedores} action={action} pending={pending} />
-          </div>
-        </div>
-      )}
-
-      {/* Desktop: form embebido en columna derecha */}
-      <div className="hidden md:block">
-        <FormContent proveedores={proveedores} action={action} pending={pending} />
-      </div>
-    </>
-  );
-}
-
-function FormContent({
-  proveedores,
-  action,
-  pending,
-}: {
-  proveedores: Proveedor[];
-  action: (formData: FormData) => void;
-  pending: boolean;
-}) {
   return (
     <form action={action} className="space-y-4">
       <div className="space-y-2">
@@ -118,13 +66,13 @@ function FormContent({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="proveedor">Proveedor / Concepto</Label>
+        <Label htmlFor="proveedor">Proveedor</Label>
         <Input
           id="proveedor"
           name="proveedor"
           list="proveedores-list"
+          placeholder="Escriba o elija un proveedor"
           required
-          placeholder="Ej: Coca-Cola"
         />
         <datalist id="proveedores-list">
           {proveedores.map((p) => (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Receipt, Plus } from "lucide-react";
+import { Receipt, Plus, X } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -51,17 +51,8 @@ export function GastosView({
 }) {
   const [open, setOpen] = useState(false);
 
-  // Estado controlado para los filtros específicos, sincronizado por
-  // las callbacks del FiltrosBar al cambiar el query string. Esto permite
-  // que el MultiSelect, Input y checkbox reflejen cambios sincrónicos.
-  //
-  // La sincronización con la URL la hace el FiltrosBar al hacer submit.
-  // Para los cambios *durante* el typing (no submit), guardamos el
-  // estado local, y al submit se aplica a la URL.
   const [estadoFiltros, setEstadoFiltros] = useState(filtros);
 
-  // Cuando el filtro efectivo cambia (post-navigation), sincronizamos.
-  // Comparamos por JSON.stringify para ignorar cambios de identidad.
   const filtrosKey = JSON.stringify(filtros);
   const lastKeyRef = useRef(filtrosKey);
   useEffect(() => {
@@ -72,6 +63,7 @@ export function GastosView({
   }, [filtrosKey, filtros]);
 
   const total = gastos.reduce((s, g) => s + g.valor, 0);
+  const cerrar = () => setOpen(false);
 
   return (
     <div className="space-y-4">
@@ -93,8 +85,9 @@ export function GastosView({
           </p>
         </div>
 
+        {/* Desktop: botón en el header que abre un panel lateral */}
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger className="hidden md:inline-flex h-9 px-4 py-2 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90">
+          <SheetTrigger className="hidden md:inline-flex h-9 px-4 py-2 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90">
             <Plus className="size-4" />
             Nuevo gasto
           </SheetTrigger>
@@ -111,8 +104,8 @@ export function GastosView({
             <div className="flex-1 overflow-y-auto px-6 py-4">
               <GastoForm
                 proveedores={proveedores}
-                onClose={() => setOpen(false)}
-                onSuccess={() => setOpen(false)}
+                onClose={cerrar}
+                onSuccess={cerrar}
               />
             </div>
           </SheetContent>
@@ -142,9 +135,7 @@ export function GastosView({
               setEstadoFiltros((f) => ({ ...f, pagadoConSeleccionados: v }))
             }
             q={estadoFiltros.q}
-            onQChange={(v) =>
-              setEstadoFiltros((f) => ({ ...f, q: v }))
-            }
+            onQChange={(v) => setEstadoFiltros((f) => ({ ...f, q: v }))}
             agruparPorMes={estadoFiltros.agruparPorMes}
             onAgruparChange={(v) =>
               setEstadoFiltros((f) => ({ ...f, agruparPorMes: v }))
@@ -164,12 +155,54 @@ export function GastosView({
         }))}
         agruparPorMes={estadoFiltros.agruparPorMes}
       />
+
+      {/* ── Mobile: FAB + panel inferior (un solo toque) ── */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger
+          className="md:hidden fixed bottom-6 right-6 z-30 size-14 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center justify-center"
+          aria-label="Nuevo gasto"
+        >
+          <Plus className="size-6" />
+        </SheetTrigger>
+        <SheetContent
+          side="bottom"
+          className="w-full max-h-[90vh] p-0 gap-0 rounded-t-2xl"
+        >
+          <SheetHeader className="px-6 py-4 border-b bg-amber-50/50 dark:bg-amber-950/20">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <SheetTitle>Nuevo gasto</SheetTitle>
+                <SheetDescription>
+                  Registre una compra de mercancía.
+                </SheetDescription>
+              </div>
+              <SheetCloseButton onClick={cerrar} />
+            </div>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <GastoForm
+              proveedores={proveedores}
+              onClose={cerrar}
+              onSuccess={cerrar}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
 
-/**
- * Sincroniza el estado local con los filtros efectivos solo cuando la
- * fuente de verdad cambia (post-navigation). Implementado en línea
- * arriba con useRef para evitar loops.
- */
+/** Botón de cierre explícito (el Sheet ya trae uno, pero lo posicionamos
+ *  junto al título en mobile para evitar el gesto de barrer para cerrar). */
+function SheetCloseButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Cerrar"
+      className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+    >
+      <X className="size-4" />
+    </button>
+  );
+}
