@@ -81,28 +81,30 @@ export default async function GastosPage({ searchParams }: Props) {
   }));
 
   return (
-    <GastosView
-      gastos={gastos.map((g) => ({
-        id: g.id,
-        fecha: g.fecha.toISOString().slice(0, 10),
-        proveedor: g.proveedor.nombre,
-        proveedorId: g.proveedorId,
-        valor: g.valor,
-        pagadoCon: g.pagadoCon,
-        nota: g.nota,
-      }))}
-      proveedores={proveedores}
-      filtros={{
-        desde: filtros.desde,
-        hasta: filtros.hasta,
-        mes: filtros.mes,
-        proveedoresSeleccionados: proveedoresIds,
-        pagadoConSeleccionados: pagadoConList as ("CAJA" | "EFECTIVO" | "TRANSFERENCIA")[],
-        q,
-        agruparPorMes,
-      }}
-      mesOptions={mesOptions}
-    />
+    <div className="p-4 md:p-10 max-w-7xl">
+      <GastosView
+        gastos={gastos.map((g) => ({
+          id: g.id,
+          fecha: g.fecha.toISOString().slice(0, 10),
+          proveedor: g.proveedor.nombre,
+          proveedorId: g.proveedorId,
+          valor: g.valor,
+          pagadoCon: g.pagadoCon,
+          nota: g.nota,
+        }))}
+        proveedores={proveedores}
+        filtros={{
+          desde: filtros.desde,
+          hasta: filtros.hasta,
+          mes: filtros.mes,
+          proveedoresSeleccionados: proveedoresIds,
+          pagadoConSeleccionados: pagadoConList as ("CAJA" | "EFECTIVO" | "TRANSFERENCIA")[],
+          q,
+          agruparPorMes,
+        }}
+        mesOptions={mesOptions}
+      />
+    </div>
   );
 }
 
