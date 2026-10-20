@@ -1,41 +1,45 @@
 import { prisma } from "@/lib/db";
-import { startOfDayUTC } from "@/lib/dates";
 import { serieCierres } from "@/lib/calc";
 import { CierreView } from "./cierre-view";
+import { CierreFilters } from "./cierre-filters";
 import { requireTiendaId } from "@/lib/auth-guard";
+import { parseFiltrosComunes } from "@/lib/search-params";
+import { parseMesLabel, mesKey } from "@/lib/dates";
 
 type Props = {
-  searchParams: Promise<{ desde?: string; hasta?: string }>;
+  searchParams: Promise<{
+    desde?: string;
+    hasta?: string;
+    mes?: string;
+  }>;
 };
 
 export default async function CierrePage({ searchParams }: Props) {
   const params = await searchParams;
   const tiendaId = await requireTiendaId();
-  const hoy = startOfDayUTC(new Date());
-  const desde = params.desde
-    ? new Date(`${params.desde}T00:00:00.000Z`)
-    : new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), 1));
-  const hasta = params.hasta ? new Date(`${params.hasta}T00:00:00.000Z`) : hoy;
+  const filtros = await parseFiltrosComunes(searchParams);
 
-  const [gastos, retiros, transferencia, cierres] = await Promise.all([
-    prisma.gasto.findMany({
-      where: { tiendaId, fecha: { gte: desde, lte: hasta } },
-      include: { proveedor: { select: { nombre: true } } },
-    }),
-    prisma.retiro.findMany({
-      where: { tiendaId, fecha: { gte: desde, lte: hasta } },
-    }),
-    prisma.transferenciaDia.findMany({
-      where: { tiendaId, fecha: { gte: desde, lte: hasta } },
-    }),
-    prisma.cierreDiario.findMany({
-      where: { tiendaId, fecha: { gte: desde, lte: hasta } },
-    }),
-  ]);
+  const [gastos, retiros, transferencia, cierres, mesesConDatos] =
+    await Promise.all([
+      prisma.gasto.findMany({
+        where: { tiendaId, fecha: { gte: filtros.desde, lte: filtros.hasta } },
+        include: { proveedor: { select: { nombre: true } } },
+      }),
+      prisma.retiro.findMany({
+        where: { tiendaId, fecha: { gte: filtros.desde, lte: filtros.hasta } },
+      }),
+      prisma.transferenciaDia.findMany({
+        where: { tiendaId, fecha: { gte: filtros.desde, lte: filtros.hasta } },
+      }),
+      prisma.cierreDiario.findMany({
+        where: { tiendaId, fecha: { gte: filtros.desde, lte: filtros.hasta } },
+      }),
+      obtenerMesesConCierre(tiendaId),
+    ]);
 
   const serie = serieCierres({
-    desde,
-    hasta,
+    desde: filtros.desde,
+    hasta: filtros.hasta,
     cierres: cierres.map((c) => ({
       fecha: c.fecha,
       cajaApertura: c.cajaApertura,
@@ -55,7 +59,10 @@ export default async function CierrePage({ searchParams }: Props) {
       valor: r.valor,
       saleDe: r.saleDe,
     })),
-    transferencia: transferencia.map((n) => ({ fecha: n.fecha, total: n.total })),
+    transferencia: transferencia.map((n) => ({
+      fecha: n.fecha,
+      total: n.total,
+    })),
   });
 
   // Dias con movimiento pero sin cierre - para mostrar como "pendientes"
@@ -76,9 +83,43 @@ export default async function CierrePage({ searchParams }: Props) {
     .filter((f) => !fechasConCierre.has(f))
     .sort();
 
+  const mesOptions = mesesConDatos.map((k) => ({
+    value: k,
+    label: parseMesLabel(k) ?? k,
+  }));
+
   return (
-    <div className="p-4 md:p-10 max-w-5xl">
+    <div className="p-4 md:p-10 space-y-4 max-w-5xl">
+      <CierreFilters
+        desde={filtros.desde}
+        hasta={filtros.hasta}
+        mes={filtros.mes}
+        mesOptions={mesOptions}
+      />
       <CierreView serie={serie} pendientes={pendientes} />
     </div>
   );
+}
+
+async function obtenerMesesConCierre(tiendaId: string): Promise<string[]> {
+  // Usamos cierres porque el cierre es el "punto principal" de esta página.
+  const result = await prisma.$queryRaw<Array<{ mes: string }>>`
+    SELECT TO_CHAR(fecha, 'YYYY-MM') AS mes
+    FROM "CierreDiario"
+    WHERE "tiendaId" = ${tiendaId}
+    GROUP BY TO_CHAR(fecha, 'YYYY-MM')
+    ORDER BY mes DESC
+    LIMIT 18
+  `;
+  const fromData = result.map((r) => r.mes);
+  if (fromData.length === 0) {
+    const out: string[] = [];
+    const hoy = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() - i, 1));
+      out.push(mesKey(d));
+    }
+    return out;
+  }
+  return fromData;
 }
