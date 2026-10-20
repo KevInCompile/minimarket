@@ -12,23 +12,42 @@ import {
 } from "@/components/ui/sheet";
 import { GastosTable } from "./gastos-table";
 import { GastoForm } from "./gasto-form";
+import { MonthSelector, type MesOption } from "@/components/filtros/month-selector";
+import { FiltrosBar } from "@/components/filtros/filtros-bar";
+import { GastosFiltrosExtra } from "./gastos-filtros-extra";
 
 type Proveedor = { id: string; nombre: string };
+type PagadoCon = "CAJA" | "EFECTIVO" | "TRANSFERENCIA";
 type GastoView = {
   id: string;
   fecha: string;
   proveedor: string;
+  proveedorId: string;
   valor: number;
-  pagadoCon: "CAJA" | "EFECTIVO";
+  pagadoCon: PagadoCon;
   nota: string | null;
+};
+
+type FiltrosActivos = {
+  desde: Date;
+  hasta: Date;
+  mes: string | null;
+  proveedoresSeleccionados: string[];
+  pagadoConSeleccionados: string[];
+  q: string;
+  agruparPorMes: boolean;
 };
 
 export function GastosView({
   gastos,
   proveedores,
+  filtros,
+  mesOptions,
 }: {
   gastos: GastoView[];
   proveedores: Proveedor[];
+  filtros: FiltrosActivos;
+  mesOptions: MesOption[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -80,6 +99,30 @@ export function GastosView({
         </Sheet>
       </header>
 
+      <div className="flex flex-col gap-3 rounded-lg border bg-card p-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Mes
+            </label>
+            <MonthSelector options={mesOptions} currentMes={filtros.mes} />
+          </div>
+        </div>
+        <FiltrosBar
+          desde={filtros.desde}
+          hasta={filtros.hasta}
+          mes={filtros.mes}
+        >
+          <GastosFiltrosExtra
+            proveedores={proveedores}
+            proveedoresSeleccionados={filtros.proveedoresSeleccionados}
+            pagadoConSeleccionados={filtros.pagadoConSeleccionados as PagadoCon[]}
+            q={filtros.q}
+            agruparPorMes={filtros.agruparPorMes}
+          />
+        </FiltrosBar>
+      </div>
+
       {/* Lista siempre visible */}
       <GastosTable
         gastos={gastos.map((g) => ({
@@ -90,10 +133,8 @@ export function GastosView({
           pagadoCon: g.pagadoCon,
           nota: g.nota,
         }))}
+        agruparPorMes={filtros.agruparPorMes}
       />
-
-      {/* FAB para mobile: solo en este componente (no en el form, para que la
-          page principal no tenga que conocer el form). En desktop no se renderiza. */}
     </div>
   );
 }

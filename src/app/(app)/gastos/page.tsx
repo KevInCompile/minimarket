@@ -1,80 +1,137 @@
 import { prisma } from "@/lib/db";
-import { GastosTable } from "./gastos-table";
-import { GastoForm } from "./gasto-form";
-import { startOfDayUTC } from "@/lib/dates";
 import { requireTiendaId } from "@/lib/auth-guard";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Receipt } from "lucide-react";
+import { parseFiltrosComunes } from "@/lib/search-params";
+import { parseMesLabel, mesKey } from "@/lib/dates";
+import { GastosView } from "./gastos-view";
+import type { Prisma } from "@prisma/client";
 
 type Props = {
-  searchParams: Promise<{ desde?: string; hasta?: string }>;
+  searchParams: Promise<{
+    desde?: string;
+    hasta?: string;
+    mes?: string;
+    proveedores?: string;
+    pagadoCon?: string;
+    q?: string;
+    agrupar?: string;
+  }>;
 };
 
 export default async function GastosPage({ searchParams }: Props) {
   const params = await searchParams;
   const tiendaId = await requireTiendaId();
-  const hoy = startOfDayUTC(new Date());
-  const desde = params.desde ? new Date(`${params.desde}T00:00:00.000Z`) : new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), 1));
-  const hasta = params.hasta ? new Date(`${params.hasta}T00:00:00.000Z`) : hoy;
 
-  const [gastos, proveedores] = await Promise.all([
-    prisma.gasto.findMany({
-      where: { tiendaId, fecha: { gte: desde, lte: hasta } },
-      orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
-      include: { proveedor: { select: { nombre: true } } },
-    }),
-    prisma.proveedor.findMany({
-      where: { tiendaId, activo: true },
-      orderBy: { nombre: "asc" },
-      select: { id: true, nombre: true },
-    }),
-  ]);
+  const filtros = await parseFiltrosComunes(searchParams);
 
-  const total = gastos.reduce((s, g) => s + g.valor, 0);
+  // Filtros específicos de /gastos
+  const proveedoresIds = (params.proveedores ?? "")
+    .split(",")
+    .filter(Boolean);
+  const pagadoConList = (params.pagadoCon ?? "")
+    .split(",")
+    .filter(Boolean);
+  const q = (params.q ?? "").trim();
+  const agruparPorMes = params.agrupar === "1";
+
+  // Query: gastos en el rango, con filtros específicos aplicados
+  const where: Prisma.GastoWhereInput = {
+    tiendaId,
+    fecha: { gte: filtros.desde, lte: filtros.hasta },
+    ...(proveedoresIds.length > 0
+      ? { proveedorId: { in: proveedoresIds } }
+      : {}),
+    ...(pagadoConList.length > 0
+      ? {
+          pagadoCon: {
+            in: pagadoConList as ("CAJA" | "EFECTIVO" | "TRANSFERENCIA")[],
+          },
+        }
+      : {}),
+    ...(q
+      ? {
+          OR: [
+            { nota: { contains: q, mode: "insensitive" } },
+            { proveedor: { nombre: { contains: q, mode: "insensitive" } } },
+          ],
+        }
+      : {}),
+  };
+
+  const [gastos, proveedores, mesesConDatos, totalProveedores] =
+    await Promise.all([
+      prisma.gasto.findMany({
+        where,
+        orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
+        include: { proveedor: { select: { nombre: true } } },
+      }),
+      prisma.proveedor.findMany({
+        where: { tiendaId, activo: true },
+        orderBy: { nombre: "asc" },
+        select: { id: true, nombre: true },
+      }),
+      // Meses con datos para el selector de mes
+      obtenerMesesConDatos(tiendaId),
+      // Conteo total de proveedores de la tienda (para mostrar "Todos")
+      prisma.proveedor.count({ where: { tiendaId, activo: true } }),
+    ]);
+
+  const mesOptions = mesesConDatos.map((k) => ({
+    value: k,
+    label: parseMesLabel(k) ?? k,
+  }));
 
   return (
-    <div className="p-6 lg:p-10 space-y-6 max-w-7xl">
-      <header className="flex items-end justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Receipt className="size-7" /> Gastos
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {gastos.length} gastos · Total {total.toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 })}
-          </p>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Listado</CardTitle>
-            <CardDescription>Del {desde.toISOString().slice(0, 10)} al {hasta.toISOString().slice(0, 10)}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <GastosTable
-              gastos={gastos.map((g) => ({
-                id: g.id,
-                fecha: g.fecha.toISOString(),
-                proveedor: g.proveedor.nombre,
-                valor: g.valor,
-                pagadoCon: g.pagadoCon,
-                nota: g.nota,
-              }))}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Nuevo gasto</CardTitle>
-            <CardDescription>Registre una compra de mercancía.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <GastoForm proveedores={proveedores} />
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <GastosView
+      gastos={gastos.map((g) => ({
+        id: g.id,
+        fecha: g.fecha.toISOString().slice(0, 10),
+        proveedor: g.proveedor.nombre,
+        proveedorId: g.proveedorId,
+        valor: g.valor,
+        pagadoCon: g.pagadoCon,
+        nota: g.nota,
+      }))}
+      proveedores={proveedores}
+      filtros={{
+        desde: filtros.desde,
+        hasta: filtros.hasta,
+        mes: filtros.mes,
+        proveedoresSeleccionados: proveedoresIds,
+        pagadoConSeleccionados: pagadoConList,
+        q,
+        agruparPorMes,
+      }}
+      mesOptions={mesOptions}
+    />
   );
+}
+
+/**
+ * Devuelve las claves 'YYYY-MM' de los meses con al menos un gasto en la tienda.
+ * Por ahora devuelve los últimos 18 meses con datos; si no hay datos devuelve
+ * los últimos 12 meses (incluyendo el actual) para que el selector tenga UI
+ * utilizable.
+ */
+async function obtenerMesesConDatos(tiendaId: string): Promise<string[]> {
+  const result = await prisma.$queryRaw<Array<{ mes: string }>>`
+    SELECT TO_CHAR(fecha, 'YYYY-MM') AS mes
+    FROM "Gasto"
+    WHERE "tiendaId" = ${tiendaId}
+    GROUP BY TO_CHAR(fecha, 'YYYY-MM')
+    ORDER BY mes DESC
+    LIMIT 18
+  `;
+  const fromData = result.map((r) => r.mes);
+
+  // Si no hay datos, devuelve los últimos 12 meses incluido el actual.
+  if (fromData.length === 0) {
+    const out: string[] = [];
+    const hoy = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() - i, 1));
+      out.push(mesKey(d));
+    }
+    return out;
+  }
+  return fromData;
 }
