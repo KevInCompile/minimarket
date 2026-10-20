@@ -72,6 +72,53 @@ Si la DB está vacía o los datos están corruptos, usar el Time Travel de Neon 
 
 Período: 02/09/2026 al 19/09/2026.
 
+## Filtros y agrupación por mes
+
+Las páginas con listas (`/gastos`, `/retiros`, `/transferencia`, `/cierre`)
+comparten el mismo patrón de filtros vía URL, server-side:
+
+- **`?mes=YYYY-MM`**: atajo a un mes completo. Si está presente, manda
+  sobre `desde`/`hasta`. Si se setea el mes, se borran `desde`/`hasta`.
+- **`?desde=YYYY-MM-DD&hasta=YYYY-MM-DD`**: rango manual.
+- **Filtros específicos**: cada página acepta sus propios keys (ver abajo).
+
+**Componentes compartidos:**
+- `src/components/filtros/month-selector.tsx`: dropdown cliente que
+  navega automáticamente al cambiar de mes, preservando otros params.
+- `src/components/filtros/filtros-bar.tsx`: `<form method="GET">` con
+  datepickers `desde`/`hasta` y slot `children` para filtros específicos.
+- `src/lib/search-params.ts`: `parseFiltrosComunes()` y `filtrosToQuery()`
+  — toda la resolución mes > rango > default vive aquí.
+
+**Páginas y sus filtros específicos:**
+
+| Página | Filtros extra (URL key → UI) |
+|---|---|
+| `/gastos` | `proveedores` (multi-select), `pagadoCon` (multi), `q` (texto en proveedor/nota), `agrupar=1` (activa agrupación por mes). Ver `gastos-filtros-extra.tsx`. |
+| `/retiros` | `tipo` (multi), `saleDe` (multi), `q` (texto en concepto/nota), `agrupar=1`. Ver `retiros-filtros-extra.tsx`. |
+| `/transferencia` | Sin filtros extra. Solo mes + fechas (un renglón por día). |
+| `/cierre` | Sin filtros extra. Solo mes + fechas (es una serie computada). |
+
+**Agrupación por mes:**
+Cuando `?agrupar=1` está activo, las páginas `/gastos` y `/retiros`
+muestran bloques por mes (con `<section>` + subtotal) en lugar de la
+lista plana. La page calcula los grupos a partir del campo `fecha`;
+cada grupo se renderiza con su propio `<ResponsiveTable>` (un patrón
+aprovechado sin tocar el componente compartido).
+
+**Patrón de page nueva con filtros:**
+1. Importar `parseFiltrosComunes` y leerlo en la page (server component).
+2. Pasar a la view: `desde`, `hasta`, `mes`, filtros específicos efectivos.
+3. Renderizar `<MonthSelector>` arriba y `<FiltrosBar>` debajo.
+4. Si la página tiene filtros específicos propios, pasarlos como
+   `children` del `<FiltrosBar>`. El form los recoge por nombre.
+5. Si la página agrega agrupación por mes: calcular grupos y renderizar
+   un bloque por mes.
+
+**Importante:** los inputs nativos del slot usan `name=` para mantener
+la convención del form GET. Los multi-select reciben una key con valores
+CSV (ej. `?proveedores=id1,id2`), y la page los parsea.
+
 ## Motor de cálculo
 
 `src/lib/calc.ts` es la fuente de verdad para todos los totales mostrados. NO
