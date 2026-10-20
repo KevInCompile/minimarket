@@ -1,113 +1,107 @@
 "use client";
 
+import { Field } from "@/components/filtros/filtros-bar";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { MultiSelect } from "@/components/filtros/multi-select";
+import { Layers } from "lucide-react";
 
 type PagadoCon = "CAJA" | "EFECTIVO" | "TRANSFERENCIA";
-
 type Proveedor = { id: string; nombre: string };
 
+const OPCIONES_PAGADO_CON: { value: PagadoCon; label: string }[] = [
+  { value: "CAJA", label: "Caja" },
+  { value: "EFECTIVO", label: "Efectivo" },
+  { value: "TRANSFERENCIA", label: "Transferencia" },
+];
+
 /**
- * Slots de filtros específicos de /gastos, renderizados dentro de FiltrosBar.
+ * Filtros específicos para /gastos. Se renderizan dentro del FiltrosBar
+ * y comparten el mismo form GET (los `<input name>` nativos viajan al
+ * submit junto con los demás).
  *
- * Mantiene la convención de usar `name` para inputs nativos: el form GET
- * del FiltrosBar los recoge del FormData y los agrega a la query string.
+ * Este componente NO maneja estado propio de filtros — recibe el estado
+ * efectivo (no controlados) y emite cambios al padre vía callbacks.
  *
- * Para multi-select usamos un input nativo multi-value: una sola key con
- * varios valores seleccionados como ','. La page los lee y los pasa a Prisma.
+ * La razón de NO controlados es para que el FiltrosBar pueda serializar
+ * el FormData tal cual sin re-sincronizar. MultiSelect emite `<input
+ * type="hidden">` por cada valor, que el form recoge como varios
+ * formData.getAll(nombre).
  */
 export function GastosFiltrosExtra({
   proveedores,
   proveedoresSeleccionados,
+  onProveedoresChange,
   pagadoConSeleccionados,
+  onPagadoConChange,
   q,
+  onQChange,
   agruparPorMes,
+  onAgruparChange,
 }: {
   proveedores: Proveedor[];
   proveedoresSeleccionados: string[];
+  onProveedoresChange: (next: string[]) => void;
   pagadoConSeleccionados: PagadoCon[];
+  onPagadoConChange: (next: PagadoCon[]) => void;
   q: string;
+  onQChange: (next: string) => void;
   agruparPorMes: boolean;
+  onAgruparChange: (next: boolean) => void;
 }) {
   return (
     <>
-      <div className="space-y-1">
-        <Label
-          htmlFor="filtros-proveedores"
-          className="text-xs font-medium text-muted-foreground"
-        >
-          Proveedores
-        </Label>
-        <select
-          id="filtros-proveedores"
+      <Field label="Proveedores" className="min-w-[140px] md:min-w-[180px] md:max-w-[260px]">
+        <MultiSelect
           name="proveedores"
-          multiple
-          defaultValue={proveedoresSeleccionados}
-          className="h-20 w-[200px] rounded-lg border border-input bg-transparent px-2 py-1 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          {proveedores.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nombre}
-            </option>
-          ))}
-        </select>
-        <p className="text-[11px] text-muted-foreground">
-          Mantén ctrl/cmd para varios.
-        </p>
-      </div>
+          options={proveedores.map((p) => ({ value: p.id, label: p.nombre }))}
+          value={proveedoresSeleccionados}
+          onChange={onProveedoresChange}
+          placeholder="Proveedores"
+          emptyLabel="Todos los proveedores"
+        />
+      </Field>
 
-      <div className="space-y-1">
-        <Label
-          htmlFor="filtros-pagadoCon"
-          className="text-xs font-medium text-muted-foreground"
-        >
-          Pagado con
-        </Label>
-        <select
-          id="filtros-pagadoCon"
+      <Field label="Pagado con" className="min-w-[140px] md:min-w-[160px] md:max-w-[200px]">
+        <MultiSelect
           name="pagadoCon"
-          multiple
-          defaultValue={pagadoConSeleccionados}
-          className="h-20 w-[160px] rounded-lg border border-input bg-transparent px-2 py-1 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <option value="CAJA">Caja</option>
-          <option value="EFECTIVO">Efectivo</option>
-          <option value="TRANSFERENCIA">Transferencia</option>
-        </select>
-      </div>
+          options={OPCIONES_PAGADO_CON}
+          value={pagadoConSeleccionados}
+          onChange={(v) =>
+            onPagadoConChange(v as PagadoCon[])
+          }
+          placeholder="Forma de pago"
+          emptyLabel="Cualquiera"
+        />
+      </Field>
 
-      <div className="space-y-1">
-        <Label
-          htmlFor="filtros-q"
-          className="text-xs font-medium text-muted-foreground"
-        >
-          Buscar
-        </Label>
+      <Field label="Buscar" className="min-w-[160px] md:min-w-[200px] md:max-w-[260px]">
         <Input
-          id="filtros-q"
           name="q"
           placeholder="proveedor o nota…"
           defaultValue={q}
-          className="w-[200px]"
+          onChange={(e) => onQChange(e.target.value)}
+          className="w-full"
         />
-      </div>
+      </Field>
 
-      <div className="flex h-8 items-center gap-2">
-        <input
-          type="checkbox"
-          id="filtros-agrupar"
-          name="agrupar"
-          value="1"
-          defaultChecked={agruparPorMes}
-          className="size-4 rounded border-input"
-        />
-        <Label
+      <Field label="Agrupar" className="md:ml-auto">
+        <label
           htmlFor="filtros-agrupar"
-          className="text-xs font-medium cursor-pointer"
+          className="inline-flex h-8 cursor-pointer items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm transition-colors hover:bg-muted/50 has-[input:checked]:bg-primary has-[input:checked]:text-primary-foreground has-[input:checked]:border-primary dark:bg-input/30 dark:hover:bg-input/50"
         >
-          Agrupar por mes
-        </Label>
-      </div>
+          <input
+            type="checkbox"
+            id="filtros-agrupar"
+            name="agrupar"
+            value="1"
+            checked={agruparPorMes}
+            onChange={(e) => onAgruparChange(e.target.checked)}
+            className="sr-only"
+          />
+          <Layers className="size-3.5" />
+          Por mes
+        </label>
+      </Field>
     </>
   );
 }

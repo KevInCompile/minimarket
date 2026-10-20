@@ -4,17 +4,22 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, type ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Filter, X, Check } from "lucide-react";
 
 /**
  * Barra de filtros reutilizable para páginas con listas.
  *
+ * Diseño:
+ * - En desktop: una sola fila horizontal con todos los campos
+ *   (mes, fechas, slot, acciones).
+ * - En mobile: stack vertical agrupado por secciones.
+ *
  * Server-friendly: la page calcula los filtros efectivos (desde, hasta,
  * mes) y los pasa como props. La barra renderiza un <form method="GET">
- * con los datepickers y un slot `children` para filtros específicos
- * por página (proveedor, tipo de pago, búsqueda, etc.).
- *
+ * con los datepickers y un slot `children` para filtros específicos.
  * Al hacer submit, navega con la nueva query string. Los demás
- * searchParams (que no controla esta barra) se preservan.
+ * searchParams que no controla esta barra se preservan.
  */
 export function FiltrosBar({
   desde,
@@ -38,7 +43,6 @@ export function FiltrosBar({
   const [desdeStr, setDesdeStr] = useState(toInputDate(desde));
   const [hastaStr, setHastaStr] = useState(toInputDate(hasta));
 
-  // Sincronizar inputs cuando cambian los filtros efectivos.
   useEffect(() => {
     setDesdeStr(toInputDate(desde));
     setHastaStr(toInputDate(hasta));
@@ -53,27 +57,23 @@ export function FiltrosBar({
     const newDesde = formData.get("desde")?.toString() ?? "";
     const newHasta = formData.get("hasta")?.toString() ?? "";
 
-    // Si hay fechas nuevas, limpiamos `mes` (los datepickers mandan).
-    if (newDesde && newHasta) {
+    if (newDesde || newHasta) {
+      // Si hay fechas manuales, el mes no aplica.
       params.delete("mes");
-      params.set("desde", newDesde);
-      params.set("hasta", newHasta);
-    } else if (newDesde || newHasta) {
-      // Solo una fecha: deja la otra como está o limpia según el caso.
       params.set("desde", newDesde);
       params.set("hasta", newHasta);
     }
 
-    // Los inputs ocultos del slot children también viajaron en el form.
-    // Iteramos cada entrada del formData para preservar filtros específicos
-    // (proveedor, saleDe, q, etc.) — los inputs nombrados con misma key se
-    // agregan como múltiples valores; usamos setAll.
+    // Los inputs del slot children viajan en el FormData. Algunos son
+    // multi-valor (multi-select emite un input por valor). Usamos append
+    // para preservarlos como múltiples entradas separadas en la URL.
     for (const [key, value] of formData.entries()) {
       if (key === "desde" || key === "hasta") continue;
       const s = value.toString();
       if (s === "" || s == null) {
         params.delete(key);
       } else {
+        // Si ya existe (e.g. multi-select con varios valores), agregamos uno más.
         params.append(key, s);
       }
     }
@@ -88,78 +88,97 @@ export function FiltrosBar({
     params.delete("mes");
     params.delete("desde");
     params.delete("hasta");
-    // Limpia los filtros específicos (best-effort: cualquier clave que el
-    // children haya inyectado se mantiene — el reset limpia solo lo básico).
     const qs = params.toString();
     const url = qs ? `${pathname}?${qs}` : pathname;
     router.push(url);
   };
 
+  const hasActiveFilters =
+    !!mes ||
+    searchParams.toString().length > 0;
+
   return (
     <form
       method="GET"
       onSubmit={submit}
-      className="flex flex-wrap items-end gap-3"
+      className="flex flex-col gap-3"
     >
-      {showDates && (
-        <>
-          <div className="space-y-1">
-            <label
-              htmlFor="filtros-desde"
-              className="text-xs font-medium text-muted-foreground"
+      {/* Fila 1: fechas y slot children */}
+      <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
+        {showDates && (
+          <>
+            <Field label="Desde">
+              <Input
+                type="date"
+                name="desde"
+                value={desdeStr}
+                onChange={(e) => setDesdeStr(e.target.value)}
+                className="w-full md:w-[160px]"
+              />
+            </Field>
+            <Field label="Hasta">
+              <Input
+                type="date"
+                name="hasta"
+                value={hastaStr}
+                onChange={(e) => setHastaStr(e.target.value)}
+                className="w-full md:w-[160px]"
+              />
+            </Field>
+          </>
+        )}
+
+        {children}
+
+        {/* Si hay mes seleccionado, lo pasamos como hidden para que se
+            mantenga en la URL al aplicar filtros específicos. */}
+        {mes && <input type="hidden" name="mes" value={mes} />}
+
+        {/* Acciones */}
+        <div className="ml-auto flex items-end gap-2">
+          {hasActiveFilters && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={reset}
+              className="text-muted-foreground"
             >
-              Desde
-            </label>
-            <Input
-              id="filtros-desde"
-              type="date"
-              name="desde"
-              value={desdeStr}
-              onChange={(e) => setDesdeStr(e.target.value)}
-              className="w-[150px]"
-            />
-          </div>
-          <div className="space-y-1">
-            <label
-              htmlFor="filtros-hasta"
-              className="text-xs font-medium text-muted-foreground"
-            >
-              Hasta
-            </label>
-            <Input
-              id="filtros-hasta"
-              type="date"
-              name="hasta"
-              value={hastaStr}
-              onChange={(e) => setHastaStr(e.target.value)}
-              className="w-[150px]"
-            />
-          </div>
-        </>
-      )}
-
-      {/* Si hay mes seleccionado, lo pasamos como hidden para que se mantenga
-          en la URL al aplicar solo filtros específicos. */}
-      {mes && <input type="hidden" name="mes" value={mes} />}
-
-      {children}
-
-      <div className="flex items-end gap-2">
-        <Button type="submit" variant="default" size="sm">
-          Aplicar
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={reset}
-        >
-          Limpiar
-        </Button>
+              <X className="size-3.5" />
+              Limpiar
+            </Button>
+          )}
+          <Button type="submit" size="sm">
+            <Filter className="size-3.5" />
+            Filtrar
+          </Button>
+        </div>
       </div>
     </form>
   );
 }
+
+/** Etiqueta + helper wrapper para los campos de la barra. */
+function Field({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`flex flex-col gap-1 ${className ?? ""}`}>
+      <span className="text-xs font-medium text-muted-foreground px-0.5">
+        {label}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+export { Field };
 
 /** Convierte Date UTC a 'YYYY-MM-DD' (input[type=date]). */
 function toInputDate(d: Date): string {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Receipt, Plus } from "lucide-react";
 import {
   Sheet,
@@ -28,12 +28,12 @@ type GastoView = {
   nota: string | null;
 };
 
-type FiltrosActivos = {
+type FiltrosEfectivos = {
   desde: Date;
   hasta: Date;
   mes: string | null;
   proveedoresSeleccionados: string[];
-  pagadoConSeleccionados: string[];
+  pagadoConSeleccionados: PagadoCon[];
   q: string;
   agruparPorMes: boolean;
 };
@@ -46,10 +46,30 @@ export function GastosView({
 }: {
   gastos: GastoView[];
   proveedores: Proveedor[];
-  filtros: FiltrosActivos;
+  filtros: FiltrosEfectivos;
   mesOptions: MesOption[];
 }) {
   const [open, setOpen] = useState(false);
+
+  // Estado controlado para los filtros específicos, sincronizado por
+  // las callbacks del FiltrosBar al cambiar el query string. Esto permite
+  // que el MultiSelect, Input y checkbox reflejen cambios sincrónicos.
+  //
+  // La sincronización con la URL la hace el FiltrosBar al hacer submit.
+  // Para los cambios *durante* el typing (no submit), guardamos el
+  // estado local, y al submit se aplica a la URL.
+  const [estadoFiltros, setEstadoFiltros] = useState(filtros);
+
+  // Cuando el filtro efectivo cambia (post-navigation), sincronizamos.
+  // Comparamos por JSON.stringify para ignorar cambios de identidad.
+  const filtrosKey = JSON.stringify(filtros);
+  const lastKeyRef = useRef(filtrosKey);
+  useEffect(() => {
+    if (lastKeyRef.current !== filtrosKey) {
+      lastKeyRef.current = filtrosKey;
+      setEstadoFiltros(filtros);
+    }
+  }, [filtrosKey, filtros]);
 
   const total = gastos.reduce((s, g) => s + g.valor, 0);
 
@@ -72,7 +92,7 @@ export function GastosView({
             </span>
           </p>
         </div>
-        {/* Botón desktop: solo visible en md+ */}
+
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger className="hidden md:inline-flex h-9 px-4 py-2 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90">
             <Plus className="size-4" />
@@ -99,31 +119,41 @@ export function GastosView({
         </Sheet>
       </header>
 
-      <div className="flex flex-col gap-3 rounded-lg border bg-card p-3">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Mes
-            </label>
-            <MonthSelector options={mesOptions} currentMes={filtros.mes} />
-          </div>
-        </div>
+      <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 md:p-4 shadow-xs">
         <FiltrosBar
-          desde={filtros.desde}
-          hasta={filtros.hasta}
-          mes={filtros.mes}
+          desde={estadoFiltros.desde}
+          hasta={estadoFiltros.hasta}
+          mes={estadoFiltros.mes}
         >
           <GastosFiltrosExtra
             proveedores={proveedores}
-            proveedoresSeleccionados={filtros.proveedoresSeleccionados}
-            pagadoConSeleccionados={filtros.pagadoConSeleccionados as PagadoCon[]}
-            q={filtros.q}
-            agruparPorMes={filtros.agruparPorMes}
+            proveedoresSeleccionados={estadoFiltros.proveedoresSeleccionados}
+            onProveedoresChange={(v) =>
+              setEstadoFiltros((f) => ({ ...f, proveedoresSeleccionados: v }))
+            }
+            pagadoConSeleccionados={estadoFiltros.pagadoConSeleccionados}
+            onPagadoConChange={(v) =>
+              setEstadoFiltros((f) => ({ ...f, pagadoConSeleccionados: v }))
+            }
+            q={estadoFiltros.q}
+            onQChange={(v) =>
+              setEstadoFiltros((f) => ({ ...f, q: v }))
+            }
+            agruparPorMes={estadoFiltros.agruparPorMes}
+            onAgruparChange={(v) =>
+              setEstadoFiltros((f) => ({ ...f, agruparPorMes: v }))
+            }
           />
         </FiltrosBar>
+
+        <div className="flex items-end">
+          <MonthSelector
+            options={mesOptions}
+            currentMes={estadoFiltros.mes}
+          />
+        </div>
       </div>
 
-      {/* Lista siempre visible */}
       <GastosTable
         gastos={gastos.map((g) => ({
           id: g.id,
@@ -133,8 +163,14 @@ export function GastosView({
           pagadoCon: g.pagadoCon,
           nota: g.nota,
         }))}
-        agruparPorMes={filtros.agruparPorMes}
+        agruparPorMes={estadoFiltros.agruparPorMes}
       />
     </div>
   );
 }
+
+/**
+ * Sincroniza el estado local con los filtros efectivos solo cuando la
+ * fuente de verdad cambia (post-navigation). Implementado en línea
+ * arriba con useRef para evitar loops.
+ */

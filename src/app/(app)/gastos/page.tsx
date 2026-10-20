@@ -97,7 +97,7 @@ export default async function GastosPage({ searchParams }: Props) {
         hasta: filtros.hasta,
         mes: filtros.mes,
         proveedoresSeleccionados: proveedoresIds,
-        pagadoConSeleccionados: pagadoConList,
+        pagadoConSeleccionados: pagadoConList as ("CAJA" | "EFECTIVO" | "TRANSFERENCIA")[],
         q,
         agruparPorMes,
       }}
