@@ -87,6 +87,11 @@ comparten el mismo patrón de filtros vía URL, server-side:
   navega automáticamente al cambiar de mes, preservando otros params.
 - `src/components/filtros/filtros-bar.tsx`: `<form method="GET">` con
   datepickers `desde`/`hasta` y slot `children` para filtros específicos.
+  Layout responsive: desktop horizontal, mobile wrap.
+- `src/components/filtros/multi-select.tsx`: Popover + checkboxes + badges.
+  Reemplaza el `<select multiple>` nativo, que es feo y no respeta el
+  design system. Emite `<input type="hidden" name=>` por valor para que
+  el form GET los recoja como multi-value form fields.
 - `src/lib/search-params.ts`: `parseFiltrosComunes()` y `filtrosToQuery()`
   — toda la resolución mes > rango > default vive aquí.
 
@@ -105,6 +110,14 @@ muestran bloques por mes (con `<section>` + subtotal) en lugar de la
 lista plana. La page calcula los grupos a partir del campo `fecha`;
 cada grupo se renderiza con su propio `<ResponsiveTable>` (un patrón
 aprovechado sin tocar el componente compartido).
+
+**Patrón de filtros específicos por página (controlado):**
+Los slots children del FiltrosBar (e.g. `gastos-filtros-extra.tsx`,
+`retiros-filtros-extra.tsx`) son **controlados**: exponen callbacks
+`onXChange` en vez de estado interno. La view del cliente mantiene
+un único `estadoFiltros` (sincronizado con la URL efectiva vía ref)
+y propaga los cambios. Esto evita loops de re-render y mantiene
+coherencia entre los inputs nativos y el submit del form.
 
 **Patrón de page nueva con filtros:**
 1. Importar `parseFiltrosComunes` y leerlo en la page (server component).
