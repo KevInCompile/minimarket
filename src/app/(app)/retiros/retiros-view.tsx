@@ -149,6 +149,12 @@ export function RetirosView({
           desde={estadoFiltros.desde}
           hasta={estadoFiltros.hasta}
           mes={estadoFiltros.mes}
+          mesSelector={
+            <MonthSelector
+              options={mesOptions}
+              currentMes={estadoFiltros.mes}
+            />
+          }
         >
           <RetirosFiltrosExtra
             tiposSeleccionados={estadoFiltros.tiposSeleccionados}
@@ -167,13 +173,6 @@ export function RetirosView({
             }
           />
         </FiltrosBar>
-
-        <div className="flex items-end">
-          <MonthSelector
-            options={mesOptions}
-            currentMes={estadoFiltros.mes}
-          />
-        </div>
       </div>
 
       <RetirosTable

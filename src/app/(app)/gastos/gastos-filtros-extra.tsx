@@ -84,7 +84,7 @@ export function GastosFiltrosExtra({
         />
       </Field>
 
-      <Field label="Agrupar" className="md:ml-auto">
+      <Field label="Agrupar">
         <label
           htmlFor="filtros-agrupar"
           className="inline-flex h-8 cursor-pointer items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm transition-colors hover:bg-muted/50 has-[input:checked]:bg-primary has-[input:checked]:text-primary-foreground has-[input:checked]:border-primary dark:bg-input/30 dark:hover:bg-input/50"

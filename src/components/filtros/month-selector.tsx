@@ -68,7 +68,7 @@ export function MonthSelector({
 
   return (
     <Select value={currentValue} onValueChange={handleChange}>
-      <SelectTrigger className="w-[180px]" aria-label="Mes">
+      <SelectTrigger className="w-full" aria-label="Mes">
         <SelectValue placeholder="Mes" />
       </SelectTrigger>
       <SelectContent>

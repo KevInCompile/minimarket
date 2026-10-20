@@ -124,6 +124,12 @@ export function GastosView({
           desde={estadoFiltros.desde}
           hasta={estadoFiltros.hasta}
           mes={estadoFiltros.mes}
+          mesSelector={
+            <MonthSelector
+              options={mesOptions}
+              currentMes={estadoFiltros.mes}
+            />
+          }
         >
           <GastosFiltrosExtra
             proveedores={proveedores}
@@ -145,13 +151,6 @@ export function GastosView({
             }
           />
         </FiltrosBar>
-
-        <div className="flex items-end">
-          <MonthSelector
-            options={mesOptions}
-            currentMes={estadoFiltros.mes}
-          />
-        </div>
       </div>
 
       <GastosTable

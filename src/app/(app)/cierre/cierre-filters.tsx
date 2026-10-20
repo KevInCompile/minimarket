@@ -19,10 +19,14 @@ export function CierreFilters({
 }) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 md:p-4 shadow-xs">
-      <FiltrosBar desde={desde} hasta={hasta} mes={mes} />
-      <div className="flex items-end">
-        <MonthSelector options={mesOptions} currentMes={mes} />
-      </div>
+      <FiltrosBar
+        desde={desde}
+        hasta={hasta}
+        mes={mes}
+        mesSelector={
+          <MonthSelector options={mesOptions} currentMes={mes} />
+        }
+      />
     </div>
   );
 }
