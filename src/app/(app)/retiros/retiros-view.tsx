@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Wallet, Plus } from "lucide-react";
 import {
   Sheet,
@@ -53,6 +53,16 @@ export function RetirosView({
   mesOptions: MesOption[];
 }) {
   const [open, setOpen] = useState(false);
+  const [estadoFiltros, setEstadoFiltros] = useState(filtros);
+
+  const filtrosKey = JSON.stringify(filtros);
+  const lastKeyRef = useRef(filtrosKey);
+  useEffect(() => {
+    if (lastKeyRef.current !== filtrosKey) {
+      lastKeyRef.current = filtrosKey;
+      setEstadoFiltros(filtros);
+    }
+  }, [filtrosKey, filtros]);
 
   const total = retiros.reduce((s, r) => s + r.valor, 0);
   const porSaleDe = {
@@ -134,27 +144,36 @@ export function RetirosView({
         </div>
       )}
 
-      <div className="flex flex-col gap-3 rounded-lg border bg-card p-3">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Mes
-            </label>
-            <MonthSelector options={mesOptions} currentMes={filtros.mes} />
-          </div>
-        </div>
+      <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 md:p-4 shadow-xs">
         <FiltrosBar
-          desde={filtros.desde}
-          hasta={filtros.hasta}
-          mes={filtros.mes}
+          desde={estadoFiltros.desde}
+          hasta={estadoFiltros.hasta}
+          mes={estadoFiltros.mes}
         >
           <RetirosFiltrosExtra
-            tiposSeleccionados={filtros.tiposSeleccionados}
-            saleDeSeleccionados={filtros.saleDeSeleccionados}
-            q={filtros.q}
-            agruparPorMes={filtros.agruparPorMes}
+            tiposSeleccionados={estadoFiltros.tiposSeleccionados}
+            onTiposChange={(v) =>
+              setEstadoFiltros((f) => ({ ...f, tiposSeleccionados: v }))
+            }
+            saleDeSeleccionados={estadoFiltros.saleDeSeleccionados}
+            onSaleDeChange={(v) =>
+              setEstadoFiltros((f) => ({ ...f, saleDeSeleccionados: v }))
+            }
+            q={estadoFiltros.q}
+            onQChange={(v) => setEstadoFiltros((f) => ({ ...f, q: v }))}
+            agruparPorMes={estadoFiltros.agruparPorMes}
+            onAgruparChange={(v) =>
+              setEstadoFiltros((f) => ({ ...f, agruparPorMes: v }))
+            }
           />
         </FiltrosBar>
+
+        <div className="flex items-end">
+          <MonthSelector
+            options={mesOptions}
+            currentMes={estadoFiltros.mes}
+          />
+        </div>
       </div>
 
       <RetirosTable
@@ -167,7 +186,7 @@ export function RetirosView({
           saleDe: r.saleDe,
           nota: r.nota,
         }))}
-        agruparPorMes={filtros.agruparPorMes}
+        agruparPorMes={estadoFiltros.agruparPorMes}
       />
 
       {/* FAB para mobile */}

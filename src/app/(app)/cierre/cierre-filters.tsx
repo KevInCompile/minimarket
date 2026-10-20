@@ -4,8 +4,7 @@ import { MonthSelector, type MesOption } from "@/components/filtros/month-select
 import { FiltrosBar } from "@/components/filtros/filtros-bar";
 
 /**
- * Filtros para /cierre. Solo mes + fechas (es una serie computada, no
- * hay otras dimensiones para filtrar).
+ * Filtros para /cierre. Solo mes + fechas (es una serie computada).
  */
 export function CierreFilters({
   desde,
@@ -19,16 +18,11 @@ export function CierreFilters({
   mesOptions: MesOption[];
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-card p-3">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            Mes
-          </label>
-          <MonthSelector options={mesOptions} currentMes={mes} />
-        </div>
-      </div>
+    <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 md:p-4 shadow-xs">
       <FiltrosBar desde={desde} hasta={hasta} mes={mes} />
+      <div className="flex items-end">
+        <MonthSelector options={mesOptions} currentMes={mes} />
+      </div>
     </div>
   );
 }

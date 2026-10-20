@@ -1,7 +1,9 @@
 "use client";
 
+import { Field } from "@/components/filtros/filtros-bar";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { MultiSelect } from "@/components/filtros/multi-select";
+import { Layers } from "lucide-react";
 
 const TIPOS = [
   { value: "ARRIENDO", label: "Arriendo" },
@@ -19,98 +21,77 @@ const SALE_DE = [
   { value: "CAJA", label: "Caja" },
 ] as const;
 
-/**
- * Slots de filtros específicos para /retiros, dentro del FiltrosBar.
- */
+type SaleDe = (typeof SALE_DE)[number]["value"];
+
 export function RetirosFiltrosExtra({
   tiposSeleccionados,
+  onTiposChange,
   saleDeSeleccionados,
+  onSaleDeChange,
   q,
+  onQChange,
   agruparPorMes,
+  onAgruparChange,
 }: {
   tiposSeleccionados: string[];
-  saleDeSeleccionados: ("EFECTIVO" | "TRANSFERENCIA" | "CAJA")[];
+  onTiposChange: (next: string[]) => void;
+  saleDeSeleccionados: SaleDe[];
+  onSaleDeChange: (next: SaleDe[]) => void;
   q: string;
+  onQChange: (next: string) => void;
   agruparPorMes: boolean;
+  onAgruparChange: (next: boolean) => void;
 }) {
   return (
     <>
-      <div className="space-y-1">
-        <Label
-          htmlFor="filtros-tipo"
-          className="text-xs font-medium text-muted-foreground"
-        >
-          Tipo
-        </Label>
-        <select
-          id="filtros-tipo"
+      <Field label="Tipo" className="min-w-[140px] md:min-w-[180px] md:max-w-[220px]">
+        <MultiSelect
           name="tipo"
-          multiple
-          defaultValue={tiposSeleccionados}
-          className="h-20 w-[170px] rounded-lg border border-input bg-transparent px-2 py-1 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          {TIPOS.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-      </div>
+          options={TIPOS.map((t) => ({ value: t.value, label: t.label }))}
+          value={tiposSeleccionados}
+          onChange={onTiposChange}
+          emptyLabel="Todos los tipos"
+        />
+      </Field>
 
-      <div className="space-y-1">
-        <Label
-          htmlFor="filtros-saleDe"
-          className="text-xs font-medium text-muted-foreground"
-        >
-          Sale de
-        </Label>
-        <select
-          id="filtros-saleDe"
+      <Field label="Sale de" className="min-w-[140px] md:min-w-[160px] md:max-w-[200px]">
+        <MultiSelect
           name="saleDe"
-          multiple
-          defaultValue={saleDeSeleccionados}
-          className="h-20 w-[140px] rounded-lg border border-input bg-transparent px-2 py-1 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          {SALE_DE.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-      </div>
+          options={SALE_DE.map((s) => ({ value: s.value, label: s.label }))}
+          value={saleDeSeleccionados}
+          onChange={(v) => onSaleDeChange(v as SaleDe[])}
+          emptyLabel="Cualquiera"
+        />
+      </Field>
 
-      <div className="space-y-1">
-        <Label
-          htmlFor="filtros-q"
-          className="text-xs font-medium text-muted-foreground"
-        >
-          Buscar
-        </Label>
+      <Field label="Buscar" className="min-w-[160px] md:min-w-[200px] md:max-w-[260px]">
         <Input
-          id="filtros-q"
           name="q"
           placeholder="motivo o nota…"
           defaultValue={q}
-          className="w-[200px]"
+          onChange={(e) => onQChange(e.target.value)}
+          className="w-full"
         />
-      </div>
+      </Field>
 
-      <div className="flex h-8 items-center gap-2">
-        <input
-          type="checkbox"
-          id="filtros-agrupar"
-          name="agrupar"
-          value="1"
-          defaultChecked={agruparPorMes}
-          className="size-4 rounded border-input"
-        />
-        <Label
+      <Field label="Agrupar" className="md:ml-auto">
+        <label
           htmlFor="filtros-agrupar"
-          className="text-xs font-medium cursor-pointer"
+          className="inline-flex h-8 cursor-pointer items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm transition-colors hover:bg-muted/50 has-[input:checked]:bg-primary has-[input:checked]:text-primary-foreground has-[input:checked]:border-primary dark:bg-input/30 dark:hover:bg-input/50"
         >
-          Agrupar por mes
-        </Label>
-      </div>
+          <input
+            type="checkbox"
+            id="filtros-agrupar"
+            name="agrupar"
+            value="1"
+            checked={agruparPorMes}
+            onChange={(e) => onAgruparChange(e.target.checked)}
+            className="sr-only"
+          />
+          <Layers className="size-3.5" />
+          Por mes
+        </label>
+      </Field>
     </>
   );
 }
