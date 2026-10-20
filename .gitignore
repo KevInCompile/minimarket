@@ -49,3 +49,6 @@ prisma/schema.prisma.bak
 # Backups de DB (contienen datos reales, no commitear)
 prisma/backups/
 .atl/
+
+# Feature documents de ODD (son temporales por fase)
+odd/

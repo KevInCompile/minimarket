@@ -50,6 +50,62 @@ export function excelSerialToDate(serial: number): Date {
   return new Date(utcDays * 86400 * 1000);
 }
 
+/**
+ * Etiqueta legible de un mes (ej. "Septiembre 2026"). Usada por el selector
+ * de mes en los filtros.
+ */
+const MESES = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+] as const;
+
+export function parseMesLabel(key: string): string | null {
+  // Acepta 'YYYY-MM', devuelve 'Septiembre 2026'.
+  const m = /^(\d{4})-(\d{2})$/.exec(key);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  if (month < 1 || month > 12) return null;
+  return `${MESES[month - 1]} ${year}`;
+}
+
+/**
+ * Devuelve el rango UTC [desde, hasta] para un mes identificado por
+ * 'YYYY-MM'. 'desde' es el primer día del mes a 00:00:00 UTC, 'hasta'
+ * es el último día del mes a 23:59:59.999 UTC.
+ *
+ * Si el input no es válido, devuelve null.
+ */
+export function mesRange(key: string): { desde: Date; hasta: Date } | null {
+  const m = /^(\d{4})-(\d{2})$/.exec(key);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  if (month < 1 || month > 12) return null;
+  const desde = new Date(Date.UTC(year, month - 1, 1));
+  const hasta = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+  return { desde, hasta };
+}
+
+/**
+ * Devuelve la clave 'YYYY-MM' del mes que contiene `fecha`.
+ */
+export function mesKey(fecha: Date): string {
+  const y = fecha.getUTCFullYear();
+  const m = String(fecha.getUTCMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
 export function diaSemana(fecha: Date): DiaSemana {
   // Para mostrar el día correcto en la zona del usuario, usamos los
   // componentes locales (que serán el día correcto en su zona horaria).
