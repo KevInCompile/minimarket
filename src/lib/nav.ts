@@ -3,8 +3,13 @@
  *
  * Fuente unica de verdad para las dos barras: la lateral de desktop
  * (`src/app/(app)/layout.tsx`) y la de mobile
- * (`src/components/mobile-sidebar.tsx`). Ambas consumen `NAV_SECTIONS`,
- * asi que agregar una ruta o moverla de seccion se hace en un solo lugar.
+ * (`src/components/mobile-sidebar.tsx`). Ambas consumen `NAV_SECTIONS` a
+ * traves del componente compartido `SidebarNav`, asi que agregar una ruta o
+ * moverla de seccion se hace en un solo lugar. La barra superior tambien
+ * deriva de acá el titulo de la ruta activa (`PageIdentity`).
+ *
+ * `keywords` alimenta la busqueda del sidebar: son sinonimos en minusculas
+ * (sin tildes) que amplian el matching por `label`.
  */
 import {
   LayoutDashboard,
@@ -26,6 +31,12 @@ export type NavItem = {
   adminOnly?: boolean;
   /** Clase de Tailwind para el color del icono. */
   iconClass?: string;
+  /**
+   * Sinónimos en minúsculas para la búsqueda del sidebar (`keywords`), así
+   * que "compras" encuentra "/gastos". La comparación normaliza acentos, por
+   * eso van sin tildes.
+   */
+  keywords?: string[];
 };
 
 export type NavSection = {
@@ -42,12 +53,14 @@ export const NAV_SECTIONS: NavSection[] = [
         label: "Balance",
         icon: LayoutDashboard,
         iconClass: "text-sky-600 dark:text-sky-400",
+        keywords: ["balance", "resumen", "inicio", "dashboard", "total", "home"],
       },
       {
         href: "/cierre",
         label: "Cierre diario",
         icon: ClipboardCheck,
         iconClass: "text-sky-600 dark:text-sky-400",
+        keywords: ["cierre", "diario", "dia", "corte", "cuadre", "descuadre", "arqueo"],
       },
     ],
   },
@@ -59,12 +72,14 @@ export const NAV_SECTIONS: NavSection[] = [
         label: "Transferencia",
         icon: Smartphone,
         iconClass: "text-violet-600 dark:text-violet-400",
+        keywords: ["transferencia", "transferencias", "nequi", "envio", "recibido"],
       },
       {
         href: "/gastos",
         label: "Gastos",
         icon: Receipt,
         iconClass: "text-amber-600 dark:text-amber-400",
+        keywords: ["gasto", "gastos", "compras", "egreso", "salida", "pago", "pagos"],
       },
       {
         href: "/retiros",
@@ -72,6 +87,7 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: Wallet,
         iconClass: "text-rose-600 dark:text-rose-400",
         adminOnly: true,
+        keywords: ["retiro", "retiros", "retirar", "retirada", "caja"],
       },
     ],
   },
@@ -84,6 +100,7 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: StickyNote,
         iconClass: "text-pink-600 dark:text-pink-400",
         adminOnly: true,
+        keywords: ["pedido", "pedidos", "nota", "notas", "encargo", "orden", "ordenes"],
       },
       {
         href: "/proveedores",
@@ -91,6 +108,7 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: Truck,
         iconClass: "text-orange-600 dark:text-orange-400",
         adminOnly: true,
+        keywords: ["proveedor", "proveedores", "suministro", "suministros", "acreedor"],
       },
       {
         href: "/usuarios",
@@ -98,6 +116,7 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: Users,
         iconClass: "text-teal-600 dark:text-teal-400",
         adminOnly: true,
+        keywords: ["usuario", "usuarios", "personal", "cajero", "empleado", "roles"],
       },
     ],
   },
