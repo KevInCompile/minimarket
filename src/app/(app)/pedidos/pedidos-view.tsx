@@ -2,7 +2,7 @@
 
 import { formatCOP } from "@/lib/format";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge, tonoDeEstadoTexto } from "@/components/status-badge";
 import { StickyNote } from "lucide-react";
 import { ResponsiveTable } from "@/components/responsive-table";
 
@@ -72,12 +72,11 @@ export function PedidosView({
                 header: "Estado",
                 cell: (p) =>
                   p.estado ? (
-                    <Badge
-                      variant="outline"
-                      className="line-through font-normal"
-                    >
+                    // Sin `line-through`: la píldora ya separa el estado del
+                    // resto de la fila y el tachado lo volvía ilegible.
+                    <StatusBadge tono={tonoDeEstadoTexto(p.estado)}>
                       {p.estado}
-                    </Badge>
+                    </StatusBadge>
                   ) : (
                     <span className="text-muted-foreground text-sm">—</span>
                   ),

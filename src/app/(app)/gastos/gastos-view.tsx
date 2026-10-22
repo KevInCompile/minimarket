@@ -11,6 +11,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { PageToolbar } from "@/components/page-toolbar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { GastosTable } from "./gastos-table";
 import { GastoForm } from "./gasto-form";
 import { MonthSelector, type MesOption } from "@/components/filtros/month-selector";
@@ -152,17 +159,28 @@ export function GastosView({
         </FiltrosBar>
       </PageToolbar>
 
-      <GastosTable
-        gastos={gastos.map((g) => ({
-          id: g.id,
-          fecha: g.fecha,
-          proveedor: g.proveedor,
-          valor: g.valor,
-          pagadoCon: g.pagadoCon,
-          nota: g.nota,
-        }))}
-        agruparPorMes={estadoFiltros.agruparPorMes}
-      />
+      <Card className="border-border shadow-sm">
+        <CardHeader>
+          <CardTitle>Listado de gastos</CardTitle>
+          <CardDescription>
+            {gastos.length} registro{gastos.length === 1 ? "" : "s"}
+            {estadoFiltros.agruparPorMes ? " agrupados por mes" : ""}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <GastosTable
+            gastos={gastos.map((g) => ({
+              id: g.id,
+              fecha: g.fecha,
+              proveedor: g.proveedor,
+              valor: g.valor,
+              pagadoCon: g.pagadoCon,
+              nota: g.nota,
+            }))}
+            agruparPorMes={estadoFiltros.agruparPorMes}
+          />
+        </CardContent>
+      </Card>
 
       {/* ── Mobile: FAB + panel inferior (un solo toque) ── */}
       <Sheet open={open} onOpenChange={setOpen}>

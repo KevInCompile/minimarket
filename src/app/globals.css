@@ -61,8 +61,8 @@
 */
 
 :root {
-  /* Base */
-  --background: oklch(0.985 0.005 250);
+  /* Base: lienzo gris-azulado claro para que las tarjetas blancas resalten */
+  --background: oklch(0.965 0.008 252);
   --foreground: oklch(0.18 0.02 250);
 
   /* Tarjetas y popovers */

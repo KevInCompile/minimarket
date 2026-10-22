@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { formatCOP, formatShortDate } from "@/lib/format";
@@ -14,6 +13,11 @@ import {
 } from "@/server/actions/gastos";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ResponsiveTable } from "@/components/responsive-table";
+import {
+  ETIQUETA_PAGADO_CON,
+  StatusBadge,
+  tonoDePagadoCon,
+} from "@/components/status-badge";
 
 type GastoView = {
   id: string;
@@ -23,6 +27,15 @@ type GastoView = {
   pagadoCon: "CAJA" | "EFECTIVO" | "TRANSFERENCIA";
   nota: string | null;
 };
+
+/** Celda de la forma de pago: píldora con etiqueta en español y tono propio. */
+function BadgePagadoCon({ pagadoCon }: { pagadoCon: GastoView["pagadoCon"] }) {
+  return (
+    <StatusBadge tono={tonoDePagadoCon(pagadoCon)}>
+      {ETIQUETA_PAGADO_CON[pagadoCon]}
+    </StatusBadge>
+  );
+}
 
 export function GastosTable({
   gastos,
@@ -65,20 +78,7 @@ export function GastosTable({
         {
           key: "tipo",
           header: "Tipo",
-          cell: (g) => (
-            <Badge
-              variant={
-                g.pagadoCon === "CAJA"
-                  ? "secondary"
-                  : g.pagadoCon === "TRANSFERENCIA"
-                    ? "default"
-                    : "outline"
-              }
-              className="font-normal"
-            >
-              {g.pagadoCon}
-            </Badge>
-          ),
+          cell: (g) => <BadgePagadoCon pagadoCon={g.pagadoCon} />,
         },
         {
           key: "valor",
@@ -131,20 +131,7 @@ export function GastosTable({
         {
           key: "tipo",
           label: "Tipo",
-          render: (g) => (
-            <Badge
-              variant={
-                g.pagadoCon === "CAJA"
-                  ? "secondary"
-                  : g.pagadoCon === "TRANSFERENCIA"
-                    ? "default"
-                    : "outline"
-              }
-              className="font-normal"
-            >
-              {g.pagadoCon}
-            </Badge>
-          ),
+          render: (g) => <BadgePagadoCon pagadoCon={g.pagadoCon} />,
         },
         {
           key: "valor",
@@ -266,20 +253,7 @@ export function GastosTable({
                 {
                   key: "tipo",
                   header: "Tipo",
-                  cell: (g) => (
-                    <Badge
-                      variant={
-                        g.pagadoCon === "CAJA"
-                          ? "secondary"
-                          : g.pagadoCon === "TRANSFERENCIA"
-                            ? "default"
-                            : "outline"
-                      }
-                      className="font-normal"
-                    >
-                      {g.pagadoCon}
-                    </Badge>
-                  ),
+                  cell: (g) => <BadgePagadoCon pagadoCon={g.pagadoCon} />,
                 },
                 {
                   key: "valor",

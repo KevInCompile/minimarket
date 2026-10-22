@@ -11,6 +11,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { PageToolbar } from "@/components/page-toolbar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { RetirosTable } from "./retiros-table";
 import { RetiroForm } from "./retiro-form";
 import { MonthSelector, type MesOption } from "@/components/filtros/month-selector";
@@ -185,18 +192,29 @@ export function RetirosView({
         </div>
       )}
 
-      <RetirosTable
-        retiros={retiros.map((r) => ({
-          id: r.id,
-          fecha: r.fecha,
-          tipo: r.tipo,
-          concepto: r.concepto,
-          valor: r.valor,
-          saleDe: r.saleDe,
-          nota: r.nota,
-        }))}
-        agruparPorMes={estadoFiltros.agruparPorMes}
-      />
+      <Card className="border-border shadow-sm">
+        <CardHeader>
+          <CardTitle>Listado de retiros</CardTitle>
+          <CardDescription>
+            {retiros.length} registro{retiros.length === 1 ? "" : "s"}
+            {estadoFiltros.agruparPorMes ? " agrupados por mes" : ""}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RetirosTable
+            retiros={retiros.map((r) => ({
+              id: r.id,
+              fecha: r.fecha,
+              tipo: r.tipo,
+              concepto: r.concepto,
+              valor: r.valor,
+              saleDe: r.saleDe,
+              nota: r.nota,
+            }))}
+            agruparPorMes={estadoFiltros.agruparPorMes}
+          />
+        </CardContent>
+      </Card>
 
       {/* FAB para mobile */}
       <div className="md:hidden fixed bottom-6 right-6 z-30">

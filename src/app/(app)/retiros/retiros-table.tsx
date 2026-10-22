@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
+import type { TipoRetiro } from "@prisma/client";
 import { formatCOP, formatShortDate } from "@/lib/format";
 import { diaSemana } from "@/lib/dates";
 import {
@@ -14,6 +14,13 @@ import {
 } from "@/server/actions/retiros";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ResponsiveTable } from "@/components/responsive-table";
+import {
+  ETIQUETA_SALE_DE,
+  ETIQUETA_TIPO_RETIRO,
+  StatusBadge,
+  tonoDeSaleDe,
+  tonoDeTipoRetiro,
+} from "@/components/status-badge";
 
 type RetiroView = {
   id: string;
@@ -25,28 +32,24 @@ type RetiroView = {
   nota: string | null;
 };
 
-const TIPO_LABEL: Record<RetiroView["tipo"], string> = {
-  ARRIENDO: "Arriendo",
-  NOMINA: "Nómina",
-  SERVICIOS: "Servicios",
-  IMPUESTOS: "Impuestos",
-  PRESTAMO: "Préstamo",
-  RETIRO_PERSONAL: "Retiro personal",
-  OTRO: "Otro",
-};
+/** Etiqueta en español de un motivo de retiro, tolerante a datos viejos. */
+function etiquetaTipo(tipo: string): string {
+  return ETIQUETA_TIPO_RETIRO[tipo as TipoRetiro] ?? tipo;
+}
 
-const TIPO_VARIANT: Record<
-  RetiroView["tipo"],
-  "default" | "secondary" | "outline" | "destructive"
-> = {
-  ARRIENDO: "default",
-  NOMINA: "default",
-  SERVICIOS: "secondary",
-  IMPUESTOS: "secondary",
-  PRESTAMO: "destructive",
-  RETIRO_PERSONAL: "outline",
-  OTRO: "outline",
-};
+/** Píldora del motivo del retiro. */
+function BadgeTipo({ tipo }: { tipo: RetiroView["tipo"] }) {
+  return (
+    <StatusBadge tono={tonoDeTipoRetiro(tipo)}>{ETIQUETA_TIPO_RETIRO[tipo]}</StatusBadge>
+  );
+}
+
+/** Píldora del origen del dinero (mismo color que en gastos y dashboard). */
+function BadgeSaleDe({ saleDe }: { saleDe: RetiroView["saleDe"] }) {
+  return (
+    <StatusBadge tono={tonoDeSaleDe(saleDe)}>{ETIQUETA_SALE_DE[saleDe]}</StatusBadge>
+  );
+}
 
 export function RetirosTable({
   retiros,
@@ -77,11 +80,7 @@ export function RetirosTable({
         {
           key: "tipo",
           header: "Tipo",
-          cell: (r) => (
-            <Badge variant={TIPO_VARIANT[r.tipo]} className="font-normal">
-              {TIPO_LABEL[r.tipo]}
-            </Badge>
-          ),
+          cell: (r) => <BadgeTipo tipo={r.tipo} />,
         },
         {
           key: "concepto",
@@ -98,11 +97,7 @@ export function RetirosTable({
         {
           key: "saleDe",
           header: "Sale de",
-          cell: (r) => (
-            <Badge variant="outline" className="font-normal">
-              {r.saleDe}
-            </Badge>
-          ),
+          cell: (r) => <BadgeSaleDe saleDe={r.saleDe} />,
         },
         {
           key: "valor",
@@ -121,7 +116,7 @@ export function RetirosTable({
           cell: (r) => (
             <DeleteRetiroButton
               id={r.id}
-              tipo={TIPO_LABEL[r.tipo]}
+              tipo={etiquetaTipo(r.tipo)}
               concepto={r.concepto}
               valor={r.valor}
             />
@@ -131,7 +126,7 @@ export function RetirosTable({
       fields={[
         {
           key: "fecha",
-          label: "Tipo",
+          label: "Fecha",
           render: (r) => (
             <div className="text-right">
               <div>{diaSemana(new Date(r.fecha))}</div>
@@ -144,11 +139,7 @@ export function RetirosTable({
         {
           key: "tipo",
           label: "Tipo",
-          render: (r) => (
-            <Badge variant={TIPO_VARIANT[r.tipo]} className="font-normal">
-              {TIPO_LABEL[r.tipo]}
-            </Badge>
-          ),
+          render: (r) => <BadgeTipo tipo={r.tipo} />,
         },
         {
           key: "concepto",
@@ -165,11 +156,7 @@ export function RetirosTable({
         {
           key: "saleDe",
           label: "Sale de",
-          render: (r) => (
-            <Badge variant="outline" className="font-normal">
-              {r.saleDe}
-            </Badge>
-          ),
+          render: (r) => <BadgeSaleDe saleDe={r.saleDe} />,
         },
         {
           key: "valor",
@@ -188,7 +175,7 @@ export function RetirosTable({
             <div className="flex justify-end">
               <DeleteRetiroButton
                 id={r.id}
-                tipo={TIPO_LABEL[r.tipo]}
+                tipo={etiquetaTipo(r.tipo)}
                 concepto={r.concepto}
                 valor={r.valor}
               />
@@ -298,7 +285,7 @@ export function RetirosTable({
                 {
                   key: "tipo",
                   header: "Tipo",
-                  cell: (r) => <Badge variant="outline">{r.tipo}</Badge>,
+                  cell: (r) => <BadgeTipo tipo={r.tipo} />,
                 },
                 {
                   key: "concepto",
@@ -309,7 +296,7 @@ export function RetirosTable({
                   key: "saleDe",
                   header: "Sale de",
                   hideOnMobile: true,
-                  cell: (r) => <Badge variant="secondary">{r.saleDe}</Badge>,
+                  cell: (r) => <BadgeSaleDe saleDe={r.saleDe} />,
                 },
                 {
                   key: "valor",
@@ -328,7 +315,7 @@ export function RetirosTable({
                   cell: (r) => (
                     <DeleteRetiroButton
                       id={r.id}
-                      tipo={r.tipo}
+                      tipo={etiquetaTipo(r.tipo)}
                       concepto={r.concepto}
                       valor={r.valor}
                     />
@@ -380,7 +367,9 @@ function DeleteRetiroButton({
         return;
       }
       toast("Retiro eliminado", {
-        description: `${snap.tipo} · ${snap.concepto} · ${formatCOP(snap.valor)}`,
+        // El snapshot viene crudo del server action: lo traducimos para que
+        // el toast no muestre "PRESTAMO" en mayúsculas.
+        description: `${etiquetaTipo(snap.tipo)} · ${snap.concepto} · ${formatCOP(snap.valor)}`,
         duration: 5000,
         action: {
           label: "Deshacer",

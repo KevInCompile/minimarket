@@ -4,6 +4,14 @@ import { useState } from "react";
 import { Truck, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -11,6 +19,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { BotonKebab } from "@/components/boton-kebab";
 import { ProveedorForm, ProveedorList } from "./proveedor-form";
 
 type ProveedorView = {
@@ -60,7 +69,24 @@ export function ProveedoresView({ proveedores }: { proveedores: ProveedorView[] 
         </Sheet>
       </header>
 
-      <ProveedorList proveedores={proveedores} />
+      {/* Mismo panel blanco del dashboard: lista sobre `bg-card`, con
+          encabezado de título a la izquierda y kebab a la derecha. */}
+      <Card className="border-border shadow-sm">
+        <CardHeader className="grid-cols-[1fr_auto] items-center">
+          <div className="min-w-0">
+            <CardTitle>Directorio de proveedores</CardTitle>
+            <CardDescription>
+              Los que ya tienen gastos no se pueden desactivar
+            </CardDescription>
+          </div>
+          <CardAction>
+            <BotonKebab titulo="Directorio de proveedores" />
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <ProveedorList proveedores={proveedores} />
+        </CardContent>
+      </Card>
 
       <div className="md:hidden fixed bottom-6 right-6 z-30">
         <Button

@@ -18,12 +18,12 @@ import { startOfDayUTC, toISODate } from "@/lib/dates";
 import { requireTiendaId } from "@/lib/auth-guard";
 import { BalanceCards } from "./balance-cards";
 import {
-  BotonKebab,
   EvolucionMensual,
   GastosPorFormaDePago,
   RetirosPorOrigen,
 } from "./dashboard-charts";
 import { ProveedoresChart } from "./proveedores-chart";
+import { BotonKebab } from "@/components/boton-kebab";
 import { UltimosGastos } from "./ultimos-gastos";
 import {
   Card,

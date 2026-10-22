@@ -33,6 +33,7 @@ import {
 import { toISODate } from "@/lib/dates";
 import { formatCOP, formatPercent } from "@/lib/format";
 import type { PuntoMes } from "@/lib/calc";
+import { BotonKebab } from "@/components/boton-kebab";
 
 /**
  * Gráficos del dashboard.
@@ -61,22 +62,6 @@ type Porcion = {
   valor: number;
   color: string;
 };
-
-/** Botón kebab decorativo, sólo affordance visual (como en el diseño). */
-export function BotonKebab({ titulo, className }: { titulo: string; className?: string }) {
-  return (
-    <button
-      type="button"
-      aria-label={`Más opciones de ${titulo}`}
-      className={cn(
-        "inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
-        className,
-      )}
-    >
-      <MoreHorizontal className="size-4" />
-    </button>
-  );
-}
 
 /**
  * Sparkline de barras para las tarjetas KPI: 12 meses teñidos con el acento de

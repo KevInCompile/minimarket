@@ -10,7 +10,8 @@ import {
 import { cn } from "cn";
 import { formatCOP } from "@/lib/format";
 import type { BalanceGeneral, MetricaTendencia, PuntoMes } from "@/lib/calc";
-import { BotonKebab, Sparkline } from "./dashboard-charts";
+import { Sparkline } from "./dashboard-charts";
+import { BotonKebab } from "@/components/boton-kebab";
 
 export type TendenciasFlujos = {
   gastos: MetricaTendencia;
