@@ -1,29 +1,30 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, Filter } from "lucide-react";
+import { X, Filter, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { parseMesLabel } from "@/lib/dates";
 
 /**
  * Barra de filtros reutilizable para páginas con listas.
  *
- * Estructura visual en dos bloques, con jerarquía clara:
+ * Comportamiento responsive:
+ *  - **Desktop (md+)**: siempre expandida. La página entera del filtro se
+ *    muestra en una o dos filas.
+ *  - **Mobile**: colapsada por defecto. Muestra un resumen corto (mes
+ *    actual o rango) + botón "Filtros" con badge de cuántos filtros
+ *    específicos están activos. Tocar expande.
  *
+ * Estructura visual (expandida):
  *   ┌─ Navegación temporal ──────────────────────────┐
  *   │  Mes          │  Desde         │  Hasta        │
  *   └────────────────────────────────────────────────┘
  *   ┌─ Filtros específicos ───────┬─ Acciones ──────┐
  *   │  Proveedores │ Buscar │ ☐   │  Limpiar │Filtrar│
  *   └─────────────────────────────┴─────────────────┘
- *
- * Por eso los botones NO compiten por espacio con los filtros: viven
- * en una celda propia, separada por un borde vertical en desktop.
- *
- * Server-friendly: la page calcula los filtros efectivos (desde, hasta,
- * mes) y los pasa como props. Al hacer submit, navega con la nueva query
- * string. Los searchParams que no controla esta barra se preservan.
  */
 export function FiltrosBar({
   desde,
@@ -31,17 +32,13 @@ export function FiltrosBar({
   mes,
   children,
   showDates = true,
-  /** Selector de mes. Se renderiza en la fila de navegación temporal. */
   mesSelector,
 }: {
   desde: Date;
   hasta: Date;
   mes: string | null;
-  /** Filtros específicos por página. */
   children?: ReactNode;
-  /** Mostrar los datepickers desde/hasta. Por defecto true. */
   showDates?: boolean;
-  /** Selector de mes (típicamente <MonthSelector />). */
   mesSelector?: ReactNode;
 }) {
   const router = useRouter();
@@ -50,11 +47,30 @@ export function FiltrosBar({
 
   const [desdeStr, setDesdeStr] = useState(toInputDate(desde));
   const [hastaStr, setHastaStr] = useState(toInputDate(hasta));
+  // Estado de expansion mobile. En desktop el panel se ve siempre.
+  const [expandido, setExpandido] = useState(false);
 
   useEffect(() => {
     setDesdeStr(toInputDate(desde));
     setHastaStr(toInputDate(hasta));
   }, [desde, hasta]);
+
+  // Cuántos filtros específicos (no temporales) están activos.
+  // Usado para el badge del botón "Filtros" en mobile.
+  const filtrosActivosCount = useMemo(() => {
+    const TEMPORALES = new Set(["mes", "desde", "hasta"]);
+    let n = 0;
+    for (const k of searchParams.keys()) {
+      if (!TEMPORALES.has(k)) n += 1;
+    }
+    return n;
+  }, [searchParams]);
+
+  // Resumen corto para el estado colapsado en mobile.
+  const resumen = useMemo(() => {
+    if (mes) return parseMesLabel(mes) ?? mes;
+    return `${formatShort(desde)} – ${formatShort(hasta)}`;
+  }, [mes, desde, hasta]);
 
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -65,15 +81,12 @@ export function FiltrosBar({
     const newDesde = formData.get("desde")?.toString() ?? "";
     const newHasta = formData.get("hasta")?.toString() ?? "";
 
-    // Si el usuario tocó las fechas, mandan sobre el atajo de mes.
     if (newDesde || newHasta) {
       params.delete("mes");
       params.set("desde", newDesde);
       params.set("hasta", newHasta);
     }
 
-    // Recolectamos los campos específicos. Primero limpiamos las keys que
-    // el propio slot usa, luego re-agregamos solo lo que venga con valor.
     for (const [key, value] of formData.entries()) {
       if (key === "desde" || key === "hasta") continue;
       const s = value.toString();
@@ -86,17 +99,14 @@ export function FiltrosBar({
 
     const qs = params.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
+    setExpandido(false);
   };
 
   const reset = () => {
     const params = new URLSearchParams(searchParams.toString());
-    // Limpia las keys de navegación temporal.
     params.delete("mes");
     params.delete("desde");
     params.delete("hasta");
-    // Limpia también los filtros específicos queogonven del slot: los
-    // borramos leyendo el FormData del form (sus inputs vienen vacíos
-    // cuando el estado se resetea, pero por seguridad los borramos todos).
     const form = document.querySelector("form") as HTMLFormElement | null;
     if (form) {
       for (const key of new FormData(form).keys()) {
@@ -105,81 +115,128 @@ export function FiltrosBar({
     }
     const qs = params.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
+    setExpandido(false);
   };
 
   const hasActiveFilters = searchParams.toString().length > 0;
 
   return (
-    <form method="GET" onSubmit={submit} className="flex flex-col gap-4">
-      {/* ── Fila 1: navegación temporal ── */}
-      {(mesSelector || showDates) && (
-        <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
-          {mesSelector && (
-            <Field label="Mes" className="min-w-[160px] md:min-w-[180px]">
-              {mesSelector}
-            </Field>
-          )}
-          {showDates && (
-            <>
-              <Field label="Desde" className="min-w-[140px] md:w-[160px]">
-                <Input
-                  type="date"
-                  name="desde"
-                  value={desdeStr}
-                  onChange={(e) => setDesdeStr(e.target.value)}
-                  className="w-full"
-                />
-              </Field>
-              <Field label="Hasta" className="min-w-[140px] md:w-[160px]">
-                <Input
-                  type="date"
-                  name="hasta"
-                  value={hastaStr}
-                  onChange={(e) => setHastaStr(e.target.value)}
-                  className="w-full"
-                />
-              </Field>
-            </>
-          )}
+    <form
+      method="GET"
+      onSubmit={submit}
+      className="flex flex-col gap-3"
+    >
+      {/* ── Mobile: resumen colapsado ── */}
+      <div className="md:hidden flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Período
+          </p>
+          <p className="text-sm font-medium truncate">{resumen}</p>
         </div>
-      )}
-
-      {/* ── Fila 2: filtros específicos + acciones ── */}
-      {children && (
-        <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
-          {/* Filtros específicos (proveedor, tipo, búsqueda, agrupar…) */}
-          {children}
-
-          {/* Acciones: celda propia, separada por borde vertical en desktop.
-              El `ml-auto` va SOLO aquí para empujar al extremo derecho. */}
-          <div
-            className="flex items-center gap-2 md:ml-auto md:pl-4 md:border-l
-                       md:border-border"
-          >
-            {hasActiveFilters && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={reset}
-                className="text-muted-foreground"
-              >
-                <X className="size-3.5" />
-                Limpiar
-              </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setExpandido((v) => !v)}
+          className="relative shrink-0"
+        >
+          <SlidersHorizontal className="size-3.5" />
+          Filtros
+          {filtrosActivosCount > 0 && (
+            <span
+              className="ml-1 inline-flex h-4 min-w-4 items-center justify-center
+                         rounded-full bg-primary px-1 text-[10px] font-semibold
+                         text-primary-foreground"
+            >
+              {filtrosActivosCount}
+            </span>
+          )}
+          <ChevronDown
+            className={cn(
+              "size-3.5 transition-transform",
+              expandido && "rotate-180",
             )}
-            <Button type="submit" size="sm">
-              <Filter className="size-3.5" />
-              Filtrar
-            </Button>
+          />
+        </Button>
+      </div>
+
+      {/* ── Bloque expandible (mobile) / siempre visible (desktop) ── */}
+      <div
+        className={cn(
+          "flex flex-col gap-4",
+          // Mobile: oculto si no esta expandido.
+          !expandido && "hidden",
+          // Desktop: siempre visible (override).
+          "md:flex",
+        )}
+      >
+        {/* Fila 1: navegación temporal */}
+        {(mesSelector || showDates) && (
+          <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
+            {mesSelector && (
+              <Field label="Mes" className="min-w-[160px] md:min-w-[180px]">
+                {mesSelector}
+              </Field>
+            )}
+            {showDates && (
+              <>
+                <Field label="Desde" className="min-w-[140px] md:w-[160px]">
+                  <Input
+                    type="date"
+                    name="desde"
+                    value={desdeStr}
+                    onChange={(e) => setDesdeStr(e.target.value)}
+                    className="w-full"
+                  />
+                </Field>
+                <Field label="Hasta" className="min-w-[140px] md:w-[160px]">
+                  <Input
+                    type="date"
+                    name="hasta"
+                    value={hastaStr}
+                    onChange={(e) => setHastaStr(e.target.value)}
+                    className="w-full"
+                  />
+                </Field>
+              </>
+            )}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Fila 2: filtros específicos + acciones */}
+        {children && (
+          <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
+            {children}
+
+            <div
+              className="flex w-full items-center gap-2 md:ml-auto md:w-auto md:pl-4 md:border-l
+                         md:border-border"
+            >
+              {hasActiveFilters && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={reset}
+                  className="text-muted-foreground"
+                >
+                  <X className="size-3.5" />
+                  Limpiar
+                </Button>
+              )}
+              <Button type="submit" size="sm" className="flex-1 md:flex-none">
+                <Filter className="size-3.5" />
+                Filtrar
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </form>
   );
 }
 
-/** Etiqueta + helper wrapper para los campos de la barra. */
 export function Field({
   label,
   children,
@@ -199,10 +256,17 @@ export function Field({
   );
 }
 
-/** Convierte Date UTC a 'YYYY-MM-DD' (input[type=date]). */
 function toInputDate(d: Date): string {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const dd = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
+}
+
+/** Formato corto 'DD/MM/YY' en UTC. */
+function formatShort(d: Date): string {
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const yy = String(d.getUTCFullYear()).slice(-2);
+  return `${dd}/${mm}/${yy}`;
 }
