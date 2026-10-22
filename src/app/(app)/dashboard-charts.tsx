@@ -366,9 +366,9 @@ function PanelDonut({
       </CardHeader>
 
       <CardContent>
-        <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
-          {/* Columna izquierda: el donut y, debajo, el resumen por color. */}
-          <div className="flex w-full shrink-0 flex-col items-center gap-3 sm:w-40">
+        <div className="flex flex-col items-center justify-center gap-5">
+          {/* El donut y, debajo, el resumen por color. */}
+          <div className="flex w-full shrink-0 flex-col items-center gap-3 sm:w-44">
             {hayDatos ? (
             <div className="relative w-full shrink-0 sm:w-40">
               <div className="h-40 w-full">
@@ -452,28 +452,6 @@ function PanelDonut({
             ))}
           </div>
           </div>
-
-          {/* Leyenda detallada: etiqueta, porcentaje e importe. */}
-          <ul className="w-full min-w-0 space-y-2.5">
-            {porciones.map((p) => (
-              <li key={p.key} className="flex items-center gap-2 text-sm">
-                <span
-                  aria-hidden
-                  className="size-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: p.color }}
-                />
-                <span className="min-w-0 flex-1 truncate text-muted-foreground">
-                  {p.label}
-                </span>
-                <span className="shrink-0 tabular-nums text-muted-foreground">
-                  {formatPercent(total === 0 ? 0 : p.valor / total, 1)}
-                </span>
-                <span className="w-24 shrink-0 text-right font-medium tabular-nums">
-                  {formatCOP(p.valor)}
-                </span>
-              </li>
-            ))}
-          </ul>
         </div>
       </CardContent>
     </Card>
