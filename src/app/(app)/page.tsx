@@ -6,17 +6,33 @@ import {
   rankingProveedores,
   previousPeriodRange,
   compararFlujos,
+  serieMensual,
+  serieMensualMetrica,
+  serieMensualSaldo,
   type CierreInput,
   type GastoForCalc,
   type RetiroForCalc,
   type TransferenciaForCalc,
 } from "@/lib/calc";
-import { startOfDayUTC } from "@/lib/dates";
+import { startOfDayUTC, toISODate } from "@/lib/dates";
 import { requireTiendaId } from "@/lib/auth-guard";
 import { BalanceCards } from "./balance-cards";
+import {
+  BotonKebab,
+  EvolucionMensual,
+  GastosPorFormaDePago,
+  RetirosPorOrigen,
+} from "./dashboard-charts";
 import { ProveedoresChart } from "./proveedores-chart";
 import { UltimosGastos } from "./ultimos-gastos";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 type Props = {
   searchParams: Promise<{ desde?: string; hasta?: string }>;
@@ -36,19 +52,26 @@ export default async function DashboardPage({ searchParams }: Props) {
   // comparison costs no extra round-trips.
   const prev = previousPeriodRange(desde, hasta);
 
+  // Los sparklines de las tarjetas KPI y el gráfico de evolución usan una
+  // ventana fija de 12 meses que termina en el mes del periodo: así el eje X
+  // siempre tiene 12 barras, aunque el periodo elegido sea de un solo mes.
+  const ventana = ultimos12Meses(hasta);
+  const desdeConsulta = prev.desde < ventana.desde ? prev.desde : ventana.desde;
+  const hastaConsulta = hasta > ventana.hasta ? hasta : ventana.hasta;
+
   const [gastos, retiros, transferencia, cierres, ultimosGastos] = await Promise.all([
     prisma.gasto.findMany({
-      where: { tiendaId, fecha: { gte: prev.desde, lte: hasta } },
+      where: { tiendaId, fecha: { gte: desdeConsulta, lte: hastaConsulta } },
       include: { proveedor: { select: { nombre: true } } },
     }),
     prisma.retiro.findMany({
-      where: { tiendaId, fecha: { gte: prev.desde, lte: hasta } },
+      where: { tiendaId, fecha: { gte: desdeConsulta, lte: hastaConsulta } },
     }),
     prisma.transferenciaDia.findMany({
-      where: { tiendaId, fecha: { gte: prev.desde, lte: hasta } },
+      where: { tiendaId, fecha: { gte: desdeConsulta, lte: hastaConsulta } },
     }),
     prisma.cierreDiario.findMany({
-      where: { tiendaId, fecha: { gte: prev.desde, lte: hasta } },
+      where: { tiendaId, fecha: { gte: desdeConsulta, lte: hastaConsulta } },
     }),
     prisma.gasto.findMany({
       where: { tiendaId },
@@ -88,39 +111,69 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   const ranking = rankingProveedores(enPeriodo(gastosForCalc, desde, hasta), 8);
 
+  const argsVentana = {
+    desde: ventana.desde,
+    hasta: ventana.hasta,
+    cierres: enPeriodo(cierresForCalc, ventana.desde, ventana.hasta),
+    gastos: enPeriodo(gastosForCalc, ventana.desde, ventana.hasta),
+    retiros: enPeriodo(retirosForCalc, ventana.desde, ventana.hasta),
+    transferencia: enPeriodo(transferenciaForCalc, ventana.desde, ventana.hasta),
+  };
+
+  const evolucion = serieMensual(argsVentana);
+
   return (
-    <div className="p-6 lg:p-10 space-y-8 max-w-7xl">
-      <header className="flex items-end justify-between flex-wrap gap-4">
+    <div className="max-w-7xl space-y-6 p-6 lg:p-10">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Balance general
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Periodo: {desde.toISOString().slice(0, 10)} al{" "}
-            {hasta.toISOString().slice(0, 10)}
+          <h1 className="text-3xl font-bold tracking-tight">Balance general</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Periodo: {toISODate(desde)} al {toISODate(hasta)}
           </p>
         </div>
       </header>
 
-      <BalanceCards bg={bg} tendencias={tendencias} />
+      <BalanceCards
+        bg={bg}
+        tendencias={tendencias}
+        series={{
+          totalDisponible: serieMensualSaldo(argsVentana),
+          efectivoGuardado: serieMensualMetrica(argsVentana, "efectivoGuardado"),
+          gastos: serieMensualMetrica(argsVentana, "gastos"),
+          transferenciaRecibido: serieMensualMetrica(argsVentana, "transferenciaRecibido"),
+        }}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-violet-200 dark:border-violet-800">
-          <CardHeader>
-            <CardTitle>Gastos por proveedor</CardTitle>
-            <CardDescription>Top del periodo</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Suspense fallback={null}>
-              <ProveedoresChart data={ranking} />
-            </Suspense>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <EvolucionMensual
+          className="lg:col-span-2"
+          data={evolucion}
+          desde={toISODate(desde)}
+          hasta={toISODate(hasta)}
+          hoy={toISODate(hoy)}
+        />
 
-        <Card className="border-amber-200 dark:border-amber-800">
-          <CardHeader>
-            <CardTitle>Últimos gastos</CardTitle>
-            <CardDescription>Registrados recientemente</CardDescription>
+        <GastosPorFormaDePago
+          gastosCaja={bg.gastosCaja}
+          gastosEfectivo={bg.gastosEfectivo}
+          gastosTransferencia={bg.gastosTransferencia}
+        />
+
+        <RetirosPorOrigen
+          retirosEfectivo={bg.retirosEfectivo}
+          retirosTransferencia={bg.retirosTransferencia}
+          retirosCaja={bg.retirosCaja}
+        />
+
+        <Card className="border-border shadow-sm">
+          <CardHeader className="grid-cols-[1fr_auto] items-center">
+            <div className="min-w-0">
+              <CardTitle>Últimos gastos</CardTitle>
+              <CardDescription>Registrados recientemente</CardDescription>
+            </div>
+            <CardAction>
+              <BotonKebab titulo="Últimos gastos" />
+            </CardAction>
           </CardHeader>
           <CardContent>
             <UltimosGastos
@@ -134,6 +187,23 @@ export default async function DashboardPage({ searchParams }: Props) {
             />
           </CardContent>
         </Card>
+
+        <Card className="border-border shadow-sm">
+          <CardHeader className="grid-cols-[1fr_auto] items-center">
+            <div className="min-w-0">
+              <CardTitle>Gastos por proveedor</CardTitle>
+              <CardDescription>Top del periodo</CardDescription>
+            </div>
+            <CardAction>
+              <BotonKebab titulo="Gastos por proveedor" />
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            <Suspense fallback={null}>
+              <ProveedoresChart data={ranking} />
+            </Suspense>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -142,6 +212,19 @@ export default async function DashboardPage({ searchParams }: Props) {
 function startOfMonthUTC(): Date {
   const d = startOfDayUTC(new Date());
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+}
+
+/**
+ * Ventana de los 12 meses que termina en el mes de `hasta`: el día 1 del mes
+ * once meses antes hasta el último día del mes de `hasta` (UTC).
+ */
+function ultimos12Meses(hasta: Date): { desde: Date; hasta: Date } {
+  const anio = hasta.getUTCFullYear();
+  const mes = hasta.getUTCMonth();
+  return {
+    desde: new Date(Date.UTC(anio, mes - 11, 1)),
+    hasta: new Date(Date.UTC(anio, mes + 1, 0, 23, 59, 59, 999)),
+  };
 }
 
 /** Keeps only the rows whose fecha falls inside the inclusive window. */

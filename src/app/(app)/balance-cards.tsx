@@ -1,19 +1,16 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-} from "@/components/ui/card";
-import { formatCOP } from "@/lib/format";
-import type { BalanceGeneral, MetricaTendencia } from "@/lib/calc";
+"use client";
+
 import {
   Banknote,
   Coins,
+  Receipt,
   Smartphone,
-  TrendingDown,
-  TrendingUp,
-  Wallet,
+  type LucideIcon,
 } from "lucide-react";
+import { cn } from "cn";
+import { formatCOP } from "@/lib/format";
+import type { BalanceGeneral, MetricaTendencia, PuntoMes } from "@/lib/calc";
+import { BotonKebab, Sparkline } from "./dashboard-charts";
 
 export type TendenciasFlujos = {
   gastos: MetricaTendencia;
@@ -22,174 +19,140 @@ export type TendenciasFlujos = {
   efectivoGuardado: MetricaTendencia;
 };
 
-type Item = {
-  title: string;
-  value: string;
-  description?: string;
-  icon: React.ComponentType<{ className?: string }>;
-  highlight?: boolean;
-  gradient: string; // Tailwind classes for background and border
-  iconBg: string;
-  trend?: MetricaTendencia;
-  /** Whether a rising metric is good news (entrances) or bad news (outflows). */
-  upIsGood?: boolean;
+/**
+ * Una serie mensual por tarjeta. Todas salen de `calc.ts` con las mismas claves
+ * de mes, así que los cuatro sparklines comparten el eje X.
+ */
+export type SeriesKpi = {
+  totalDisponible: PuntoMes[];
+  efectivoGuardado: PuntoMes[];
+  gastos: PuntoMes[];
+  transferenciaRecibido: PuntoMes[];
 };
 
-const GRADIENTE_SKY =
-  "border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30";
-const ICONO_SKY = "bg-linear-to-br from-sky-500 to-cyan-500 text-white";
-const GRADIENTE_VIOLETA =
-  "border-violet-200 bg-linear-to-br from-violet-50 to-fuchsia-50/60 dark:border-violet-800 dark:from-violet-950/30 dark:to-fuchsia-950/30";
-const ICONO_VIOLETA =
-  "bg-linear-to-br from-violet-500 to-fuchsia-500 text-white";
+const COLOR_SKY = "#0284c7";
+const COLOR_ESMERALDA = "#10b981";
+const COLOR_ROSA = "#f43f5e";
+const COLOR_VIOLETA = "#8b5cf6";
+
+type Tarjeta = {
+  titulo: string;
+  valor: string;
+  detalle?: string;
+  tendencia?: MetricaTendencia;
+  /** Si subir es buena noticia (entradas) o mala (salidas). */
+  subeEsBueno?: boolean;
+  icon: LucideIcon;
+  /** Clases Tailwind del chip: fondo tintado + icono en el acento. */
+  chip: string;
+  accent: string;
+  serie: PuntoMes[];
+};
 
 /**
- * Only flow metrics carry a trend: balances restart from zero on every
- * `balanceGeneral()` call, so comparing them across periods would mislead.
+ * Sólo los flujos llevan tendencia: los saldos reinician el acumulador en cada
+ * llamada a `balanceGeneral()`, así que compararlos entre periodos mentiría.
  */
-const GRUPOS = (
+function tarjetas(
   bg: BalanceGeneral,
   t: TendenciasFlujos,
-): { titulo: string; items: Item[] }[] => [
-  {
-    titulo: "Liquidez actual",
-    items: [
-      {
-        title: "Total disponible",
-        value: formatCOP(bg.totalDisponible),
-        description: `${formatCOP(bg.saldoEfectivoActual)} efectivo + ${formatCOP(bg.saldoTransferenciaActual)} Transferencia`,
-        icon: Banknote,
-        highlight: true,
-        gradient:
-          "border-sky-300 bg-linear-to-br from-sky-50 via-sky-50/80 to-blue-50 dark:border-sky-700 dark:from-sky-950/40 dark:via-sky-950/30 dark:to-blue-950/40",
-        iconBg: "bg-linear-to-br from-sky-700 to-blue-800 text-white",
-      },
-      {
-        title: "Saldo efectivo",
-        value: formatCOP(bg.saldoEfectivoActual),
-        description: `Punto mas bajo: ${formatCOP(bg.puntoMasBajoEfectivo)}`,
-        icon: Coins,
-        gradient: GRADIENTE_SKY,
-        iconBg: ICONO_SKY,
-      },
-      {
-        title: "Saldo Transferencia",
-        value: formatCOP(bg.saldoTransferenciaActual),
-        icon: Smartphone,
-        gradient: GRADIENTE_VIOLETA,
-        iconBg: ICONO_VIOLETA,
-      },
-      {
-        title: "Ultimo cierre de caja",
-        value: formatCOP(bg.ultimoCajaCierre),
-        description:
-          bg.efectivoRealUltimoConteo != null
-            ? `Ultimo conteo real: ${formatCOP(bg.efectivoRealUltimoConteo)}`
-            : undefined,
-        icon: Wallet,
-        gradient: GRADIENTE_SKY,
-        iconBg: ICONO_SKY,
-      },
-    ],
-  },
-  {
-    titulo: "Entradas del mes",
-    items: [
-      {
-        title: "Efectivo guardado",
-        value: formatCOP(bg.efectivoGuardadoPeriodo),
-        icon: Coins,
-        gradient: GRADIENTE_SKY,
-        iconBg: ICONO_SKY,
-        trend: t.efectivoGuardado,
-        upIsGood: true,
-      },
-      {
-        title: "Transferencia recibido",
-        value: formatCOP(bg.transferenciaRecibidoPeriodo),
-        icon: Smartphone,
-        gradient: GRADIENTE_VIOLETA,
-        iconBg: ICONO_VIOLETA,
-        trend: t.transferenciaRecibido,
-        upIsGood: true,
-      },
-    ],
-  },
-  {
-    titulo: "Salidas del mes",
-    items: [
-      {
-        title: "Gastos del periodo",
-        value: formatCOP(bg.totalGastos),
-        description: `Caja: ${formatCOP(bg.gastosCaja)} · Efectivo: ${formatCOP(bg.gastosEfectivo)} · Transf.: ${formatCOP(bg.gastosTransferencia)}`,
-        icon: TrendingDown,
-        gradient: GRADIENTE_SKY,
-        iconBg: ICONO_SKY,
-        trend: t.gastos,
-        upIsGood: false,
-      },
-      {
-        title: "Retiros del periodo",
-        value: formatCOP(bg.totalRetiros),
-        description: `Efectivo: ${formatCOP(bg.retirosEfectivo)} · Transferencia: ${formatCOP(bg.retirosTransferencia)}`,
-        icon: TrendingUp,
-        gradient: GRADIENTE_SKY,
-        iconBg: ICONO_SKY,
-        trend: t.retiros,
-        upIsGood: false,
-      },
-    ],
-  },
-];
+  series: SeriesKpi,
+): Tarjeta[] {
+  return [
+    {
+      titulo: "Total disponible",
+      valor: formatCOP(bg.totalDisponible),
+      detalle: `${formatCOP(bg.saldoEfectivoActual)} efectivo · ${formatCOP(bg.saldoTransferenciaActual)} transferencia`,
+      icon: Banknote,
+      chip: "bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-400",
+      accent: COLOR_SKY,
+      serie: series.totalDisponible,
+    },
+    {
+      titulo: "Efectivo guardado",
+      valor: formatCOP(bg.efectivoGuardadoPeriodo),
+      tendencia: t.efectivoGuardado,
+      subeEsBueno: true,
+      icon: Coins,
+      chip: "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400",
+      accent: COLOR_ESMERALDA,
+      serie: series.efectivoGuardado,
+    },
+    {
+      titulo: "Gastos del periodo",
+      valor: formatCOP(bg.totalGastos),
+      tendencia: t.gastos,
+      subeEsBueno: false,
+      icon: Receipt,
+      chip: "bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400",
+      accent: COLOR_ROSA,
+      serie: series.gastos,
+    },
+    {
+      titulo: "Transferencia recibida",
+      valor: formatCOP(bg.transferenciaRecibidoPeriodo),
+      tendencia: t.transferenciaRecibido,
+      subeEsBueno: true,
+      icon: Smartphone,
+      chip: "bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400",
+      accent: COLOR_VIOLETA,
+      serie: series.transferenciaRecibido,
+    },
+  ];
+}
 
 export function BalanceCards({
   bg,
   tendencias,
+  series,
 }: {
   bg: BalanceGeneral;
   tendencias: TendenciasFlujos;
+  series: SeriesKpi;
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-      {GRUPOS(bg, tendencias).map((grupo) => (
-        <section key={grupo.titulo} className="rounded-xl border bg-card p-4">
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {grupo.titulo}
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {grupo.items.map((item) => (
-              <Card
-                key={item.title}
-                className={`${item.gradient} ${item.highlight ? "ring-2 ring-sky-300/60 dark:ring-sky-700/60" : ""} transition-shadow hover:shadow-md`}
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {tarjetas(bg, tendencias, series).map((t) => (
+        <article
+          key={t.titulo}
+          className="flex flex-col rounded-xl border border-border bg-card p-4 shadow-sm"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className={cn(
+                  "inline-flex size-8 shrink-0 items-center justify-center rounded-lg",
+                  t.chip,
+                )}
               >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardDescription className="font-semibold uppercase tracking-wide text-xs">
-                    {item.title}
-                  </CardDescription>
-                  <div
-                    className={`size-8 shrink-0 rounded-lg ${item.iconBg} flex items-center justify-center`}
-                  >
-                    <item.icon className="size-4" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold tabular-nums">{item.value}</div>
-                  {item.description && (
-                    <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-                      {item.description}
-                    </p>
-                  )}
-                  {item.trend && (
-                    <IndicadorTendencia
-                      tendencia={item.trend}
-                      upIsGood={item.upIsGood ?? true}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                <t.icon className="size-4" />
+              </span>
+              <span className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t.titulo}
+              </span>
+            </div>
+            <BotonKebab titulo={t.titulo} className="-mt-1 -mr-1" />
           </div>
-        </section>
+
+          <p className="mt-3 text-2xl font-bold tabular-nums text-foreground xl:text-3xl">
+            {t.valor}
+          </p>
+
+          {t.tendencia ? (
+            <IndicadorTendencia
+              tendencia={t.tendencia}
+              subeEsBueno={t.subeEsBueno ?? true}
+            />
+          ) : (
+            <p className="mt-1 truncate text-xs tabular-nums text-muted-foreground">
+              {t.detalle}
+            </p>
+          )}
+
+          <div className="mt-auto pt-3">
+            <Sparkline data={t.serie} color={t.accent} />
+          </div>
+        </article>
       ))}
     </div>
   );
@@ -197,13 +160,13 @@ export function BalanceCards({
 
 function IndicadorTendencia({
   tendencia,
-  upIsGood,
+  subeEsBueno,
 }: {
   tendencia: MetricaTendencia;
-  upIsGood: boolean;
+  subeEsBueno: boolean;
 }) {
-  // With no previous data the percentage is undefined: render nothing rather
-  // than Infinity or NaN.
+  // Sin datos del periodo anterior el porcentaje no existe: no se renderiza
+  // nada en vez de un Infinity/NaN.
   if (tendencia.pct === null) return null;
 
   const flecha =
@@ -215,23 +178,16 @@ function IndicadorTendencia({
   const color =
     tendencia.direccion === "igual"
       ? "text-muted-foreground"
-      : (tendencia.direccion === "sube") === upIsGood
+      : (tendencia.direccion === "sube") === subeEsBueno
         ? "text-emerald-600 dark:text-emerald-400"
         : "text-rose-600 dark:text-rose-400";
 
   return (
-    <p className="mt-2 text-xs font-medium tabular-nums">
-      <span className="sr-only">
-        {tendencia.direccion === "sube"
-          ? "Sube"
-          : tendencia.direccion === "baja"
-            ? "Baja"
-            : "Igual"}{" "}
-        vs periodo anterior:{" "}
-      </span>
+    <p className="mt-1 flex items-center gap-1 text-xs font-medium tabular-nums">
       <span className={color} aria-hidden>
         {flecha} {Math.abs(tendencia.pct).toFixed(1)}%
       </span>
+      <span className="font-normal text-muted-foreground">vs mes anterior</span>
     </p>
   );
 }

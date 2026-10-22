@@ -6,9 +6,13 @@ import {
   rankingProveedores,
   previousPeriodRange,
   compararFlujos,
+  serieMensual,
+  serieMensualMetrica,
+  serieMensualSaldo,
   type BalanceGeneral,
   type CierreInput,
   type GastoForCalc,
+  type MetricaMensual,
   type RetiroForCalc,
   type TransferenciaForCalc,
 } from "../src/lib/calc";
@@ -527,5 +531,218 @@ describe("compararFlujos", () => {
       expect(m.pct).toBe(0);
       expect(m.direccion).toBe("igual");
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Serie mensual: base de los sparklines de las tarjetas KPI y del gráfico de
+// evolución del dashboard. Todos los tests viven acá porque `vitest` corre en
+// environment node con include tests/**/*.test.ts (sin .tsx, sin jsdom).
+// ---------------------------------------------------------------------------
+
+const D = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
+
+const cierresMensuales: CierreInput[] = [
+  { fecha: D("2026-01-05"), cajaApertura: 0, cajaCierre: 0, efectivoGuardado: 100000, efectivoRealContado: null },
+  { fecha: D("2026-02-10"), cajaApertura: 0, cajaCierre: 0, efectivoGuardado: 200000, efectivoRealContado: null },
+  { fecha: D("2026-03-15"), cajaApertura: 0, cajaCierre: 0, efectivoGuardado: 300000, efectivoRealContado: null },
+];
+
+const gastosMensuales: GastoForCalc[] = [
+  { fecha: D("2026-01-05"), proveedor: "A", valor: 10000, pagadoCon: "CAJA" },
+  { fecha: D("2026-01-20"), proveedor: "B", valor: 5000, pagadoCon: "EFECTIVO" },
+  { fecha: D("2026-02-10"), proveedor: "C", valor: 7000, pagadoCon: "TRANSFERENCIA" },
+  { fecha: D("2026-03-15"), proveedor: "D", valor: 3000, pagadoCon: "CAJA" },
+];
+
+const retirosMensuales: RetiroForCalc[] = [
+  { fecha: D("2026-03-16"), concepto: "Arriendo", valor: 4000, saleDe: "EFECTIVO" },
+];
+
+const transferenciaMensual: TransferenciaForCalc[] = [
+  { fecha: D("2026-02-11"), total: 50000 },
+];
+
+const argsMensuales = {
+  desde: D("2026-01-01"),
+  hasta: D("2026-03-31"),
+  cierres: cierresMensuales,
+  gastos: gastosMensuales,
+  retiros: retirosMensuales,
+  transferencia: transferenciaMensual,
+};
+
+describe("serieMensual", () => {
+  it("devuelve un punto por mes del rango, en orden ascendente", () => {
+    const serie = serieMensual(argsMensuales);
+
+    expect(serie).toEqual([
+      { key: "2026-01", label: "ene", total: 110000 },
+      { key: "2026-02", label: "feb", total: 250000 },
+      { key: "2026-03", label: "mar", total: 303000 },
+    ]);
+  });
+
+  it("suma totalVentaDelDia por mes (efectivo guardado + gastos de caja + transferencia)", () => {
+    // enero: 100000 (guardado) + 10000 (gastos CAJA) + 0 = 110000
+    // febrero: 200000 + 0 + 50000 (transferencia del 11) = 250000
+    // marzo: 300000 + 3000 + 0 = 303000
+    expect(serieMensual(argsMensuales).map((p) => p.total)).toEqual([110000, 250000, 303000]);
+  });
+
+  it("devuelve 12 puntos cuando el rango cubre 12 meses", () => {
+    const serie = serieMensual({
+      ...argsMensuales,
+      desde: D("2026-01-01"),
+      hasta: D("2026-12-31"),
+      cierres: [],
+      gastos: [],
+      retiros: [],
+      transferencia: [],
+    });
+
+    expect(serie).toHaveLength(12);
+    expect(serie.map((p) => p.key)).toEqual([
+      "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06",
+      "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12",
+    ]);
+    expect(serie.map((p) => p.label)).toEqual([
+      "ene", "feb", "mar", "abr", "may", "jun",
+      "jul", "ago", "sep", "oct", "nov", "dic",
+    ]);
+    // Sin datos: todos los meses en cero (nunca NaN ni null).
+    expect(serie.every((p) => p.total === 0)).toBe(true);
+  });
+
+  it("cambia de año correctamente al cruzar diciembre", () => {
+    const serie = serieMensual({
+      ...argsMensuales,
+      desde: D("2025-11-15"),
+      hasta: D("2026-02-10"),
+      cierres: cierresMensuales.slice(1),
+      gastos: [],
+      retiros: [],
+      transferencia: [],
+    });
+
+    expect(serie.map((p) => p.key)).toEqual(["2025-11", "2025-12", "2026-01", "2026-02"]);
+    expect(serie.map((p) => p.label)).toEqual(["nov", "dic", "ene", "feb"]);
+    expect(serie[3].total).toBe(200000);
+  });
+
+  it("ignora los días que caen fuera del rango pedido", () => {
+    // serieCierres() no filtra los cierres por rango, así que un cierre de
+    // diciembre no puede contaminar enero.
+    const serie = serieMensual({
+      ...argsMensuales,
+      cierres: [
+        { fecha: D("2025-12-31"), cajaApertura: 0, cajaCierre: 0, efectivoGuardado: 999999, efectivoRealContado: null },
+        ...cierresMensuales,
+      ],
+    });
+
+    expect(serie[0]).toEqual({ key: "2026-01", label: "ene", total: 110000 });
+  });
+
+  it("devuelve ceros cuando el rango no tiene ningún movimiento", () => {
+    const serie = serieMensual({
+      desde: D("2026-03-01"),
+      hasta: D("2026-03-31"),
+      cierres: [],
+      gastos: [],
+      retiros: [],
+      transferencia: [],
+    });
+
+    expect(serie).toEqual([{ key: "2026-03", label: "mar", total: 0 }]);
+    expect(serie.every((p) => Number.isFinite(p.total))).toBe(true);
+  });
+
+  it("no se cuelga cuando `hasta` es anterior a `desde`", () => {
+    const serie = serieMensual({
+      ...argsMensuales,
+      desde: D("2026-03-15"),
+      hasta: D("2026-01-01"),
+    });
+
+    expect(serie).toHaveLength(1);
+    expect(serie[0].key).toBe("2026-03");
+  });
+});
+
+describe("serieMensualMetrica", () => {
+  const metricas: { metrica: MetricaMensual; esperado: number[] }[] = [
+    { metrica: "totalVenta", esperado: [110000, 250000, 303000] },
+    { metrica: "efectivoGuardado", esperado: [100000, 200000, 300000] },
+    { metrica: "gastos", esperado: [15000, 7000, 3000] },
+    { metrica: "transferenciaRecibido", esperado: [0, 50000, 0] },
+  ];
+
+  it("devuelve la serie de cada métrica del dashboard", () => {
+    for (const { metrica, esperado } of metricas) {
+      expect(serieMensualMetrica(argsMensuales, metrica).map((p) => p.total)).toEqual(esperado);
+    }
+  });
+
+  it("comparte las mismas claves y etiquetas para que todas las tarjetas alineen el eje X", () => {
+    const base = serieMensualMetrica(argsMensuales, "totalVenta");
+
+    for (const { metrica } of metricas) {
+      const serie = serieMensualMetrica(argsMensuales, metrica);
+      expect(serie.map((p) => p.key)).toEqual(base.map((p) => p.key));
+      expect(serie.map((p) => p.label)).toEqual(base.map((p) => p.label));
+    }
+  });
+});
+
+describe("serieMensualSaldo", () => {
+  it("devuelve el saldo acumulado al cierre de cada mes", () => {
+    // enero: último día con datos = 20/01 → efectivo 100000 - 5000 (gasto
+    // EFECTIVO) = 95000, transferencia 0
+    // febrero: último día = 11/02 → efectivo 295000, transferencia 50000 - 7000
+    // (gasto TRANSFERENCIA) = 43000
+    // marzo: último día = 16/03 → efectivo 591000 (retiro EFECTIVO de 4000),
+    // transferencia 43000
+    const serie = serieMensualSaldo(argsMensuales);
+
+    expect(serie).toEqual([
+      { key: "2026-01", label: "ene", total: 95000 },
+      { key: "2026-02", label: "feb", total: 338000 },
+      { key: "2026-03", label: "mar", total: 634000 },
+    ]);
+  });
+
+  it("el último mes coincide con el totalDisponible de balanceGeneral", () => {
+    const bg = balanceGeneral(argsMensuales);
+    const serie = serieMensualSaldo(argsMensuales);
+
+    expect(bg.totalDisponible).toBe(634000);
+    expect(serie[serie.length - 1].total).toBe(bg.totalDisponible);
+  });
+
+  it("ignora días de meses que no están en el rango", () => {
+    const serie = serieMensualSaldo({
+      ...argsMensuales,
+      cierres: [
+        { fecha: D("2025-12-31"), cajaApertura: 0, cajaCierre: 0, efectivoGuardado: 999999, efectivoRealContado: null },
+        ...cierresMensuales,
+      ],
+    });
+
+    expect(serie[0]).toEqual({ key: "2026-01", label: "ene", total: 95000 });
+  });
+
+  it("devuelve ceros en una ventana sin datos", () => {
+    const serie = serieMensualSaldo({
+      desde: D("2026-01-01"),
+      hasta: D("2026-12-31"),
+      cierres: [],
+      gastos: [],
+      retiros: [],
+      transferencia: [],
+    });
+
+    expect(serie).toHaveLength(12);
+    expect(serie.every((p) => p.total === 0)).toBe(true);
   });
 });

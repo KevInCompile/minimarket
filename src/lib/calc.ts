@@ -16,7 +16,7 @@
  */
 
 import type { PagadoCon, SaleDe } from "@prisma/client";
-import { startOfDayUTC, endOfDayUTC } from "./dates";
+import { startOfDayUTC, endOfDayUTC, mesKey } from "./dates";
 
 export type CierreInput = {
   fecha: Date;
@@ -504,6 +504,185 @@ export function rankingProveedores(
     }))
     .sort((a, b) => b.total - a.total)
     .slice(0, topN);
+}
+
+/**
+ * Punto de una serie mensual: clave 'YYYY-MM', etiqueta corta en español
+ * ("ene", "feb", …) y el total del mes.
+ */
+export type PuntoMes = { key: string; label: string; total: number };
+
+/** Métricas de flujo que las tarjetas KPI del dashboard resumen por mes. */
+export type MetricaMensual =
+  | "totalVenta"
+  | "efectivoGuardado"
+  | "gastos"
+  | "transferenciaRecibido";
+
+export type SerieMensualArgs = {
+  desde: Date;
+  hasta: Date;
+  cierres: CierreInput[];
+  gastos: GastoForCalc[];
+  retiros: RetiroForCalc[];
+  transferencia: TransferenciaForCalc[];
+};
+
+const MESES_CORTOS = [
+  "ene",
+  "feb",
+  "mar",
+  "abr",
+  "may",
+  "jun",
+  "jul",
+  "ago",
+  "sep",
+  "oct",
+  "nov",
+  "dic",
+] as const;
+
+type MesDelRango = { key: string; label: string; anio: number; mes: number };
+
+/**
+ * Meses de calendario que cubre el rango [desde, hasta], en orden ascendente.
+ * Si `hasta` es anterior a `desde` colapsa al mes de `desde` (en vez de
+ * devolver una lista vacía o infinita).
+ */
+function mesesDelRango(desde: Date, hasta: Date): MesDelRango[] {
+  const inicio = startOfDay(desde);
+  const finBruto = startOfDay(hasta);
+  const fin = finBruto.getTime() < inicio.getTime() ? inicio : finBruto;
+
+  const meses: MesDelRango[] = [];
+  let anio = inicio.getUTCFullYear();
+  let mes = inicio.getUTCMonth();
+
+  for (;;) {
+    meses.push({
+      key: `${anio}-${String(mes + 1).padStart(2, "0")}`,
+      label: MESES_CORTOS[mes],
+      anio,
+      mes,
+    });
+    if (anio === fin.getUTCFullYear() && mes === fin.getUTCMonth()) return meses;
+    mes += 1;
+    if (mes > 11) {
+      mes = 0;
+      anio += 1;
+    }
+  }
+}
+
+const VALOR_POR_METRICA: Record<
+  MetricaMensual,
+  (c: CierreDiarioComputed) => number
+> = {
+  totalVenta: (c) => c.totalVentaDelDia,
+  efectivoGuardado: (c) => c.efectivoGuardado,
+  gastos: (c) => c.totalGastos,
+  transferenciaRecibido: (c) => c.transferenciaDia,
+};
+
+/**
+ * Recorta los movimientos a la ventana pedida.
+ *
+ * `serieCierres()` agrega los días de `cierres` sin filtrar por rango, así que
+ * un cierre anterior al `desde` entraría en la serie y —peor— contaminaría los
+ * acumulados de todo lo que viene después. Las series mensuales se acotan
+ * siempre a su propia ventana.
+ */
+function movementsEnRango<T extends { fecha: Date }>(
+  items: T[],
+  desde: Date,
+  hasta: Date,
+): T[] {
+  const t0 = startOfDay(desde).getTime();
+  const t1 = startOfDay(hasta).getTime();
+  return items.filter((i) => {
+    const t = startOfDay(i.fecha).getTime();
+    return t >= t0 && t <= t1;
+  });
+}
+
+function serieMensualAcotada(args: SerieMensualArgs): SerieMensualArgs {
+  return {
+    desde: args.desde,
+    hasta: args.hasta,
+    cierres: movementsEnRango(args.cierres, args.desde, args.hasta),
+    gastos: movementsEnRango(args.gastos, args.desde, args.hasta),
+    retiros: movementsEnRango(args.retiros, args.desde, args.hasta),
+    transferencia: movementsEnRango(args.transferencia, args.desde, args.hasta),
+  };
+}
+
+/**
+ * Serie mensual de una métrica de flujo: un punto por mes del rango.
+ *
+ * Todas las métricas comparten las mismas claves de mes (salen de
+ * `mesesDelRango`), así que las tarjetas KPI y el gráfico de evolución pueden
+ * alinearse en el mismo eje X.
+ */
+export function serieMensualMetrica(
+  args: SerieMensualArgs,
+  metrica: MetricaMensual,
+): PuntoMes[] {
+  const acotada = serieMensualAcotada(args);
+  const meses = mesesDelRango(acotada.desde, acotada.hasta);
+  const totalPorMes = new Map<string, number>(meses.map((m) => [m.key, 0]));
+  const valor = VALOR_POR_METRICA[metrica];
+
+  for (const dia of serieCierres(acotada)) {
+    // Cinturón de seguridad: un mes que no está en el pedido se descarta.
+    const key = mesKey(dia.fecha);
+    if (!totalPorMes.has(key)) continue;
+    totalPorMes.set(key, (totalPorMes.get(key) ?? 0) + valor(dia));
+  }
+
+  return meses.map((m) => ({
+    key: m.key,
+    label: m.label,
+    total: totalPorMes.get(m.key) ?? 0,
+  }));
+}
+
+/**
+ * Serie mensual del "total venta" (efectivo guardado + gastos de caja +
+ * transferencia recibida), la misma métrica de `totalVentaDelDia`.
+ */
+export function serieMensual(args: SerieMensualArgs): PuntoMes[] {
+  return serieMensualMetrica(args, "totalVenta");
+}
+
+/**
+ * Serie mensual del saldo total disponible (efectivo acumulado +
+ * Transferencia acumulada) al cierre de cada mes.
+ *
+ * A diferencia de las métricas de flujo, el saldo sí es acumulativo: para cada
+ * mes se corre la serie hasta el último día de ese mes y se toma el acumulado
+ * del último día con datos. Por eso `serieCierres()` reinicia los acumulados en
+ * cada llamada — el valor de un mes NO es comparable con el saldo del mismo
+ * mes calculado sobre otra ventana.
+ */
+export function serieMensualSaldo(args: SerieMensualArgs): PuntoMes[] {
+  const acotada = serieMensualAcotada(args);
+
+  return mesesDelRango(acotada.desde, acotada.hasta).map((m) => {
+    const finDelMes = new Date(
+      Date.UTC(m.anio, m.mes + 1, 0, 23, 59, 59, 999),
+    );
+    const ultimo = serieCierres({ ...acotada, hasta: finDelMes })
+      .filter((c) => mesKey(c.fecha) === m.key)
+      .at(-1);
+    return {
+      key: m.key,
+      label: m.label,
+      total:
+        (ultimo?.efectivoAcumulado ?? 0) +
+        (ultimo?.transferenciaAcumulado ?? 0),
+    };
+  });
 }
 
 /**
