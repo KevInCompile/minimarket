@@ -16,7 +16,7 @@
  */
 
 import type { PagadoCon, SaleDe } from "@prisma/client";
-import { startOfDayUTC } from "./dates";
+import { startOfDayUTC, endOfDayUTC } from "./dates";
 
 export type CierreInput = {
   fecha: Date;
@@ -98,6 +98,10 @@ export type RankingProveedor = {
 
 function startOfDay(d: Date): Date {
   return startOfDayUTC(d);
+}
+
+function endOfDay(d: Date): Date {
+  return endOfDayUTC(d);
 }
 
 function sameDay(a: Date, b: Date): boolean {
@@ -404,6 +408,79 @@ export function balanceGeneral(args: {
     puntoMasBajoEfectivo:
       puntoMasBajoEfecto === Number.POSITIVE_INFINITY ? 0 : puntoMasBajoEfecto,
     diasConDescuadre,
+  };
+}
+
+/**
+ * Immediately preceding window with the same length in days, ending the day
+ * before `desde`. Both bounds are UTC: `desde` is the start of the first day
+ * and `hasta` is the end of the last day, so the result can be compared with a
+ * DB range filter without losing same-day rows.
+ */
+export function previousPeriodRange(
+  desde: Date,
+  hasta: Date,
+): { desde: Date; hasta: Date } {
+  const inicioActual = startOfDay(desde).getTime();
+  const finActual = startOfDay(hasta).getTime();
+  const MS_PER_DAY = 86_400_000;
+
+  const dias = Math.floor((finActual - inicioActual) / MS_PER_DAY) + 1;
+  const finAnterior = new Date(inicioActual - MS_PER_DAY);
+  const inicioAnterior = new Date(finAnterior.getTime() - (dias - 1) * MS_PER_DAY);
+
+  return {
+    desde: startOfDay(inicioAnterior),
+    hasta: endOfDay(finAnterior),
+  };
+}
+
+export type MetricaTendencia = {
+  valor: number;
+  anterior: number;
+  delta: number;
+  pct: number | null; // delta/anterior*100, null when anterior === 0
+  direccion: "sube" | "baja" | "igual";
+};
+
+function tendencia(actual: number, anterior: number): MetricaTendencia {
+  const delta = actual - anterior;
+  return {
+    valor: actual,
+    anterior,
+    delta,
+    pct: anterior === 0 ? null : (delta / anterior) * 100,
+    direccion: delta === 0 ? "igual" : delta > 0 ? "sube" : "baja",
+  };
+}
+
+/**
+ * Period-over-period comparison of the period-scoped flows.
+ *
+ * Only flows are comparable: `totalGastos`, `totalRetiros`,
+ * `transferenciaRecibidoPeriodo` and `efectivoGuardadoPeriodo` accumulate
+ * within the given range. The balance fields (`totalDisponible`,
+ * `saldoEfectivoActual`, `saldoTransferenciaActual`) restart from zero on every
+ * call, so comparing them across periods would be misleading — that is why
+ * they are deliberately absent here.
+ */
+export function compararFlujos(actual: BalanceGeneral, anterior: BalanceGeneral): {
+  gastos: MetricaTendencia;
+  retiros: MetricaTendencia;
+  transferenciaRecibido: MetricaTendencia;
+  efectivoGuardado: MetricaTendencia;
+} {
+  return {
+    gastos: tendencia(actual.totalGastos, anterior.totalGastos),
+    retiros: tendencia(actual.totalRetiros, anterior.totalRetiros),
+    transferenciaRecibido: tendencia(
+      actual.transferenciaRecibidoPeriodo,
+      anterior.transferenciaRecibidoPeriodo,
+    ),
+    efectivoGuardado: tendencia(
+      actual.efectivoGuardadoPeriodo,
+      anterior.efectivoGuardadoPeriodo,
+    ),
   };
 }
 

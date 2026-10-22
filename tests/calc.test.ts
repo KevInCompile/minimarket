@@ -4,6 +4,9 @@ import {
   serieCierres,
   balanceGeneral,
   rankingProveedores,
+  previousPeriodRange,
+  compararFlujos,
+  type BalanceGeneral,
   type CierreInput,
   type GastoForCalc,
   type RetiroForCalc,
@@ -367,5 +370,162 @@ describe("computeCierreDiario", () => {
     expect(c.transferenciaAcumulado).toBe(250000);
     // El efectivo NO se toca
     expect(c.efectivoAcumulado).toBe(0);
+  });
+});
+
+describe("previousPeriodRange", () => {
+  it("returns the immediately preceding window when the range crosses a month boundary", () => {
+    // September 1..30 is 30 days, so the previous window is August 2..31.
+    const prev = previousPeriodRange(
+      new Date("2026-09-01T00:00:00.000Z"),
+      new Date("2026-09-30T00:00:00.000Z"),
+    );
+
+    expect(prev.desde.toISOString()).toBe("2026-08-02T00:00:00.000Z");
+    expect(prev.hasta.toISOString()).toBe("2026-08-31T23:59:59.999Z");
+  });
+
+  it("returns the immediately preceding window when the range crosses a year boundary", () => {
+    // Dec 20 2025..Jan 10 2026 is 22 days, so the previous window is Nov 28..Dec 19 2025.
+    const prev = previousPeriodRange(
+      new Date("2025-12-20T00:00:00.000Z"),
+      new Date("2026-01-10T00:00:00.000Z"),
+    );
+
+    expect(prev.desde.toISOString()).toBe("2025-11-28T00:00:00.000Z");
+    expect(prev.hasta.toISOString()).toBe("2025-12-19T23:59:59.999Z");
+  });
+
+  it("returns the previous day when the range is a single day", () => {
+    const prev = previousPeriodRange(
+      new Date("2026-03-15T00:00:00.000Z"),
+      new Date("2026-03-15T00:00:00.000Z"),
+    );
+
+    expect(prev.desde.toISOString()).toBe("2026-03-14T00:00:00.000Z");
+    expect(prev.hasta.toISOString()).toBe("2026-03-14T23:59:59.999Z");
+  });
+
+  it("does not mutate the dates it receives", () => {
+    const desde = new Date("2026-09-01T00:00:00.000Z");
+    const hasta = new Date("2026-09-30T00:00:00.000Z");
+
+    previousPeriodRange(desde, hasta);
+
+    expect(desde.toISOString()).toBe("2026-09-01T00:00:00.000Z");
+    expect(hasta.toISOString()).toBe("2026-09-30T00:00:00.000Z");
+  });
+});
+
+describe("compararFlujos", () => {
+  const makeBalance = (over: Partial<BalanceGeneral> = {}): BalanceGeneral => ({
+    desde: new Date("2026-09-01T00:00:00.000Z"),
+    hasta: new Date("2026-09-30T23:59:59.999Z"),
+    gastosCaja: 0,
+    gastosEfectivo: 0,
+    gastosTransferencia: 0,
+    totalGastos: 0,
+    retirosEfectivo: 0,
+    retirosTransferencia: 0,
+    retirosCaja: 0,
+    totalRetiros: 0,
+    efectivoGuardadoPeriodo: 0,
+    efectivoRealUltimoConteo: null,
+    ultimoCajaCierre: 0,
+    saldoEfectivoActual: 0,
+    transferenciaRecibidoPeriodo: 0,
+    saldoTransferenciaActual: 0,
+    totalDisponible: 0,
+    puntoMasBajoEfectivo: 0,
+    diasConDescuadre: 0,
+    ...over,
+  });
+
+  it("computes delta, pct and direction for each flow metric", () => {
+    const actual = makeBalance({
+      totalGastos: 120,
+      totalRetiros: 50,
+      transferenciaRecibidoPeriodo: 300,
+      efectivoGuardadoPeriodo: 450,
+    });
+    const anterior = makeBalance({
+      totalGastos: 100,
+      totalRetiros: 100,
+      transferenciaRecibidoPeriodo: 150,
+      efectivoGuardadoPeriodo: 300,
+    });
+
+    const t = compararFlujos(actual, anterior);
+
+    expect(t.gastos).toEqual({
+      valor: 120,
+      anterior: 100,
+      delta: 20,
+      pct: 20,
+      direccion: "sube",
+    });
+    expect(t.retiros).toEqual({
+      valor: 50,
+      anterior: 100,
+      delta: -50,
+      pct: -50,
+      direccion: "baja",
+    });
+    expect(t.transferenciaRecibido).toEqual({
+      valor: 300,
+      anterior: 150,
+      delta: 150,
+      pct: 100,
+      direccion: "sube",
+    });
+    expect(t.efectivoGuardado).toEqual({
+      valor: 450,
+      anterior: 300,
+      delta: 150,
+      pct: 50,
+      direccion: "sube",
+    });
+  });
+
+  it("returns pct null when the previous period has no data", () => {
+    const actual = makeBalance({
+      totalGastos: 120,
+      totalRetiros: 50,
+      transferenciaRecibidoPeriodo: 300,
+      efectivoGuardadoPeriodo: 450,
+    });
+    const anterior = makeBalance();
+
+    const t = compararFlujos(actual, anterior);
+
+    for (const m of [t.gastos, t.retiros, t.transferenciaRecibido, t.efectivoGuardado]) {
+      expect(m.anterior).toBe(0);
+      expect(m.pct).toBeNull();
+      expect(m.direccion).toBe("sube");
+    }
+    expect(t.gastos.delta).toBe(120);
+  });
+
+  it("returns direction igual when both periods match", () => {
+    const actual = makeBalance({
+      totalGastos: 100,
+      totalRetiros: 100,
+      transferenciaRecibidoPeriodo: 150,
+      efectivoGuardadoPeriodo: 300,
+    });
+    const anterior = makeBalance({
+      totalGastos: 100,
+      totalRetiros: 100,
+      transferenciaRecibidoPeriodo: 150,
+      efectivoGuardadoPeriodo: 300,
+    });
+
+    const t = compararFlujos(actual, anterior);
+
+    for (const m of [t.gastos, t.retiros, t.transferenciaRecibido, t.efectivoGuardado]) {
+      expect(m.delta).toBe(0);
+      expect(m.pct).toBe(0);
+      expect(m.direccion).toBe("igual");
+    }
   });
 });
