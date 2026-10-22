@@ -367,7 +367,9 @@ function PanelDonut({
 
       <CardContent>
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
-          {hayDatos ? (
+          {/* Columna izquierda: el donut y, debajo, el resumen por color. */}
+          <div className="flex w-full shrink-0 flex-col items-center gap-3 sm:w-40">
+            {hayDatos ? (
             <div className="relative w-full shrink-0 sm:w-40">
               <div className="h-40 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -388,6 +390,30 @@ function PanelDonut({
                         <Cell key={p.key} fill={p.color} />
                       ))}
                     </Pie>
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const p = payload[0].payload as Porcion;
+                        return (
+                          <div className="rounded-md border bg-popover p-2 text-xs shadow-md">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                aria-hidden
+                                className="size-2 shrink-0 rounded-full"
+                                style={{ backgroundColor: p.color }}
+                              />
+                              <span className="text-muted-foreground">{p.label}</span>
+                            </div>
+                            <div className="mt-0.5 font-medium tabular-nums">
+                              {formatCOP(p.valor)}
+                            </div>
+                            <div className="tabular-nums text-muted-foreground">
+                              {formatPercent(total === 0 ? 0 : p.valor / total, 1)}
+                            </div>
+                          </div>
+                        );
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -406,6 +432,28 @@ function PanelDonut({
             </p>
           )}
 
+          {/* Resumen por color debajo del grafico: cada porcentaje te dice
+              que porcion del donut representa, en el mismo color del sector. */}
+          <div className="flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:flex-col sm:items-stretch sm:gap-y-2.5">
+            {porciones.map((p) => (
+              <div key={p.key} className="flex items-center gap-2">
+                <span
+                  aria-hidden
+                  className="size-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: p.color }}
+                />
+                <span className="min-w-0 truncate text-sm font-medium tabular-nums">
+                  {formatPercent(total === 0 ? 0 : p.valor / total, 1)}
+                </span>
+                <span className="min-w-0 truncate text-xs text-muted-foreground">
+                  {p.label}
+                </span>
+              </div>
+            ))}
+          </div>
+          </div>
+
+          {/* Leyenda detallada: etiqueta, porcentaje e importe. */}
           <ul className="w-full min-w-0 space-y-2.5">
             {porciones.map((p) => (
               <li key={p.key} className="flex items-center gap-2 text-sm">
