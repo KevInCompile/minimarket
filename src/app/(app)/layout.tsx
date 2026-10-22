@@ -7,35 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileSidebar } from "@/components/mobile-sidebar";
-import {
-  LayoutDashboard,
-  Receipt,
-  Wallet,
-  Smartphone,
-  ClipboardCheck,
-  StickyNote,
-  Truck,
-  Users,
-  LogOut,
-} from "lucide-react";
+import { NAV_SECTIONS, type NavItem } from "@/lib/nav";
+import { LogOut } from "lucide-react";
 
-type NavItem = {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  adminOnly?: boolean;
-};
-
-const NAV: NavItem[] = [
-  { href: "/", label: "Balance", icon: LayoutDashboard },
-  { href: "/cierre", label: "Cierre diario", icon: ClipboardCheck },
-  { href: "/transferencia", label: "Transferencia", icon: Smartphone },
-  { href: "/gastos", label: "Gastos", icon: Receipt },
-  { href: "/retiros", label: "Retiros", icon: Wallet, adminOnly: true },
-  { href: "/pedidos", label: "Pedidos (nota)", icon: StickyNote, adminOnly: true },
-  { href: "/proveedores", label: "Proveedores", icon: Truck, adminOnly: true },
-  { href: "/usuarios", label: "Usuarios", icon: Users, adminOnly: true },
-];
+type NavSection = { title: string; items: NavItem[] };
 
 const ROLE_STYLE: Record<string, { bg: string; text: string; label: string }> = {
   ADMIN: {
@@ -48,17 +23,6 @@ const ROLE_STYLE: Record<string, { bg: string; text: string; label: string }> = 
     text: "text-sky-800 dark:text-sky-300",
     label: "Cajero",
   },
-};
-
-const ICON_STYLE: Record<string, string> = {
-  "/": "text-sky-600 dark:text-sky-400",
-  "/gastos": "text-amber-600 dark:text-amber-400",
-  "/retiros": "text-rose-600 dark:text-rose-400",
-  "/transferencia": "text-violet-600 dark:text-violet-400",
-  "/cierre": "text-sky-600 dark:text-sky-400",
-  "/pedidos": "text-pink-600 dark:text-pink-400",
-  "/proveedores": "text-orange-600 dark:text-orange-400",
-  "/usuarios": "text-teal-600 dark:text-teal-400",
 };
 
 export default async function AppLayout({
@@ -78,13 +42,14 @@ export default async function AppLayout({
   });
   const nombreTienda = user?.tienda?.nombre ?? "";
 
-  const items = NAV.filter((i) => isAdmin || !i.adminOnly);
-
-  const mobileItems = items.map((i) => ({ href: i.href, label: i.label }));
+  const sections: NavSection[] = NAV_SECTIONS.map((s) => ({
+    title: s.title,
+    items: s.items.filter((i) => isAdmin || !i.adminOnly),
+  })).filter((s) => s.items.length > 0);
 
   return (
     <div className="min-h-screen flex bg-background text-foreground">
-      <MobileSidebar items={mobileItems} nombreTienda={nombreTienda} />
+      <MobileSidebar isAdmin={isAdmin} nombreTienda={nombreTienda} />
 
       <aside className="hidden md:flex w-60 shrink-0 border-r border-sidebar-border bg-background flex-col">
         <div className="p-5 text-white bg-linear-to-br from-sky-700 via-blue-800 to-indigo-900">
@@ -103,18 +68,27 @@ export default async function AppLayout({
           </Link>
         </div>
         <Separator />
-        <nav className="flex-1 p-3 space-y-1">
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="group flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-            >
-              <item.icon
-                className={`size-4 ${ICON_STYLE[item.href] ?? "text-muted-foreground"} group-hover:scale-110 transition-transform`}
-              />
-              {item.label}
-            </Link>
+        <nav className="flex-1 p-3 overflow-y-auto">
+          {sections.map((section, i) => (
+            <div key={section.title} className={i > 0 ? "mt-5" : ""}>
+              <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {section.title}
+              </p>
+              <div className="space-y-0.5">
+                {section.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="group flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  >
+                    <item.icon
+                      className={`size-4 ${item.iconClass ?? "text-muted-foreground"} group-hover:scale-110 transition-transform`}
+                    />
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
         <Separator />

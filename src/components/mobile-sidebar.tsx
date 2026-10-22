@@ -2,17 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Receipt,
-  Wallet,
-  Smartphone,
-  ClipboardCheck,
-  StickyNote,
-  Truck,
-  Users,
-  Menu,
-} from "lucide-react";
+import { Menu } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -21,40 +11,22 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useState } from "react";
-
-type NavItem = { href: string; label: string };
-
-const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  "/": LayoutDashboard,
-  "/gastos": Receipt,
-  "/retiros": Wallet,
-  "/transferencia": Smartphone,
-  "/cierre": ClipboardCheck,
-  "/pedidos": StickyNote,
-  "/proveedores": Truck,
-  "/usuarios": Users,
-};
-
-const ICON_STYLE: Record<string, string> = {
-  "/": "text-sky-600 dark:text-sky-400",
-  "/gastos": "text-amber-600 dark:text-amber-400",
-  "/retiros": "text-rose-600 dark:text-rose-400",
-  "/transferencia": "text-violet-600 dark:text-violet-400",
-  "/cierre": "text-sky-600 dark:text-sky-400",
-  "/pedidos": "text-pink-600 dark:text-pink-400",
-  "/proveedores": "text-orange-600 dark:text-orange-400",
-  "/usuarios": "text-teal-600 dark:text-teal-400",
-};
+import { NAV_SECTIONS, navItemsFor, type NavItem } from "@/lib/nav";
 
 export function MobileSidebar({
-  items,
+  isAdmin,
   nombreTienda,
 }: {
-  items: NavItem[];
+  isAdmin: boolean;
   nombreTienda: string;
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+
+  const sections = NAV_SECTIONS.map((s) => ({
+    title: s.title,
+    items: s.items.filter((i) => isAdmin || !i.adminOnly),
+  })).filter((s) => s.items.length > 0);
 
   return (
     <div className="md:hidden sticky top-0 z-40 bg-sidebar border-b border-sidebar-border shadow-sm">
@@ -68,7 +40,7 @@ export function MobileSidebar({
           </SheetTrigger>
           <SheetContent
             side="left"
-            className="w-72 md:w-72 p-0 bg-sidebar border-r border-sidebar-border"
+            className="w-72 md:w-72 p-0 bg-sidebar border-r border-sidebar-border overflow-y-auto"
           >
             <SheetHeader className="px-4 py-3 bg-linear-to-br from-sky-700 via-blue-800 to-indigo-900 text-white flex-row items-center gap-3 space-y-0">
               <div className="size-9 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold shrink-0">
@@ -81,37 +53,58 @@ export function MobileSidebar({
                 </span>
               </SheetTitle>
             </SheetHeader>
-            <nav className="p-2 space-y-0.5">
-              {items.map((item) => {
-                const Icon = ICONS[item.href];
-                const active =
-                  pathname === item.href ||
-                  (item.href !== "/" && pathname.startsWith(item.href));
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
-                      active
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : "hover:bg-sidebar-accent/60"
-                    }
-                  `}
-                  >
-                    {Icon ? (
-                      <Icon
-                        className={`size-4 ${ICON_STYLE[item.href] ?? "text-muted-foreground"}`}
+            <nav className="p-3">
+              {sections.map((section, i) => (
+                <div key={section.title} className={i > 0 ? "mt-5" : ""}>
+                  <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {section.title}
+                  </p>
+                  <div className="space-y-0.5">
+                    {section.items.map((item) => (
+                      <NavLink
+                        key={item.href}
+                        item={item}
+                        pathname={pathname}
+                        onNavigate={() => setOpen(false)}
                       />
-                    ) : null}
-                    {item.label}
-                  </Link>
-                );
-              })}
+                    ))}
+                  </div>
+                </div>
+              ))}
             </nav>
           </SheetContent>
         </Sheet>
       </div>
     </div>
+  );
+}
+
+function NavLink({
+  item,
+  pathname,
+  onNavigate,
+}: {
+  item: NavItem;
+  pathname: string;
+  onNavigate: () => void;
+}) {
+  const active =
+    pathname === item.href ||
+    (item.href !== "/" && pathname.startsWith(item.href));
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
+        active
+          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+          : "hover:bg-sidebar-accent/60"
+      }`}
+    >
+      <item.icon
+        className={`size-4 ${item.iconClass ?? "text-muted-foreground"}`}
+      />
+      {item.label}
+    </Link>
   );
 }
