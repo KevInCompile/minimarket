@@ -33,6 +33,8 @@ export function FiltrosBar({
   children,
   showDates = true,
   mesSelector,
+  onApplied,
+  alwaysExpanded = false,
 }: {
   desde: Date;
   hasta: Date;
@@ -40,6 +42,10 @@ export function FiltrosBar({
   children?: ReactNode;
   showDates?: boolean;
   mesSelector?: ReactNode;
+  /** Se invoca al final de `submit()` y de `reset()`, después de `router.push`. */
+  onApplied?: () => void;
+  /** `true` omite el resumen colapsable de mobile: el panel se ve siempre. */
+  alwaysExpanded?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -100,6 +106,7 @@ export function FiltrosBar({
     const qs = params.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
     setExpandido(false);
+    onApplied?.();
   };
 
   const reset = () => {
@@ -116,6 +123,7 @@ export function FiltrosBar({
     const qs = params.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
     setExpandido(false);
+    onApplied?.();
   };
 
   const hasActiveFilters = searchParams.toString().length > 0;
@@ -126,49 +134,51 @@ export function FiltrosBar({
       onSubmit={submit}
       className="flex flex-col gap-3"
     >
-      {/* ── Mobile: resumen colapsado ── */}
-      <div className="md:hidden flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2">
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Período
-          </p>
-          <p className="text-sm font-medium truncate">{resumen}</p>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setExpandido((v) => !v)}
-          className="relative shrink-0"
-        >
-          <SlidersHorizontal className="size-3.5" />
-          Filtros
-          {filtrosActivosCount > 0 && (
-            <span
-              className="ml-1 inline-flex h-4 min-w-4 items-center justify-center
-                         rounded-full bg-primary px-1 text-[10px] font-semibold
-                         text-primary-foreground"
-            >
-              {filtrosActivosCount}
-            </span>
-          )}
-          <ChevronDown
-            className={cn(
-              "size-3.5 transition-transform",
-              expandido && "rotate-180",
+      {/* ── Mobile: resumen colapsado (omitido con alwaysExpanded) ── */}
+      {!alwaysExpanded && (
+        <div className="md:hidden flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Período
+            </p>
+            <p className="text-sm font-medium truncate">{resumen}</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setExpandido((v) => !v)}
+            className="relative shrink-0"
+          >
+            <SlidersHorizontal className="size-3.5" />
+            Filtros
+            {filtrosActivosCount > 0 && (
+              <span
+                className="ml-1 inline-flex h-4 min-w-4 items-center justify-center
+                           rounded-full bg-primary px-1 text-[10px] font-semibold
+                           text-primary-foreground"
+              >
+                {filtrosActivosCount}
+              </span>
             )}
-          />
-        </Button>
-      </div>
+            <ChevronDown
+              className={cn(
+                "size-3.5 transition-transform",
+                expandido && "rotate-180",
+              )}
+            />
+          </Button>
+        </div>
+      )}
 
       {/* ── Bloque expandible (mobile) / siempre visible (desktop) ── */}
       <div
         className={cn(
           "flex flex-col gap-4",
           // Mobile: oculto si no esta expandido.
-          !expandido && "hidden",
+          !alwaysExpanded && !expandido && "hidden",
           // Desktop: siempre visible (override).
-          "md:flex",
+          !alwaysExpanded && "md:flex",
         )}
       >
         {/* Fila 1: navegación temporal */}

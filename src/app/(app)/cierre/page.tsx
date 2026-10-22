@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db";
 import { serieCierres } from "@/lib/calc";
 import { CierreView } from "./cierre-view";
-import { CierreFilters } from "./cierre-filters";
 import { requireTiendaId } from "@/lib/auth-guard";
 import { parseFiltrosComunes } from "@/lib/search-params";
 import { parseMesLabel, mesKey } from "@/lib/dates";
@@ -15,7 +14,6 @@ type Props = {
 };
 
 export default async function CierrePage({ searchParams }: Props) {
-  const params = await searchParams;
   const tiendaId = await requireTiendaId();
   const filtros = await parseFiltrosComunes(searchParams);
 
@@ -90,13 +88,14 @@ export default async function CierrePage({ searchParams }: Props) {
 
   return (
     <div className="p-4 md:p-10 space-y-4 max-w-5xl">
-      <CierreFilters
+      <CierreView
+        serie={serie}
+        pendientes={pendientes}
         desde={filtros.desde}
         hasta={filtros.hasta}
         mes={filtros.mes}
         mesOptions={mesOptions}
       />
-      <CierreView serie={serie} pendientes={pendientes} />
     </div>
   );
 }

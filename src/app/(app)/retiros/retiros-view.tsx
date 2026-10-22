@@ -10,6 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { PageToolbar } from "@/components/page-toolbar";
 import { RetirosTable } from "./retiros-table";
 import { RetiroForm } from "./retiro-form";
 import { MonthSelector, type MesOption } from "@/components/filtros/month-selector";
@@ -77,15 +78,22 @@ export function RetirosView({
       .reduce((s, r) => s + r.valor, 0),
   };
 
+  // Solo los filtros NO temporales cuentan para el badge del toolbar: el
+  // período (mes / desde / hasta) es el estado por defecto de la lista.
+  const filtrosActivos =
+    estadoFiltros.tiposSeleccionados.length +
+    estadoFiltros.saleDeSeleccionados.length +
+    (estadoFiltros.q.trim() ? 1 : 0) +
+    (estadoFiltros.agruparPorMes ? 1 : 0);
+
   return (
     <div className="space-y-4">
-      <header className="flex items-end justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Wallet className="size-7 text-rose-600 dark:text-rose-400" />
-            Retiros
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+      <PageToolbar
+        title="Retiros"
+        icon={Wallet}
+        iconClassName="text-rose-600 dark:text-rose-400"
+        subtitle={
+          <>
             {retiros.length} retiros · Total{" "}
             <span className="font-semibold tabular-nums text-foreground">
               {total.toLocaleString("es-CO", {
@@ -94,57 +102,36 @@ export function RetirosView({
                 maximumFractionDigits: 0,
               })}
             </span>
-          </p>
-        </div>
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger className="hidden md:inline-flex h-9 px-4 py-2 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90">
-            <Plus className="size-4" />
-            Nuevo retiro
-          </SheetTrigger>
-          <SheetContent
-            side="right"
-            className="w-full sm:max-w-xl p-0 gap-0"
-          >
-            <SheetHeader className="px-6 py-4 border-b bg-rose-50/50 dark:bg-rose-950/20">
-              <SheetTitle>Nuevo retiro</SheetTitle>
-              <SheetDescription>
-                Plata que sale del negocio y no es compra.
-              </SheetDescription>
-            </SheetHeader>
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              <RetiroForm
-                onClose={() => setOpen(false)}
-                onSuccess={() => setOpen(false)}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-      </header>
-
-      {retiros.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <StatCard
-            label="Descontado del efectivo acumulado"
-            value={porSaleDe.EFECTIVO}
-            color="border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30"
-            iconColor="bg-linear-to-br from-sky-500 to-cyan-500 text-white"
-          />
-          <StatCard
-            label="Descontado del saldo Transferencia"
-            value={porSaleDe.TRANSFERENCIA}
-            color="border-violet-200 bg-linear-to-br from-violet-50 to-fuchsia-50/60 dark:border-violet-800 dark:from-violet-950/30 dark:to-fuchsia-950/30"
-            iconColor="bg-linear-to-br from-violet-500 to-fuchsia-500 text-white"
-          />
-          <StatCard
-            label="Salido de la caja del día"
-            value={porSaleDe.CAJA}
-            color="border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30"
-            iconColor="bg-linear-to-br from-sky-500 to-cyan-500 text-white"
-          />
-        </div>
-      )}
-
-      <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 md:p-4 shadow-xs">
+          </>
+        }
+        activeFilters={filtrosActivos}
+        actions={
+          /* Desktop: botón en el toolbar que abre un panel lateral */
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger className="hidden md:inline-flex h-9 px-4 py-2 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90">
+              <Plus className="size-4" />
+              Nuevo retiro
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              className="w-full sm:max-w-xl p-0 gap-0"
+            >
+              <SheetHeader className="px-6 py-4 border-b bg-rose-50/50 dark:bg-rose-950/20">
+                <SheetTitle>Nuevo retiro</SheetTitle>
+                <SheetDescription>
+                  Plata que sale del negocio y no es compra.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto px-6 py-4">
+                <RetiroForm
+                  onClose={() => setOpen(false)}
+                  onSuccess={() => setOpen(false)}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        }
+      >
         <FiltrosBar
           desde={estadoFiltros.desde}
           hasta={estadoFiltros.hasta}
@@ -173,7 +160,30 @@ export function RetirosView({
             }
           />
         </FiltrosBar>
-      </div>
+      </PageToolbar>
+
+      {retiros.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <StatCard
+            label="Descontado del efectivo acumulado"
+            value={porSaleDe.EFECTIVO}
+            color="border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30"
+            iconColor="bg-linear-to-br from-sky-500 to-cyan-500 text-white"
+          />
+          <StatCard
+            label="Descontado del saldo Transferencia"
+            value={porSaleDe.TRANSFERENCIA}
+            color="border-violet-200 bg-linear-to-br from-violet-50 to-fuchsia-50/60 dark:border-violet-800 dark:from-violet-950/30 dark:to-fuchsia-950/30"
+            iconColor="bg-linear-to-br from-violet-500 to-fuchsia-500 text-white"
+          />
+          <StatCard
+            label="Salido de la caja del día"
+            value={porSaleDe.CAJA}
+            color="border-sky-200 bg-linear-to-br from-sky-50 to-cyan-50/60 dark:border-sky-800 dark:from-sky-950/30 dark:to-cyan-950/30"
+            iconColor="bg-linear-to-br from-sky-500 to-cyan-500 text-white"
+          />
+        </div>
+      )}
 
       <RetirosTable
         retiros={retiros.map((r) => ({

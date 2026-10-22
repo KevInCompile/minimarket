@@ -5,7 +5,6 @@ import { parseMesLabel, mesKey } from "@/lib/dates";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TransferenciaTable } from "./transferencia-table";
 import { TransferenciaFilters } from "./transferencia-filters";
-import { Smartphone } from "lucide-react";
 
 type Props = {
   searchParams: Promise<{
@@ -16,7 +15,6 @@ type Props = {
 };
 
 export default async function TransferenciaPage({ searchParams }: Props) {
-  const params = await searchParams;
   const tiendaId = await requireTiendaId();
   const filtros = await parseFiltrosComunes(searchParams);
 
@@ -36,21 +34,23 @@ export default async function TransferenciaPage({ searchParams }: Props) {
 
   return (
     <div className="p-6 lg:p-10 space-y-6 max-w-3xl">
-      <header>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Smartphone className="size-7" /> Transferencia
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {transferencia.length} días con Transferencia · Total recibido{" "}
-          {total.toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 })}
-        </p>
-      </header>
-
       <TransferenciaFilters
         desde={filtros.desde}
         hasta={filtros.hasta}
         mes={filtros.mes}
         mesOptions={mesOptions}
+        subtitulo={
+          <>
+            {transferencia.length} días con Transferencia · Total recibido{" "}
+            <span className="font-semibold tabular-nums text-foreground">
+              {total.toLocaleString("es-CO", {
+                style: "currency",
+                currency: "COP",
+                maximumFractionDigits: 0,
+              })}
+            </span>
+          </>
+        }
       />
 
       <Card>
