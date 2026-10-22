@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useTransition, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -353,6 +353,17 @@ function PanelDonut({
   const total = porciones.reduce((s, p) => s + p.valor, 0);
   const hayDatos = total !== 0;
 
+  // El hover vive en las filas del resumen, no en un tooltip flotante sobre
+  // el grafico: un tooltip sigue al cursor y terminaba encima del valor del
+  // hueco. Resaltar el sector desde la fila evita el solapamiento por
+  // construccion y ademas funciona con el dedo en movil.
+  const [indiceActivo, setIndiceActivo] = useState<number | null>(null);
+  const valorCentro = formatCOP(total);
+  // El hueco mide ~100px y el padding se come 24px. Un valor de 7+ digitos
+  // no cabe en 16px, asi que el tamano baja por pasos segun la longitud.
+  const tamanoCentro =
+    valorCentro.length > 13 ? "text-xs" : valorCentro.length > 10 ? "text-sm" : "text-base";
+
   return (
     <Card className={cn("border-border shadow-sm", className)}>
       <CardHeader className="grid-cols-[1fr_auto] items-center">
@@ -378,52 +389,39 @@ function PanelDonut({
                       data={porciones}
                       dataKey="valor"
                       nameKey="label"
-                      innerRadius="62%"
-                      outerRadius="92%"
+                      innerRadius="58%"
+                      outerRadius="90%"
                       paddingAngle={2}
                       startAngle={90}
                       endAngle={-270}
                       stroke="none"
                       isAnimationActive={false}
                     >
-                      {porciones.map((p) => (
-                        <Cell key={p.key} fill={p.color} />
+                      {porciones.map((p, i) => (
+                        <Cell
+                          key={p.key}
+                          fill={p.color}
+                          stroke={i === indiceActivo ? "var(--foreground)" : "none"}
+                          strokeWidth={i === indiceActivo ? 2 : 0}
+                          onMouseEnter={() => setIndiceActivo(i)}
+                          onMouseLeave={() => setIndiceActivo(null)}
+                        />
                       ))}
                     </Pie>
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        const p = payload[0].payload as Porcion;
-                        return (
-                          <div className="rounded-md border bg-popover p-2 text-xs shadow-md">
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                aria-hidden
-                                className="size-2 shrink-0 rounded-full"
-                                style={{ backgroundColor: p.color }}
-                              />
-                              <span className="text-muted-foreground">{p.label}</span>
-                            </div>
-                            <div className="mt-0.5 font-medium tabular-nums">
-                              {formatCOP(p.valor)}
-                            </div>
-                            <div className="tabular-nums text-muted-foreground">
-                              {formatPercent(total === 0 ? 0 : p.valor / total, 1)}
-                            </div>
-                          </div>
-                        );
-                      }}
-                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
               {/* El total va en el hueco del donut: HTML encima del SVG, para
                   que no dependamos del API de labels de recharts. */}
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <span className="max-w-full truncate px-3 text-base font-bold tabular-nums">
-                  {formatCOP(total)}
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-2">
+                <span
+                  className={`max-w-full truncate font-bold tabular-nums leading-tight ${tamanoCentro}`}
+                >
+                  {valorCentro}
                 </span>
-                <span className="text-xs text-muted-foreground">{etiquetaTotal}</span>
+                <span className="mt-0.5 max-w-full truncate text-[10px] text-muted-foreground">
+                  {etiquetaTotal}
+                </span>
               </div>
             </div>
           ) : (
@@ -432,25 +430,55 @@ function PanelDonut({
             </p>
           )}
 
-          {/* Resumen por color debajo del grafico: cada porcentaje te dice
-              que porcion del donut representa, en el mismo color del sector. */}
-          <div className="flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:flex-col sm:items-stretch sm:gap-y-2.5">
-            {porciones.map((p) => (
-              <div key={p.key} className="flex items-center gap-2">
-                <span
-                  aria-hidden
-                  className="size-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: p.color }}
-                />
-                <span className="min-w-0 truncate text-sm font-medium tabular-nums">
-                  {formatPercent(total === 0 ? 0 : p.valor / total, 1)}
-                </span>
-                <span className="min-w-0 truncate text-xs text-muted-foreground">
-                  {p.label}
-                </span>
-              </div>
-            ))}
-          </div>
+          {/* Resumen por color debajo del grafico. Cada fila resaltala sector
+              correspondiente del donut, asi que no hace falta tooltip
+              flotante. En movil el mismo gesto con el dedo la resalta. */}
+          <ul className="flex w-full flex-col gap-1">
+            {porciones.map((p, i) => {
+              const activo = i === indiceActivo;
+              return (
+                <li key={p.key}>
+                  <button
+                    type="button"
+                    onMouseEnter={() => setIndiceActivo(i)}
+                    onMouseLeave={() => setIndiceActivo(null)}
+                    onFocus={() => setIndiceActivo(i)}
+                    onBlur={() => setIndiceActivo(null)}
+                    onClick={() =>
+                      setIndiceActivo(activo ? null : i)
+                    }
+                    aria-pressed={activo}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors",
+                      activo ? "bg-muted" : "hover:bg-muted/60",
+                    )}
+                  >
+                    <span
+                      aria-hidden
+                      className="size-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: p.color }}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                      {p.label}
+                    </span>
+                    {/* El importe aparece al resaltar, en el hueco de la fila
+                        sin desplazar el porcentaje. */}
+                    <span
+                      className={cn(
+                        "w-0 shrink-0 overflow-hidden text-right text-xs tabular-nums transition-all",
+                        activo ? "w-20 opacity-100" : "w-0 opacity-0",
+                      )}
+                    >
+                      {formatCOP(p.valor)}
+                    </span>
+                    <span className="w-12 shrink-0 text-right text-sm font-medium tabular-nums">
+                      {formatPercent(total === 0 ? 0 : p.valor / total, 1)}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
           </div>
         </div>
       </CardContent>
