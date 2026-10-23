@@ -135,7 +135,7 @@ export function BalanceCards({
             <BotonKebab titulo={t.titulo} className="-mt-1 -mr-1" />
           </div>
 
-          <p className="mt-3 text-2xl font-bold tabular-nums text-foreground xl:text-3xl">
+          <p className="mt-3 text-xl font-bold tabular-nums text-foreground xl:text-2xl">
             {t.valor}
           </p>
 
