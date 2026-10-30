@@ -57,7 +57,11 @@ export function GastosView({
   filtros: FiltrosEfectivos;
   mesOptions: MesOption[];
 }) {
-  const [open, setOpen] = useState(false);
+  // El panel de escritorio y la hoja inferior de mobile son DOS formularios
+  // distintos, así que cada uno lleva su propio estado de apertura: con un
+  // solo `open` los dos se abrian al tiempo y quedaban superpuestos.
+  const [openPanel, setOpenPanel] = useState(false);
+  const [openHoja, setOpenHoja] = useState(false);
 
   const [estadoFiltros, setEstadoFiltros] = useState(filtros);
 
@@ -71,7 +75,12 @@ export function GastosView({
   }, [filtrosKey, filtros]);
 
   const total = gastos.reduce((s, g) => s + g.valor, 0);
-  const cerrar = () => setOpen(false);
+  // Días distintos en el listado: es la cantidad de grupos del accordion.
+  const dias = new Set(gastos.map((g) => g.fecha.slice(0, 10))).size;
+  const cerrar = () => {
+    setOpenPanel(false);
+    setOpenHoja(false);
+  };
 
   // Solo los filtros NO temporales cuentan para el badge del toolbar: el
   // período (mes / desde / hasta) es el estado por defecto de la lista.
@@ -102,7 +111,7 @@ export function GastosView({
         activeFilters={filtrosActivos}
         actions={
           /* Desktop: botón en el toolbar que abre un panel lateral */
-          <Sheet open={open} onOpenChange={setOpen}>
+          <Sheet open={openPanel} onOpenChange={setOpenPanel}>
             <SheetTrigger className="hidden md:inline-flex h-9 px-4 py-2 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90">
               <Plus className="size-4" />
               Nuevo gasto
@@ -163,8 +172,9 @@ export function GastosView({
         <CardHeader>
           <CardTitle>Listado de gastos</CardTitle>
           <CardDescription>
-            {gastos.length} registro{gastos.length === 1 ? "" : "s"}
-            {estadoFiltros.agruparPorMes ? " agrupados por mes" : ""}
+            {gastos.length} registro{gastos.length === 1 ? "" : "s"} · {dias}{" "}
+            día{dias === 1 ? "" : "s"}
+            {estadoFiltros.agruparPorMes ? " agrupados por mes" : " agrupados por día"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -183,7 +193,7 @@ export function GastosView({
       </Card>
 
       {/* ── Mobile: FAB + panel inferior (un solo toque) ── */}
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet open={openHoja} onOpenChange={setOpenHoja}>
         <SheetTrigger
           className="md:hidden fixed bottom-6 right-6 z-30 size-14 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center justify-center"
           aria-label="Nuevo gasto"

@@ -9,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { filtrosToQuery } from "@/lib/search-params";
 
 export type MesOption = {
   /** Clave 'YYYY-MM'. Usa "all" para "Todos". */

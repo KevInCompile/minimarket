@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useMemo, type ReactNode } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { X, Filter, SlidersHorizontal, ChevronDown } from "lucide-react";
@@ -51,15 +51,7 @@ export function FiltrosBar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [desdeStr, setDesdeStr] = useState(toInputDate(desde));
-  const [hastaStr, setHastaStr] = useState(toInputDate(hasta));
-  // Estado de expansion mobile. En desktop el panel se ve siempre.
   const [expandido, setExpandido] = useState(false);
-
-  useEffect(() => {
-    setDesdeStr(toInputDate(desde));
-    setHastaStr(toInputDate(hasta));
-  }, [desde, hasta]);
 
   // Cuántos filtros específicos (no temporales) están activos.
   // Usado para el badge del botón "Filtros" en mobile.
@@ -193,19 +185,19 @@ export function FiltrosBar({
               <>
                 <Field label="Desde" className="min-w-[140px] md:w-[160px]">
                   <Input
+                    key={`desde-${desde.getTime()}`}
                     type="date"
                     name="desde"
-                    value={desdeStr}
-                    onChange={(e) => setDesdeStr(e.target.value)}
+                    defaultValue={toInputDate(desde)}
                     className="w-full"
                   />
                 </Field>
                 <Field label="Hasta" className="min-w-[140px] md:w-[160px]">
                   <Input
+                    key={`hasta-${hasta.getTime()}`}
                     type="date"
                     name="hasta"
-                    value={hastaStr}
-                    onChange={(e) => setHastaStr(e.target.value)}
+                    defaultValue={toInputDate(hasta)}
                     className="w-full"
                   />
                 </Field>

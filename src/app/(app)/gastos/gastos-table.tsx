@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { ChevronDown, Trash2 } from "lucide-react";
 import { formatCOP, formatShortDate } from "@/lib/format";
 import { diaSemana } from "@/lib/dates";
 import {
@@ -18,6 +18,7 @@ import {
   StatusBadge,
   tonoDePagadoCon,
 } from "@/components/status-badge";
+import { cn } from "@/lib/utils";
 
 type GastoView = {
   id: string;
@@ -37,43 +38,175 @@ function BadgePagadoCon({ pagadoCon }: { pagadoCon: GastoView["pagadoCon"] }) {
   );
 }
 
-export function GastosTable({
-  gastos,
-  agruparPorMes = false,
+/** Un día del accordion: los gastos de esa fecha y su total. */
+type GrupoDia = {
+  /** Clave del día: "YYYY-MM-DD". */
+  key: string;
+  fecha: Date;
+  items: GastoView[];
+  total: number;
+};
+
+/** Un mes (solo se usa en el modo "agrupar por mes"). */
+type GrupoMes = {
+  /** Clave del mes: "YYYY-MM". */
+  key: string;
+  label: string;
+  items: GastoView[];
+  total: number;
+};
+
+/**
+ * Agrupa los gastos por día.
+ *
+ * Los gastos llegan ordenados por fecha descendente, así que el primer grupo
+ * es el día más reciente.
+ */
+function agruparGastosPorDia(gastos: GastoView[]): GrupoDia[] {
+  const mapa = new Map<string, GastoView[]>();
+  for (const g of gastos) {
+    // `fecha` viene como YYYY-MM-DD; los primeros 10 chars son el día.
+    const key = g.fecha.slice(0, 10);
+    const items = mapa.get(key);
+    if (items) items.push(g);
+    else mapa.set(key, [g]);
+  }
+
+  return Array.from(mapa, ([key, items]) => ({
+    key,
+    fecha: new Date(`${key}T00:00:00.000Z`),
+    items,
+    total: items.reduce((s, g) => s + g.valor, 0),
+  }));
+}
+
+/** Agrupa los gastos por mes (modo "agrupar por mes"). */
+function agruparGastosPorMes(gastos: GastoView[]): GrupoMes[] {
+  const mapa = new Map<string, GastoView[]>();
+  for (const g of gastos) {
+    const key = g.fecha.slice(0, 7); // "YYYY-MM"
+    const items = mapa.get(key);
+    if (items) items.push(g);
+    else mapa.set(key, [g]);
+  }
+
+  const MESES_LARGO = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
+
+  return Array.from(mapa.entries())
+    .sort(([a], [b]) => b.localeCompare(a)) // más reciente arriba
+    .map(([key, items]) => {
+      const [y, m] = key.split("-").map(Number);
+      return {
+        key,
+        label: `${MESES_LARGO[m - 1]} ${y}`,
+        items,
+        total: items.reduce((s, g) => s + g.valor, 0),
+      };
+    });
+}
+
+/**
+ * Accordion por día: una cabecera por día (fecha, cantidad de gastos y total)
+ * que al desplegar muestra los gastos de ese día.
+ *
+ * Por defecto queda abierto solo el día más reciente; el resto, cerrado. Cada
+ * clic del usuario se guarda como una decisión explícita para ese día.
+ */
+function AcordeonPorDia({
+  dias,
+  diaAbiertoPorDefecto,
 }: {
-  gastos: GastoView[];
-  agruparPorMes?: boolean;
+  dias: GrupoDia[];
+  diaAbiertoPorDefecto?: string;
 }) {
-  if (!agruparPorMes) {
-    return (
-      <ResponsiveTable
-        rows={gastos}
-        rowKey={(g) => g.id}
-        emptyMessage="No hay gastos en este periodo."
-        columns={[
-          {
-          key: "fecha",
-          header: "Fecha",
-          cell: (g) => (
-            <div>
-              <div className="text-sm">{diaSemana(new Date(g.fecha))}</div>
-              <div className="text-xs text-muted-foreground">
-                {formatShortDate(new Date(g.fecha))}
-              </div>
+  const [decisiones, setDecisiones] = useState<Record<string, boolean>>({});
+
+  return (
+    <div className="space-y-2">
+      {dias.map((dia) => {
+        const abierto =
+          decisiones[dia.key] ?? dia.key === diaAbiertoPorDefecto;
+        const panelId = `gastos-panel-${dia.key}`;
+
+        return (
+          <div
+            key={dia.key}
+            className="overflow-hidden rounded-lg border border-border"
+          >
+            <button
+              type="button"
+              aria-expanded={abierto}
+              aria-controls={panelId}
+              onClick={() =>
+                setDecisiones((d) => ({ ...d, [dia.key]: !abierto }))
+              }
+              className="flex w-full items-center justify-between gap-3 bg-muted/40 px-3 py-2 text-left transition-colors hover:bg-muted/70"
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <ChevronDown
+                  className={cn(
+                    "size-4 shrink-0 text-muted-foreground transition-transform",
+                    !abierto && "-rotate-90",
+                  )}
+                />
+                <span className="truncate text-sm font-medium">
+                  {diaSemana(dia.fecha)}
+                </span>
+                <span className="truncate text-sm text-muted-foreground">
+                  {formatShortDate(dia.fecha)}
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-3">
+                <span className="text-xs text-muted-foreground">
+                  {dia.items.length}{" "}
+                  {dia.items.length === 1 ? "gasto" : "gastos"}
+                </span>
+                <span className="text-sm font-semibold tabular-nums">
+                  {formatCOP(dia.total)}
+                </span>
+              </span>
+            </button>
+
+            <div id={panelId} hidden={!abierto} className="border-t border-border">
+              <TablaGastos items={dia.items} />
             </div>
-          ),
-        },
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Filas de los gastos de un día.
+ *
+ * Reusa `ResponsiveTable` para que en mobile se vean como tarjetas igual que
+ * antes, y para no tener dos tablas distintas que mantener.
+ */
+function TablaGastos({ items }: { items: GastoView[] }) {
+  return (
+    <ResponsiveTable
+      rows={items}
+      rowKey={(g) => g.id}
+      emptyMessage=""
+      columns={[
         {
           key: "proveedor",
           header: "Proveedor",
-          cell: (g) => (
-            <div>
-              <div className="font-medium">{g.proveedor}</div>
-              {g.nota && (
-                <div className="text-xs text-muted-foreground">{g.nota}</div>
-              )}
-            </div>
-          ),
+          cell: (g) => <span className="font-medium">{g.proveedor}</span>,
         },
         {
           key: "tipo",
@@ -91,36 +224,31 @@ export function GastosTable({
           ),
         },
         {
-          key: "actions",
+          key: "nota",
+          header: "Nota",
+          hideOnMobile: true,
+          cell: (g) =>
+            g.nota ? (
+              <span className="text-sm text-muted-foreground">{g.nota}</span>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            ),
+        },
+        {
+          key: "acciones",
           header: "",
           align: "right",
           cell: (g) => (
-            <DeleteGastoButton
-              id={g.id}
-              proveedor={g.proveedor}
-              valor={g.valor}
-            />
+            <DeleteGastoButton id={g.id} proveedor={g.proveedor} valor={g.valor} />
           ),
         },
       ]}
       fields={[
         {
-          key: "fecha",
-          label: "Fecha",
-          render: (g) => (
-            <div className="text-right">
-              <div>{diaSemana(new Date(g.fecha))}</div>
-              <div className="text-xs text-muted-foreground">
-                {formatShortDate(new Date(g.fecha))}
-              </div>
-            </div>
-          ),
-        },
-        {
           key: "proveedor",
           label: "Proveedor",
           render: (g) => (
-            <div className="text-right">
+            <div>
               <div className="font-medium">{g.proveedor}</div>
               {g.nota && (
                 <div className="text-xs text-muted-foreground">{g.nota}</div>
@@ -144,7 +272,7 @@ export function GastosTable({
           fullWidth: true,
         },
         {
-          key: "actions",
+          key: "acciones",
           label: "",
           render: (g) => (
             <div className="flex justify-end">
@@ -161,140 +289,46 @@ export function GastosTable({
   );
 }
 
-  // ---------------------------------------------------------------------
-  // Modo agrupado: un bloque por mes, con subtotal visible.
-  // ---------------------------------------------------------------------
-  type Grupo = { key: string; label: string; items: GastoView[] };
-  const grupos: Grupo[] = (() => {
-    const map = new Map<string, GastoView[]>();
-    for (const g of gastos) {
-      // fecha viene como YYYY-MM-DD; usamos los primeros 7 chars para agrupar.
-      const key = g.fecha.slice(0, 7); // "YYYY-MM"
-      const arr = map.get(key) ?? [];
-      arr.push(g);
-      map.set(key, arr);
-    }
-    const MESES_LARGO = [
-      "Enero",
-      "Febrero",
-      "Marzo",
-      "Abril",
-      "Mayo",
-      "Junio",
-      "Julio",
-      "Agosto",
-      "Septiembre",
-      "Octubre",
-      "Noviembre",
-      "Diciembre",
-    ];
-    return Array.from(map.entries())
-      .sort(([a], [b]) => b.localeCompare(a)) // más reciente arriba
-      .map(([key, items]) => {
-        const [y, m] = key.split("-").map(Number);
-        return {
-          key,
-          label: `${MESES_LARGO[m - 1]} ${y}`,
-          items,
-        };
-      });
-  })();
-
-  if (grupos.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground py-6 text-center">
-        No hay gastos en este periodo.
-      </p>
-    );
-  }
+export function GastosTable({
+  gastos,
+  agruparPorMes = false,
+}: {
+  gastos: GastoView[];
+  agruparPorMes?: boolean;
+}) {
+  const dias = agruparGastosPorDia(gastos);
+  const meses = agruparGastosPorMes(gastos);
+  // El día más reciente de toda la lista es el que queda abierto.
+  const diaAbiertoPorDefecto = dias[0]?.key;
 
   return (
-    <div className="space-y-6">
-      {grupos.map((grupo) => {
-        const subtotal = grupo.items.reduce((s, g) => s + g.valor, 0);
-        return (
-          <section key={grupo.key} className="space-y-2">
-            <header className="flex items-baseline justify-between gap-3 rounded-md bg-muted/40 px-3 py-2">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {grupo.label}
-              </h3>
-              <span className="text-sm font-semibold tabular-nums">
-                {subtotal.toLocaleString("es-CO", {
-                  style: "currency",
-                  currency: "COP",
-                  maximumFractionDigits: 0,
-                })}
-              </span>
-            </header>
-            <ResponsiveTable
-              rows={grupo.items}
-              rowKey={(g) => g.id}
-              emptyMessage=""
-              columns={[
-                {
-                  key: "fecha",
-                  header: "Fecha",
-                  cell: (g) => (
-                    <div className="text-sm">
-                      <div className="font-medium">
-                        {formatShortDate(new Date(g.fecha + "T00:00:00.000Z"))}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {diaSemana(new Date(g.fecha + "T00:00:00.000Z"))}
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  key: "proveedor",
-                  header: "Proveedor",
-                  cell: (g) => <span className="font-medium">{g.proveedor}</span>,
-                },
-                {
-                  key: "tipo",
-                  header: "Tipo",
-                  cell: (g) => <BadgePagadoCon pagadoCon={g.pagadoCon} />,
-                },
-                {
-                  key: "valor",
-                  header: "Valor",
-                  align: "right",
-                  cell: (g) => (
-                    <span className="font-medium tabular-nums">
-                      {formatCOP(g.valor)}
-                    </span>
-                  ),
-                },
-                {
-                  key: "nota",
-                  header: "Nota",
-                  hideOnMobile: true,
-                  cell: (g) =>
-                    g.nota ? (
-                      <span className="text-sm text-muted-foreground">
-                        {g.nota}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    ),
-                },
-                {
-                  key: "acciones",
-                  header: "",
-                  align: "right",
-                  cell: (g) => (
-                    <DeleteGastoButton
-                      id={g.id}
-                      proveedor={g.proveedor}
-                      valor={g.valor}
-                    />
-                  ),
-                },
-              ]}
-            />
-          </section>
-        );
-      })}
+    <div data-slot="gastos-acordeon" className="space-y-2">
+      {gastos.length === 0 ? (
+        <p className="py-6 text-center text-sm text-muted-foreground">
+          No hay gastos en este periodo.
+        </p>
+      ) : agruparPorMes ? (
+        <div className="space-y-6">
+          {meses.map((mes) => (
+            <section key={mes.key} className="space-y-2">
+              <header className="flex items-baseline justify-between gap-3 rounded-md bg-muted/40 px-3 py-2">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  {mes.label}
+                </h3>
+                <span className="text-sm font-semibold tabular-nums">
+                  {formatCOP(mes.total)}
+                </span>
+              </header>
+              <AcordeonPorDia
+                dias={agruparGastosPorDia(mes.items)}
+                diaAbiertoPorDefecto={diaAbiertoPorDefecto}
+              />
+            </section>
+          ))}
+        </div>
+      ) : (
+        <AcordeonPorDia dias={dias} diaAbiertoPorDefecto={diaAbiertoPorDefecto} />
+      )}
     </div>
   );
 }

@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/sheet";
 import { BotonKebab } from "@/components/boton-kebab";
 import { UsuarioForm, UsuarioList } from "./usuario-form";
-import type { UsuarioState } from "@/server/actions/usuarios";
 
 type UsuarioView = {
   id: string;
@@ -31,7 +30,6 @@ type UsuarioView = {
   activo: boolean;
 };
 
-const INITIAL: UsuarioState = { ok: true, ts: 0 };
 
 export function UsuariosView({
   usuarios,

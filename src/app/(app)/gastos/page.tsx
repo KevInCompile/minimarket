@@ -57,7 +57,7 @@ export default async function GastosPage({ searchParams }: Props) {
       : {}),
   };
 
-  const [gastos, proveedores, mesesConDatos, totalProveedores] =
+  const [gastos, proveedores, mesesConDatos] =
     await Promise.all([
       prisma.gasto.findMany({
         where,

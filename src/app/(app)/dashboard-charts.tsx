@@ -13,7 +13,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { MoreHorizontal } from "lucide-react";
 import { cn } from "cn";
 import {
   Card,
@@ -47,7 +46,6 @@ import { BotonKebab } from "@/components/boton-kebab";
 const COLOR_BARRA_MUDA = "var(--muted)";
 const COLOR_ACENTO = "var(--primary)";
 const COLOR_SKY = "#0284c7";
-const COLOR_ESMERALDA = "#10b981";
 const COLOR_VIOLETA = "#8b5cf6";
 const COLOR_AMARILLO = "#f59e0b";
 

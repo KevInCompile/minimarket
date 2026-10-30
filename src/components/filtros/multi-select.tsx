@@ -25,7 +25,6 @@ export function MultiSelect({
   value,
   onChange,
   name,
-  placeholder = "Seleccionar…",
   emptyLabel = "Todos",
   className,
 }: {
@@ -34,8 +33,9 @@ export function MultiSelect({
   onChange: (next: string[]) => void;
   /** name del input hidden; el FiltrosBar lo lee del FormData. */
   name: string;
-  placeholder?: string;
   emptyLabel?: string;
+  /** Texto mostrado cuando no hay nada seleccionado. */
+  placeholder?: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);

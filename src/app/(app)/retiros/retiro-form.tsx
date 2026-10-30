@@ -58,11 +58,9 @@ export function RetiroForm({
 }) {
   const [state, action, pending] = useActionState(crearRetiroAction, INITIAL);
   const lastTs = useRef(0);
-  const [tipo, setTipo] = useState<string>("OTRO");
   const [valor, setValor] = useState("");
   const [saleDe, setSaleDe] = useState<string>("EFECTIVO");
 
-  const handleTipo = (v: string | null) => setTipo(v ?? "OTRO");
   const handleSaleDe = (v: string | null) => setSaleDe(v ?? "EFECTIVO");
 
   useEffect(() => {
