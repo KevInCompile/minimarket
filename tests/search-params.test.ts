@@ -3,8 +3,37 @@ import {
   parseMesLabel,
   mesRange,
   mesKey,
+  toISODateLocal,
 } from "../src/lib/dates";
 import { parseFiltrosComunes, filtrosToQuery } from "../src/lib/search-params";
+
+describe("dates - toISODateLocal", () => {
+  // El constructor local de Date garantiza que la hora sea local sin
+  // importar la zona horaria donde corra el test.
+  it("devuelve la fecha del reloj del usuario, no la de UTC", () => {
+    // 22 de octubre, 23:30 hora local. En UTC-5 ya es el 23, que es
+    // exactamente el bug que reporto el usuario.
+    expect(toISODateLocal(new Date(2026, 9, 22, 23, 30))).toBe("2026-10-22");
+    // Madrugada: tampoco debe adelantarse.
+    expect(toISODateLocal(new Date(2026, 9, 22, 0, 30))).toBe("2026-10-22");
+  });
+
+  it("no cambia de dia dentro de la misma fecha local", () => {
+    for (const hora of [0, 6, 12, 18, 23]) {
+      expect(toISODateLocal(new Date(2026, 9, 22, hora, 0))).toBe("2026-10-22");
+    }
+  });
+
+  it("formatea meses y dias con dos digitos", () => {
+    expect(toISODateLocal(new Date(2026, 0, 5))).toBe("2026-01-05");
+    expect(toISODateLocal(new Date(2026, 11, 31))).toBe("2026-12-31");
+  });
+
+  it("cruza el cambio de dia correctamente", () => {
+    expect(toISODateLocal(new Date(2026, 9, 31, 23, 59))).toBe("2026-10-31");
+    expect(toISODateLocal(new Date(2026, 10, 1, 0, 1))).toBe("2026-11-01");
+  });
+});
 
 describe("dates - parseMesLabel", () => {
   it("devuelve el label legible en español", () => {

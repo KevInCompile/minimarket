@@ -33,6 +33,25 @@ export function toISODate(fecha: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+/**
+ * Convierte a 'YYYY-MM-DD' usando la fecha del reloj del usuario.
+ *
+ * `toISODate` usa UTC, que es lo correcto para serializar fechas que ya
+ * viven en UTC (queries, comparaciones, fechas almacenadas).
+ *
+ * Para el VALOR POR DEFECTO de un input de fecha la regla es otra: el
+ * usuario piensa en su reloj, no en UTC. En Colombia (UTC-5) a las 19:00
+ * la fecha UTC ya es la del día siguiente, así que el formulario se
+ * abría con "mañana" en vez de "hoy". Por eso los formularios usan esta
+ * función y no `toISODate`.
+ */
+export function toISODateLocal(fecha: Date): string {
+  const y = fecha.getFullYear();
+  const m = String(fecha.getMonth() + 1).padStart(2, "0");
+  const d = String(fecha.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export function fromISODate(s: string): Date {
   const [y, m, d] = s.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d));

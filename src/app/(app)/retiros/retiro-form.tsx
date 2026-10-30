@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toISODate } from "@/lib/dates";
+import { toISODateLocal } from "@/lib/dates";
 import { Plus, AlertCircle } from "lucide-react";
 import { formatCOP } from "@/lib/format";
 import { useState } from "react";
@@ -89,7 +89,7 @@ export function RetiroForm({
           id="fecha"
           name="fecha"
           type="date"
-          defaultValue={toISODate(new Date())}
+          defaultValue={toISODateLocal(new Date())}
           required
         />
       </div>

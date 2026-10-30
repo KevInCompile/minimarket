@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toISODate } from "@/lib/dates";
+import { toISODateLocal } from "@/lib/dates";
 import { Plus } from "lucide-react";
 import { crearGastoAction, type GastoState } from "@/server/actions/gastos";
 
@@ -61,7 +61,7 @@ export function GastoForm({
           id="fecha"
           name="fecha"
           type="date"
-          defaultValue={toISODate(new Date())}
+          defaultValue={toISODateLocal(new Date())}
           required
         />
       </div>

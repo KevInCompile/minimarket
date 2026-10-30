@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
-import { toISODate } from "@/lib/dates";
+import { toISODateLocal } from "@/lib/dates";
 
 const INITIAL: CrearCierreState = { ok: true, ts: 0 };
 
@@ -40,7 +40,7 @@ export function CrearCierreForm({
     }
   }, [state, onSuccess, onClose]);
 
-  const today = toISODate(new Date());
+  const today = toISODateLocal(new Date());
 
   return (
     <form action={action} className="flex items-end gap-3 flex-wrap">
