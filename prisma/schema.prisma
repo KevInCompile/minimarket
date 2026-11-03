@@ -47,6 +47,10 @@ model Tienda {
   telefono  String?
   direccion String?
   activa    Boolean  @default(true)
+  /// Dia del mes (1-28) en que se reinicia el periodo de la tienda.
+  /// Con 1 el periodo es el mes calendario; con 15 el periodo va del 15
+  /// de un mes al 14 del siguiente. Cada negocio tiene su corte.
+  diaCorte  Int      @default(1)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -16,6 +16,7 @@ const ADMIN_ONLY_PREFIXES = [
   "/pedidos",
   "/proveedores",
   "/usuarios",
+  "/configuracion",
 ];
 
 const PUBLIC_PATHS = ["/login", "/forbidden", "/registro"];

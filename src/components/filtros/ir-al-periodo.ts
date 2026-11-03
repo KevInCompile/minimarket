@@ -4,7 +4,7 @@ import { useCallback, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 // Import RELATIVO a propósito: Vitest no resuelve el alias "@/", y este
 // módulo se prueba desde `tests/` (la parte pura de la decisión de navegar).
-import { dateInRangeUTC, fromISODate, mesKey } from "../../lib/dates";
+import { dateInRangeUTC, fromISODate, periodoKeyDe } from "../../lib/dates";
 
 /**
  * Decisión de navegación al período de un registro recién guardado.
@@ -28,8 +28,8 @@ import { dateInRangeUTC, fromISODate, mesKey } from "../../lib/dates";
  * El cálculo es UTC, el mismo que usa el servidor para resolver `?mes=`:
  * así la clave que se pone en la URL abre exactamente el mismo período.
  */
-export function mesDeFecha(fecha: Date): string {
-  return mesKey(fecha);
+export function mesDeFecha(fecha: Date, diaCorte = 1): string {
+  return periodoKeyDe(fecha, diaCorte);
 }
 
 /**
@@ -73,9 +73,10 @@ export function urlDelPeriodo(
   pathname: string,
   search: string,
   fecha: Date,
+  diaCorte = 1,
 ): string {
   const params = new URLSearchParams(search);
-  params.set("mes", mesDeFecha(fecha));
+  params.set("mes", mesDeFecha(fecha, diaCorte));
   params.delete("desde");
   params.delete("hasta");
   const qs = params.toString();
@@ -93,9 +94,11 @@ export function urlDelPeriodo(
 export function useIrAlPeriodo({
   desde,
   hasta,
+  diaCorte = 1,
 }: {
   desde?: Date;
   hasta?: Date;
+  diaCorte?: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -109,9 +112,14 @@ export function useIrAlPeriodo({
       if (Number.isNaN(fecha.getTime())) return;
       if (!debeNavegar(fecha, desde, hasta)) return;
 
-      const url = urlDelPeriodo(pathname, searchParams.toString(), fecha);
+      const url = urlDelPeriodo(
+        pathname,
+        searchParams.toString(),
+        fecha,
+        diaCorte,
+      );
       startTransition(() => router.push(url));
     },
-    [desde, hasta, pathname, router, searchParams],
+    [desde, hasta, diaCorte, pathname, router, searchParams],
   );
 }

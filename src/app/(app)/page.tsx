@@ -13,13 +13,13 @@ import {
   type RetiroForCalc,
   type TransferenciaForCalc,
 } from "@/lib/calc";
-import { startOfDayUTC, toISODate, parseMesLabel, mesKey, mesRange } from "@/lib/dates";
+import { startOfDayUTC, toISODate, etiquetaPeriodo, mesRange, periodoKeyDe } from "@/lib/dates";
 import {
   navegacionMes,
   parseFiltrosComunes,
   periodoComparacion,
 } from "@/lib/search-params";
-import { requireTiendaId } from "@/lib/auth-guard";
+import { requireTienda } from "@/lib/auth-guard";
 import { BalanceCards } from "./balance-cards";
 import {
   EvolucionMensual,
@@ -45,22 +45,22 @@ type Props = {
 
 export default async function DashboardPage({ searchParams }: Props) {
   await auth();
-  const tiendaId = await requireTiendaId();
+  const { id: tiendaId, diaCorte } = await requireTienda();
   const params = await searchParams;
   const hoy = startOfDayUTC(new Date());
 
   // Mismo motor de filtros que las páginas con listas: `?mes=YYYY-MM` gana
   // sobre `desde`/`hasta`, y si no hay nada se usa el mes actual.
-  const filtros = await parseFiltrosComunes(searchParams);
+  const filtros = await parseFiltrosComunes(searchParams, undefined, diaCorte);
 
   // Meses vecinos para las flechas del selector (la derecha se apaga en el
   // mes actual).
-  const navegacion = navegacionMes(filtros.mes, filtros.hasta);
+  const navegacion = navegacionMes(filtros.mes, filtros.hasta, diaCorte);
 
   // Periodo contra el que se compara: si el usuario está viendo un mes, es
   // el mes calendario anterior; si está viendo un rango libre, es el rango
   // anterior del mismo largo.
-  const comparacion = periodoComparacion(filtros.mes, filtros.desde, filtros.hasta);
+  const comparacion = periodoComparacion(filtros.mes, filtros.desde, filtros.hasta, diaCorte);
   const prev = { desde: comparacion.desde, hasta: comparacion.hasta };
   const etiquetaComparacion = comparacion.esMes
     ? "vs mes anterior"
@@ -107,7 +107,7 @@ export default async function DashboardPage({ searchParams }: Props) {
         take: 8,
         include: { proveedor: { select: { nombre: true } } },
       }),
-      obtenerMesesConDatos(tiendaId),
+      obtenerMesesConDatos(tiendaId, diaCorte),
     ]);
 
   const gastosForCalc = gastos.map(toGastoForCalc);
@@ -156,14 +156,14 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   const mesOptions = mesesConDatos.map((k) => ({
     value: k,
-    label: parseMesLabel(k) ?? k,
+    label: etiquetaPeriodo(k, diaCorte) ?? k,
   }));
 
   // El rótulo del periodo incluye el nombre del mes cuando el rango viene de
   // un atajo de mes, para que se entienda de un vistazo qué se está viendo.
   const rangoTexto = `${toISODate(filtros.desde)} al ${toISODate(filtros.hasta)}`;
   const periodoTexto = filtros.mes
-    ? `${parseMesLabel(filtros.mes) ?? filtros.mes} (${rangoTexto})`
+    ? `${etiquetaPeriodo(filtros.mes, diaCorte) ?? filtros.mes} (${rangoTexto})`
     : rangoTexto;
 
   // El `mes` crudo de la URL (sólo si es una clave válida) es lo que le dice
@@ -188,6 +188,7 @@ export default async function DashboardPage({ searchParams }: Props) {
             currentMes={filtros.mes}
             anterior={navegacion.anterior}
             siguiente={navegacion.siguiente}
+              diaCorte={diaCorte}
           />
         </div>
       </header>
@@ -297,22 +298,32 @@ function ultimos12Meses(hasta: Date): { desde: Date; hasta: Date } {
  * últimos 12 meses (incluido el actual) para que el selector tenga UI
  * utilizable.
  */
-async function obtenerMesesConDatos(tiendaId: string): Promise<string[]> {
+async function obtenerMesesConDatos(
+  tiendaId: string,
+  diaCorte: number,
+): Promise<string[]> {
+  // El período se ancla al día de corte de la tienda: una fecha del 20 de
+  // octubre, con corte 15, pertenece al período que empezó el 15 de
+  // octubre. Por eso no se agrupa por mes calendario sino por período.
+  const clavePeriodo = `TO_CHAR(
+    fecha - (CASE WHEN EXTRACT(DAY FROM fecha) < ${diaCorte}
+                  THEN INTERVAL '1 month' ELSE INTERVAL '0 days' END),
+    'YYYY-MM')`;
   const result = await prisma.$queryRaw<Array<{ mes: string }>>`
     SELECT mes FROM (
-      SELECT TO_CHAR(fecha, 'YYYY-MM') AS mes
+      SELECT ${clavePeriodo} AS mes
       FROM "Gasto"
       WHERE "tiendaId" = ${tiendaId}
       UNION
-      SELECT TO_CHAR(fecha, 'YYYY-MM')
+      SELECT ${clavePeriodo}
       FROM "Retiro"
       WHERE "tiendaId" = ${tiendaId}
       UNION
-      SELECT TO_CHAR(fecha, 'YYYY-MM')
+      SELECT ${clavePeriodo}
       FROM "TransferenciaDia"
       WHERE "tiendaId" = ${tiendaId}
       UNION
-      SELECT TO_CHAR(fecha, 'YYYY-MM')
+      SELECT ${clavePeriodo}
       FROM "CierreDiario"
       WHERE "tiendaId" = ${tiendaId}
     ) AS meses
@@ -321,13 +332,13 @@ async function obtenerMesesConDatos(tiendaId: string): Promise<string[]> {
   `;
   const fromData = result.map((r) => r.mes);
 
-  // Si no hay datos, devuelve los últimos 12 meses incluido el actual.
+  // Si no hay datos, devuelve los últimos 12 períodos incluido el actual.
   if (fromData.length === 0) {
     const out: string[] = [];
     const hoy = new Date();
     for (let i = 0; i < 12; i++) {
       const d = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() - i, 1));
-      out.push(mesKey(d));
+      out.push(periodoKeyDe(d, diaCorte));
     }
     return out;
   }

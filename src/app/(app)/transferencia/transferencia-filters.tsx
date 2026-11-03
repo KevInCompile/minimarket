@@ -26,7 +26,9 @@ export function TransferenciaFilters({
   siguiente,
   subtitulo,
   actions,
+  diaCorte = 1,
 }: {
+  diaCorte?: number;
   desde: Date;
   hasta: Date;
   mes: string | null;
@@ -51,6 +53,7 @@ export function TransferenciaFilters({
           currentMes={mes}
           anterior={anterior}
           siguiente={siguiente}
+              diaCorte={diaCorte}
         />
       }
       actions={actions}

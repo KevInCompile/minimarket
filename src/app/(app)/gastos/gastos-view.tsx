@@ -54,7 +54,9 @@ export function GastosView({
   anterior,
   siguiente,
   fechaInicial,
+  diaCorte = 1,
 }: {
+  diaCorte?: number;
   gastos: GastoView[];
   proveedores: Proveedor[];
   filtros: FiltrosEfectivos;
@@ -124,6 +126,7 @@ export function GastosView({
             currentMes={estadoFiltros.mes}
             anterior={anterior}
             siguiente={siguiente}
+              diaCorte={diaCorte}
           />
         }
         actions={

@@ -14,9 +14,8 @@
  */
 import {
   fromISODate,
-  mesActual,
   mesAnterior,
-  mesKey,
+  periodoKeyDe,
   mesRange,
   mesSiguiente,
   startOfDayUTC,
@@ -31,21 +30,24 @@ export type FiltrosComunes = {
   desde: Date;
   /** Fecha final del rango (UTC, final del día). */
   hasta: Date;
-  /** Clave 'YYYY-MM' si el rango vino de un atajo de mes. */
+  /** Clave 'YYYY-MM' del período, si el rango vino de un atajo. */
   mes: string | null;
 };
 
 /**
  * Determina los filtros comunes a partir de los `searchParams` recibidos en
  * una page Next.js (Promise). Si `mes` está presente y es válido, devuelve el
- * rango del mes y `mes=key`. Si no, usa `desde`/`hasta` o los `defaults`.
+ * rango del período y `mes=key`. Si no, usa `desde`/`hasta` o los `defaults`.
  *
  * @param searchParams Promise de searchParams típica de Next.js 16.
- * @param defaults Por defecto: desde = primer día del mes actual UTC, hasta = hoy UTC.
+ * @param defaults Por defecto: desde = inicio del período actual, hasta = hoy UTC.
+ * @param diaCorte Día del mes (1-28) en que se reinicia el período de la
+ *   tienda. Con 1 es el mes calendario.
  */
 export async function parseFiltrosComunes(
   searchParams: Promise<Record<string, string | string[] | undefined>>,
   defaults?: { desde?: Date; hasta?: Date },
+  diaCorte = 1,
 ): Promise<FiltrosComunes> {
   const params = await searchParams;
 
@@ -53,9 +55,9 @@ export async function parseFiltrosComunes(
   const hastaRaw = pickString(params.hasta);
   const mesRaw = pickString(params.mes);
 
-  // 1) Mes como atajo (mayor prioridad)
+  // 1) Período como atajo (mayor prioridad)
   if (mesRaw) {
-    const range = mesRange(mesRaw);
+    const range = mesRange(mesRaw, diaCorte);
     if (range) {
       return { desde: range.desde, hasta: range.hasta, mes: mesRaw };
     }
@@ -68,16 +70,18 @@ export async function parseFiltrosComunes(
     return { desde, hasta, mes: null };
   }
 
-  // 3) Defaults: si no se pasa nada, todo el mes actual UTC.
+  // 3) Defaults: el período en curso según el día de corte de la tienda.
   const hoy = startOfDayUTC(new Date());
   const defaultDesde =
-    defaults?.desde ?? new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), 1));
+    defaults?.desde ??
+    mesRange(periodoKeyDe(hoy, diaCorte), diaCorte)?.desde ??
+    new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), 1));
   const defaultHasta = defaults?.hasta ?? endOfDayUTC(hoy);
 
   return {
     desde: startOfDayUTC(defaultDesde),
     hasta: defaultHasta,
-    mes: mesKey(defaultDesde),
+    mes: periodoKeyDe(defaultDesde, diaCorte),
   };
 }
 
@@ -121,32 +125,38 @@ export function fechaPorDefectoPara(hasta: Date): string {
 }
 
 /**
- * Meses vecinos al que el usuario está viendo, para las flechas de
- * navegación del selector de mes.
+ * Períodos vecinos al que el usuario está viendo, para las flechas de
+ * navegación del selector de período.
  */
 export type NavegacionMes = {
-  /** Clave 'YYYY-MM' del mes anterior (null si la clave no es válida). */
+  /** Clave 'YYYY-MM' del período anterior (null si la clave no es válida). */
   anterior: string | null;
-  /** Clave 'YYYY-MM' del mes siguiente (null si no se puede avanzar). */
+  /** Clave 'YYYY-MM' del período siguiente (null si no se puede avanzar). */
   siguiente: string | null;
 };
 
 /**
- * Calcula los meses vecinos del período visible.
+ * Calcula los períodos vecinos del período visible.
  *
- * El mes de referencia es `mes` cuando viene del atajo `?mes=YYYY-MM`; si
- * no, es el mes en que termina el rango (`mesKey(hasta)`).
+ * El período de referencia es `mes` cuando viene del atajo `?mes=YYYY-MM`; si
+ * no, es el período en que termina el rango.
  *
- * `siguiente` solo existe cuando el mes de referencia es ESTRICTAMENTE
- * anterior al mes actual: nunca se puede navegar al futuro. Por eso, en el
- * mes actual la flecha derecha queda deshabilitada.
+ * `siguiente` solo existe cuando el período de referencia es ESTRICTAMENTE
+ * anterior al período en curso: nunca se puede navegar al futuro. Con día
+ * de corte 15 y hoy 3 de noviembre, el período en curso es el que empezó el
+ * 15 de octubre, así que la flecha derecha queda deshabilitada en ése.
  */
-export function navegacionMes(mes: string | null, hasta: Date): NavegacionMes {
-  const referencia = mes ?? mesKey(hasta);
+export function navegacionMes(
+  mes: string | null,
+  hasta: Date,
+  diaCorte = 1,
+): NavegacionMes {
+  const referencia = mes ?? periodoKeyDe(hasta, diaCorte);
   const anterior = mesAnterior(referencia);
   // Las claves 'YYYY-MM' se comparan bien como texto (mismo formato, mismo
   // largo): '2026-09' < '2026-10' < '2027-01'.
-  const puedeAvanzar = referencia < mesActual();
+  const enCurso = periodoKeyDe(new Date(), diaCorte);
+  const puedeAvanzar = referencia < enCurso;
   const siguiente = puedeAvanzar ? mesSiguiente(referencia) : null;
   return { anterior, siguiente };
 }
@@ -189,10 +199,11 @@ export function periodoComparacion(
   mes: string | null,
   desde: Date,
   hasta: Date,
+  diaCorte = 1,
 ): PeriodoComparacion {
   if (mes) {
     const claveAnterior = mesAnterior(mes);
-    const rango = claveAnterior ? mesRange(claveAnterior) : null;
+    const rango = claveAnterior ? mesRange(claveAnterior, diaCorte) : null;
     if (rango) {
       return { desde: rango.desde, hasta: rango.hasta, esMes: true };
     }

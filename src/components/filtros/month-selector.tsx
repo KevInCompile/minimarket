@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { etiquetaPeriodo } from "@/lib/dates";
 
 export type MesOption = {
   /** Clave 'YYYY-MM'. Usa "all" para "Todos". */
@@ -41,6 +42,7 @@ export function MonthSelector({
   currentMes,
   anterior,
   siguiente,
+  diaCorte = 1,
 }: {
   options: MesOption[];
   currentMes: string | null;
@@ -48,6 +50,12 @@ export function MonthSelector({
   anterior?: string | null;
   /** Clave 'YYYY-MM' del mes siguiente (null si no se puede avanzar). */
   siguiente?: string | null;
+  /**
+   * Día de corte de la tienda (1-28). Sirve para etiquetar un período que
+   * no está en la lista de opciones (por ejemplo, un período futuro al que
+   * se llega escribiendo la URL a mano).
+   */
+  diaCorte?: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -120,7 +128,9 @@ export function MonthSelector({
             {(value: string | null) =>
               value === "all"
                 ? "Todos los meses"
-                : (options.find((o) => o.value === value)?.label ?? value)
+                : (options.find((o) => o.value === value)?.label ??
+                  etiquetaPeriodo(value, diaCorte) ??
+                  value)
             }
           </SelectValue>
         </SelectTrigger>

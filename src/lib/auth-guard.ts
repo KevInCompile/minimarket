@@ -2,6 +2,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { normalizarDiaCorte } from "@/lib/dates";
 
 /**
  * Devuelve el user validado contra la DB, o redirige al login si la sesión
@@ -72,4 +73,27 @@ export async function requireTiendaId(): Promise<string> {
   const tiendaId = await getTiendaId();
   if (!tiendaId) redirect("/login");
   return tiendaId;
+}
+
+/**
+ * Requiere una tienda y devuelve su identificador junto con el día de corte
+ * con el que se reinicia el período contable de esa tienda.
+ *
+ * El día de corte va entre 1 y 28: con 1 el período es el mes calendario,
+ * con 15 va del 15 de un mes al 14 del siguiente.
+ */
+export async function requireTienda(): Promise<{
+  id: string;
+  diaCorte: number;
+}> {
+  const tiendaId = await getTiendaId();
+  if (!tiendaId) redirect("/login");
+  const tienda = await prisma.tienda.findUnique({
+    where: { id: tiendaId },
+    select: { id: true, diaCorte: true },
+  });
+  return {
+    id: tiendaId,
+    diaCorte: normalizarDiaCorte(tienda?.diaCorte),
+  };
 }

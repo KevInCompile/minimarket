@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/db";
-import { requireTiendaId } from "@/lib/auth-guard";
+import { requireTienda } from "@/lib/auth-guard";
 import {
   fechaPorDefectoPara,
   navegacionMes,
   parseFiltrosComunes,
 } from "@/lib/search-params";
-import { parseMesLabel, mesKey } from "@/lib/dates";
+import { etiquetaPeriodo, periodoKeyDe } from "@/lib/dates";
 import { GastosView } from "./gastos-view";
 import type { Prisma } from "@prisma/client";
 
@@ -23,14 +23,14 @@ type Props = {
 
 export default async function GastosPage({ searchParams }: Props) {
   const params = await searchParams;
-  const tiendaId = await requireTiendaId();
+  const { id: tiendaId, diaCorte } = await requireTienda();
 
-  const filtros = await parseFiltrosComunes(searchParams);
+  const filtros = await parseFiltrosComunes(searchParams, undefined, diaCorte);
 
   // Meses vecinos para las flechas del selector (la derecha se apaga en el
   // mes actual) y fecha por defecto del formulario: la del mes que el
   // usuario está mirando, no la de hoy.
-  const navegacion = navegacionMes(filtros.mes, filtros.hasta);
+  const navegacion = navegacionMes(filtros.mes, filtros.hasta, diaCorte);
   const fechaInicial = fechaPorDefectoPara(filtros.hasta);
 
   // Filtros específicos de /gastos
@@ -80,19 +80,20 @@ export default async function GastosPage({ searchParams }: Props) {
         select: { id: true, nombre: true },
       }),
       // Meses con datos para el selector de mes
-      obtenerMesesConDatos(tiendaId),
+      obtenerMesesConDatos(tiendaId, diaCorte),
       // Conteo total de proveedores de la tienda (para mostrar "Todos")
       prisma.proveedor.count({ where: { tiendaId, activo: true } }),
     ]);
 
   const mesOptions = mesesConDatos.map((k) => ({
     value: k,
-    label: parseMesLabel(k) ?? k,
+    label: etiquetaPeriodo(k, diaCorte) ?? k,
   }));
 
   return (
     <div className="p-4 md:p-10 max-w-7xl">
       <GastosView
+        diaCorte={diaCorte}
         gastos={gastos.map((g) => ({
           id: g.id,
           fecha: g.fecha.toISOString().slice(0, 10),
@@ -127,12 +128,15 @@ export default async function GastosPage({ searchParams }: Props) {
  * los últimos 12 meses (incluyendo el actual) para que el selector tenga UI
  * utilizable.
  */
-async function obtenerMesesConDatos(tiendaId: string): Promise<string[]> {
+async function obtenerMesesConDatos(tiendaId: string, diaCorte: number): Promise<string[]> {
   const result = await prisma.$queryRaw<Array<{ mes: string }>>`
-    SELECT TO_CHAR(fecha, 'YYYY-MM') AS mes
+    SELECT TO_CHAR(
+             fecha - (CASE WHEN EXTRACT(DAY FROM fecha) < ${diaCorte}
+                           THEN INTERVAL '1 month' ELSE INTERVAL '0 days' END),
+             'YYYY-MM') AS mes
     FROM "Gasto"
     WHERE "tiendaId" = ${tiendaId}
-    GROUP BY TO_CHAR(fecha, 'YYYY-MM')
+    GROUP BY 1
     ORDER BY mes DESC
     LIMIT 18
   `;
@@ -144,7 +148,7 @@ async function obtenerMesesConDatos(tiendaId: string): Promise<string[]> {
     const hoy = new Date();
     for (let i = 0; i < 12; i++) {
       const d = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() - i, 1));
-      out.push(mesKey(d));
+      out.push(periodoKeyDe(d, diaCorte));
     }
     return out;
   }

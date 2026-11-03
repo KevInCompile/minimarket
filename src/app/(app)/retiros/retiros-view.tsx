@@ -58,7 +58,9 @@ export function RetirosView({
   anterior,
   siguiente,
   fechaInicial,
+  diaCorte = 1,
 }: {
+  diaCorte?: number;
   retiros: RetiroView[];
   filtros: FiltrosActivos;
   mesOptions: MesOption[];
@@ -127,6 +129,7 @@ export function RetirosView({
             currentMes={estadoFiltros.mes}
             anterior={anterior}
             siguiente={siguiente}
+              diaCorte={diaCorte}
           />
         }
         actions={

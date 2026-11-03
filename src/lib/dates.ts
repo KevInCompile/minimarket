@@ -99,21 +99,94 @@ export function parseMesLabel(key: string): string | null {
 }
 
 /**
- * Devuelve el rango UTC [desde, hasta] para un mes identificado por
- * 'YYYY-MM'. 'desde' es el primer día del mes a 00:00:00 UTC, 'hasta'
- * es el último día del mes a 23:59:59.999 UTC.
+ * Devuelve el rango UTC [desde, hasta] para un período identificado por
+ * 'YYYY-MM'.
+ *
+ * El período depende del DÍA DE CORTE de la tienda:
+ *  - `diaCorte = 1` (por defecto): el mes calendario, del 1 al último día.
+ *  - `diaCorte = 15`: del 15 de ese mes al 14 del siguiente.
  *
  * Si el input no es válido, devuelve null.
  */
-export function mesRange(key: string): { desde: Date; hasta: Date } | null {
+export function mesRange(
+  key: string,
+  diaCorte = 1,
+): { desde: Date; hasta: Date } | null {
   const m = /^(\d{4})-(\d{2})$/.exec(key);
   if (!m) return null;
   const year = Number(m[1]);
   const month = Number(m[2]);
   if (month < 1 || month > 12) return null;
-  const desde = new Date(Date.UTC(year, month - 1, 1));
-  const hasta = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+  const corte = normalizarDiaCorte(diaCorte);
+  // month es 1-based; Date.UTC usa meses 0-based.
+  const desde = new Date(Date.UTC(year, month - 1, corte));
+  const hasta = new Date(Date.UTC(year, month, corte - 1, 23, 59, 59, 999));
   return { desde, hasta };
+}
+
+/**
+ * Normaliza el día de corte a un entero válido entre 1 y 28.
+ *
+ * El 29, 30 y 31 no valen porque no todos los meses los tienen; el 28
+ * es el último día que existe en todos.
+ */
+export function normalizarDiaCorte(diaCorte: number | null | undefined): number {
+  if (diaCorte == null || !Number.isFinite(diaCorte)) return 1;
+  const n = Math.trunc(diaCorte);
+  if (n < 1) return 1;
+  if (n > 28) return 28;
+  return n;
+}
+
+/**
+ * Clave 'YYYY-MM' del PERÍODO que contiene `fecha`.
+ *
+ * Con `diaCorte = 1` coincide con `mesKey`. Con `diaCorte = 15`, una
+ * fecha del 20 de octubre pertenece al período que empezó el 15 de
+ * octubre (clave '2026-10'), y una del 10 de octubre al que empezó el 15
+ * de septiembre (clave '2026-09').
+ */
+export function periodoKeyDe(fecha: Date, diaCorte = 1): string {
+  const corte = normalizarDiaCorte(diaCorte);
+  const dia = fecha.getUTCDate();
+  // Si el día es anterior al corte, el período empezó el mes anterior.
+  const ref =
+    dia >= corte
+      ? new Date(Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth(), 1))
+      : new Date(Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth() - 1, 1));
+  return mesKey(ref);
+}
+
+/**
+ * Etiqueta legible de un período, según su día de corte.
+ *
+ * Con corte 1 es "Septiembre 2026". Con corte 15 es
+ * "Del 15 de sep al 14 de oct", porque el período no coincide con un mes
+ * del calendario.
+ */
+export function etiquetaPeriodo(key: string | null, diaCorte = 1): string | null {
+  if (!key) return null;
+  const corte = normalizarDiaCorte(diaCorte);
+  if (corte === 1) return parseMesLabel(key);
+
+  const m = /^(\d{4})-(\d{2})$/.exec(key);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  if (month < 1 || month > 12) return null;
+
+  const MESES_CORTOS = [
+    "ene", "feb", "mar", "abr", "may", "jun",
+    "jul", "ago", "sep", "oct", "nov", "dic",
+  ];
+  const inicio = new Date(Date.UTC(year, month - 1, corte));
+  const fin = new Date(Date.UTC(year, month, corte - 1));
+  const mismoAnio = inicio.getUTCFullYear() === fin.getUTCFullYear();
+  const f = (d: Date) =>
+    `${d.getUTCDate()} ${MESES_CORTOS[d.getUTCMonth()]}` +
+    (mismoAnio ? "" : ` ${d.getUTCFullYear()}`);
+
+  return `Del ${f(inicio)} al ${f(fin)}`;
 }
 
 /**

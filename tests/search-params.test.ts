@@ -7,6 +7,9 @@ import {
   mesAnterior,
   mesSiguiente,
   mesActual,
+  normalizarDiaCorte,
+  periodoKeyDe,
+  etiquetaPeriodo,
 } from "../src/lib/dates";
 import {
   parseFiltrosComunes,
@@ -416,5 +419,104 @@ describe("ir-al-periodo - urlDelPeriodo", () => {
       new Date("2026-10-30T00:00:00.000Z"),
     );
     expect(url).toBe("/cierre?mes=2026-10");
+  });
+});
+
+describe("periodos con dia de corte", () => {
+  describe("normalizarDiaCorte", () => {
+    it("deja los valores validos", () => {
+      expect(normalizarDiaCorte(1)).toBe(1);
+      expect(normalizarDiaCorte(15)).toBe(15);
+      expect(normalizarDiaCorte(28)).toBe(28);
+    });
+
+    it("acota los valores fuera de rango", () => {
+      expect(normalizarDiaCorte(0)).toBe(1);
+      expect(normalizarDiaCorte(-5)).toBe(1);
+      expect(normalizarDiaCorte(29)).toBe(28);
+      expect(normalizarDiaCorte(31)).toBe(28);
+      expect(normalizarDiaCorte(null)).toBe(1);
+      expect(normalizarDiaCorte(undefined)).toBe(1);
+      expect(normalizarDiaCorte(NaN)).toBe(1);
+    });
+  });
+
+  describe("mesRange con dia de corte", () => {
+    it("con corte 1 es el mes calendario", () => {
+      const r = mesRange("2026-10", 1);
+      expect(r!.desde.toISOString().slice(0, 10)).toBe("2026-10-01");
+      expect(r!.hasta.toISOString().slice(0, 10)).toBe("2026-10-31");
+    });
+
+    it("con corte 15 va del 15 al 14 del siguiente", () => {
+      const r = mesRange("2026-10", 15);
+      expect(r!.desde.toISOString().slice(0, 10)).toBe("2026-10-15");
+      expect(r!.hasta.toISOString().slice(0, 10)).toBe("2026-11-14");
+    });
+
+    it("con corte 15 en diciembre cruza el ano", () => {
+      const r = mesRange("2026-12", 15);
+      expect(r!.desde.toISOString().slice(0, 10)).toBe("2026-12-15");
+      expect(r!.hasta.toISOString().slice(0, 10)).toBe("2027-01-14");
+    });
+
+    it("con corte 28 respeta los meses cortos", () => {
+      const r = mesRange("2026-02", 28);
+      expect(r!.desde.toISOString().slice(0, 10)).toBe("2026-02-28");
+      expect(r!.hasta.toISOString().slice(0, 10)).toBe("2026-03-27");
+    });
+  });
+
+  describe("periodoKeyDe", () => {
+    it("con corte 1 es el mes calendario", () => {
+      expect(periodoKeyDe(new Date("2026-10-20T00:00:00Z"), 1)).toBe("2026-10");
+      expect(periodoKeyDe(new Date("2026-10-01T00:00:00Z"), 1)).toBe("2026-10");
+    });
+
+    it("con corte 15 una fecha antes del corte pertenece al periodo anterior", () => {
+      // 20 de octubre -> el periodo que empezo el 15 de octubre
+      expect(periodoKeyDe(new Date("2026-10-20T00:00:00Z"), 15)).toBe("2026-10");
+      // 10 de octubre -> el periodo que empezo el 15 de septiembre
+      expect(periodoKeyDe(new Date("2026-10-10T00:00:00Z"), 15)).toBe("2026-09");
+      // El dia exacto del corte pertenece al periodo nuevo
+      expect(periodoKeyDe(new Date("2026-10-15T00:00:00Z"), 15)).toBe("2026-10");
+      expect(periodoKeyDe(new Date("2026-10-14T00:00:00Z"), 15)).toBe("2026-09");
+    });
+
+    it("con corte 15 cruza el ano correctamente", () => {
+      expect(periodoKeyDe(new Date("2027-01-05T00:00:00Z"), 15)).toBe("2026-12");
+      expect(periodoKeyDe(new Date("2026-12-20T00:00:00Z"), 15)).toBe("2026-12");
+    });
+  });
+
+  describe("etiquetaPeriodo", () => {
+    it("con corte 1 muestra el nombre del mes", () => {
+      expect(etiquetaPeriodo("2026-09", 1)).toBe("Septiembre 2026");
+    });
+
+    it("con corte 15 muestra el rango real", () => {
+      const l = etiquetaPeriodo("2026-09", 15);
+      expect(l).toContain("15 sep");
+      expect(l).toContain("14 oct");
+    });
+  });
+
+  describe("navegacionMes con dia de corte", () => {
+    it("no deja avanzar al periodo futuro", () => {
+      const hoy = new Date();
+      const enCurso = periodoKeyDe(hoy, 15);
+      const nav = navegacionMes(enCurso, hoy, 15);
+      expect(nav.siguiente).toBeNull();
+      expect(nav.anterior).not.toBeNull();
+    });
+  });
+
+  describe("periodoComparacion con dia de corte", () => {
+    it("compara contra el periodo calendario anterior", () => {
+      const r = periodoComparacion("2026-10", new Date(), new Date(), 15);
+      expect(r.esMes).toBe(true);
+      expect(r.desde.toISOString().slice(0, 10)).toBe("2026-09-15");
+      expect(r.hasta.toISOString().slice(0, 10)).toBe("2026-10-14");
+    });
   });
 });

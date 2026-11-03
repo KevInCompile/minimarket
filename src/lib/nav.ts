@@ -20,6 +20,7 @@ import {
   StickyNote,
   Truck,
   Users,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 
@@ -116,7 +117,13 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: Users,
         iconClass: "text-teal-600 dark:text-teal-400",
         adminOnly: true,
-        keywords: ["usuario", "usuarios", "personal", "cajero", "empleado", "roles"],
+      },
+      {
+        href: "/configuracion",
+        label: "Configuración",
+        icon: Settings,
+        iconClass: "text-slate-600 dark:text-slate-400",
+        adminOnly: true,
       },
     ],
   },

@@ -31,7 +31,9 @@ export function CierreView({
   anterior,
   siguiente,
   fechaInicial,
+  diaCorte = 1,
 }: {
+  diaCorte?: number;
   serie: CierreDiarioComputed[];
   pendientes: Pendiente[];
   desde: Date;
@@ -60,6 +62,7 @@ export function CierreView({
             currentMes={mes}
             anterior={anterior}
             siguiente={siguiente}
+              diaCorte={diaCorte}
           />
         }
         actions={
