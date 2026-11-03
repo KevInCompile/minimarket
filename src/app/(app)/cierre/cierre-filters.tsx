@@ -14,11 +14,17 @@ export function CierreFilters({
   hasta,
   mes,
   mesOptions,
+  anterior,
+  siguiente,
 }: {
   desde: Date;
   hasta: Date;
   mes: string | null;
   mesOptions: MesOption[];
+  /** Mes anterior para la flecha izquierda del selector (server). */
+  anterior?: string | null;
+  /** Mes siguiente para la flecha derecha del selector (server). */
+  siguiente?: string | null;
 }) {
   return (
     <FiltrosBar
@@ -26,7 +32,12 @@ export function CierreFilters({
       hasta={hasta}
       mes={mes}
       mesSelector={
-        <MonthSelector options={mesOptions} currentMes={mes} />
+        <MonthSelector
+          options={mesOptions}
+          currentMes={mes}
+          anterior={anterior}
+          siguiente={siguiente}
+        />
       }
     />
   );

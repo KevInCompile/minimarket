@@ -64,10 +64,17 @@ function nuevaFila(id: number): Fila {
  */
 export function GastoForm({
   proveedores,
+  fechaInicial,
   onClose,
   onSuccess,
 }: {
   proveedores: Proveedor[];
+  /**
+   * Fecha por defecto ('YYYY-MM-DD'). La page la calcula con el período que
+   * el usuario está viendo: si está viendo un mes pasado, el formulario se
+   * abre con el último día de ese mes. Sin este prop se usa hoy.
+   */
+  fechaInicial?: string;
   onClose?: () => void;
   onSuccess?: () => void;
 }) {
@@ -171,7 +178,8 @@ export function GastoForm({
           id={`${uid}-fecha`}
           name="fecha"
           type="date"
-          defaultValue={toISODateLocal(new Date())}
+          defaultValue={fechaInicial ?? toISODateLocal(new Date())}
+          max={toISODateLocal(new Date())}
           required
         />
       </div>

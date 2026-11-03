@@ -50,9 +50,16 @@ const SALE_DE = [
 ] as const;
 
 export function RetiroForm({
+  fechaInicial,
   onClose,
   onSuccess,
 }: {
+  /**
+   * Fecha por defecto ('YYYY-MM-DD'). La page la calcula con el período que
+   * el usuario está viendo: si está viendo un mes pasado, el formulario se
+   * abre con el último día de ese mes. Sin este prop se usa hoy.
+   */
+  fechaInicial?: string;
   onClose?: () => void;
   onSuccess?: () => void;
 }) {
@@ -87,7 +94,8 @@ export function RetiroForm({
           id="fecha"
           name="fecha"
           type="date"
-          defaultValue={toISODateLocal(new Date())}
+          defaultValue={fechaInicial ?? toISODateLocal(new Date())}
+          max={toISODateLocal(new Date())}
           required
         />
       </div>

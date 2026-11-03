@@ -51,11 +51,20 @@ export function GastosView({
   proveedores,
   filtros,
   mesOptions,
+  anterior,
+  siguiente,
+  fechaInicial,
 }: {
   gastos: GastoView[];
   proveedores: Proveedor[];
   filtros: FiltrosEfectivos;
   mesOptions: MesOption[];
+  /** Mes anterior para la flecha izquierda del selector (server). */
+  anterior?: string | null;
+  /** Mes siguiente para la flecha derecha del selector (server). */
+  siguiente?: string | null;
+  /** Fecha por defecto del formulario: la del mes que se está viendo. */
+  fechaInicial?: string;
 }) {
   // El panel de escritorio y la hoja inferior de mobile son DOS formularios
   // distintos, así que cada uno lleva su propio estado de apertura: con un
@@ -129,6 +138,7 @@ export function GastosView({
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <GastoForm
                   proveedores={proveedores}
+                  fechaInicial={fechaInicial}
                   onClose={cerrar}
                   onSuccess={cerrar}
                 />
@@ -145,6 +155,8 @@ export function GastosView({
             <MonthSelector
               options={mesOptions}
               currentMes={estadoFiltros.mes}
+              anterior={anterior}
+              siguiente={siguiente}
             />
           }
         >
@@ -218,6 +230,7 @@ export function GastosView({
           <div className="flex-1 overflow-y-auto px-6 py-4">
             <GastoForm
               proveedores={proveedores}
+              fechaInicial={fechaInicial}
               onClose={cerrar}
               onSuccess={cerrar}
             />

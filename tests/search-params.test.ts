@@ -4,8 +4,16 @@ import {
   mesRange,
   mesKey,
   toISODateLocal,
+  mesAnterior,
+  mesSiguiente,
+  mesActual,
 } from "../src/lib/dates";
-import { parseFiltrosComunes, filtrosToQuery } from "../src/lib/search-params";
+import {
+  parseFiltrosComunes,
+  filtrosToQuery,
+  fechaPorDefectoPara,
+  navegacionMes,
+} from "../src/lib/search-params";
 
 describe("dates - toISODateLocal", () => {
   // El constructor local de Date garantiza que la hora sea local sin
@@ -169,5 +177,85 @@ describe("filtrosToQuery", () => {
   it("omite valores nulos y vacíos", () => {
     expect(filtrosToQuery({})).toBe("");
     expect(filtrosToQuery({ mes: null })).toBe("");
+  });
+});
+
+describe("dates - mesAnterior / mesSiguiente", () => {
+  it("devuelve el mes vecino dentro del mismo año", () => {
+    expect(mesAnterior("2026-10")).toBe("2026-09");
+    expect(mesSiguiente("2026-10")).toBe("2026-11");
+  });
+
+  it("cruza el cambio de año en enero y diciembre", () => {
+    expect(mesAnterior("2026-01")).toBe("2025-12");
+    expect(mesSiguiente("2026-12")).toBe("2027-01");
+  });
+
+  it("devuelve null si la clave es inválida", () => {
+    expect(mesAnterior("2026-13")).toBeNull();
+    expect(mesAnterior("2026-00")).toBeNull();
+    expect(mesAnterior("2026-1")).toBeNull();
+    expect(mesAnterior("foo")).toBeNull();
+    expect(mesAnterior("")).toBeNull();
+    expect(mesSiguiente("2026-13")).toBeNull();
+    expect(mesSiguiente("2026-00")).toBeNull();
+    expect(mesSiguiente("2026-9")).toBeNull();
+    expect(mesSiguiente("foo")).toBeNull();
+    expect(mesSiguiente("")).toBeNull();
+  });
+});
+
+describe("dates - mesActual", () => {
+  it("devuelve el mes del reloj del usuario, no el de UTC", () => {
+    const hoy = new Date();
+    const y = hoy.getFullYear();
+    const m = String(hoy.getMonth() + 1).padStart(2, "0");
+    expect(mesActual()).toBe(`${y}-${m}`);
+  });
+});
+
+describe("navegacionMes", () => {
+  it("con un mes pasado devuelve los dos vecinos", () => {
+    const nav = navegacionMes("2020-05", new Date("2020-05-20T00:00:00.000Z"));
+    expect(nav.anterior).toBe("2020-04");
+    expect(nav.siguiente).toBe("2020-06");
+  });
+
+  it("en el mes actual la flecha derecha queda apagada", () => {
+    const nav = navegacionMes(mesActual(), new Date());
+    expect(nav.siguiente).toBeNull();
+    expect(nav.anterior).toBe(mesAnterior(mesActual()));
+  });
+
+  it("nunca deja navegar a un mes futuro", () => {
+    const nav = navegacionMes("2099-01", new Date());
+    expect(nav.siguiente).toBeNull();
+    // La flecha izquierda sí funciona: el mes anterior existe.
+    expect(nav.anterior).toBe("2098-12");
+  });
+
+  it("sin `mes` usa el mes en que termina el rango", () => {
+    const nav = navegacionMes(null, new Date("2020-05-20T23:59:59.999Z"));
+    expect(nav.anterior).toBe("2020-04");
+    expect(nav.siguiente).toBe("2020-06");
+  });
+});
+
+describe("fechaPorDefectoPara", () => {
+  it("en el mes actual devuelve hoy", () => {
+    const ahora = new Date();
+    expect(fechaPorDefectoPara(ahora)).toBe(toISODateLocal(ahora));
+  });
+
+  it("en un rango que terminó en el pasado devuelve ese día", () => {
+    // Constructor local: el resultado no depende de la zona horaria.
+    const finDeRango = new Date(2020, 4, 20, 12, 0, 0);
+    expect(fechaPorDefectoPara(finDeRango)).toBe("2020-05-20");
+  });
+
+  it("nunca devuelve una fecha futura", () => {
+    const futuro = new Date(2099, 0, 15, 12, 0, 0);
+    const ahora = new Date();
+    expect(fechaPorDefectoPara(futuro)).toBe(toISODateLocal(ahora));
   });
 });

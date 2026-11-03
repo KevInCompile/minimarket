@@ -125,6 +125,56 @@ export function mesKey(fecha: Date): string {
   return `${y}-${m}`;
 }
 
+/**
+ * Parte una clave 'YYYY-MM' en año y mes. Devuelve null si la clave está
+ * mal formada (o si el mes no existe, como '2026-13').
+ */
+function partesMes(key: string): { year: number; month: number } | null {
+  const m = /^(\d{4})-(\d{2})$/.exec(key);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  if (month < 1 || month > 12) return null;
+  return { year, month };
+}
+
+/**
+ * Clave 'YYYY-MM' del mes anterior al de `key`.
+ *
+ * '2026-10' → '2026-09'; '2026-01' → '2025-12' (cambio de año).
+ * Devuelve null si la clave no es válida.
+ */
+export function mesAnterior(key: string): string | null {
+  const partes = partesMes(key);
+  if (!partes) return null;
+  // Date.UTC normaliza los meses que se salen del rango (0 = diciembre
+  // del año anterior, 12 = enero del año siguiente).
+  return mesKey(new Date(Date.UTC(partes.year, partes.month - 2, 1)));
+}
+
+/**
+ * Clave 'YYYY-MM' del mes siguiente al de `key`.
+ *
+ * '2026-10' → '2026-11'; '2026-12' → '2027-01' (cambio de año).
+ * Devuelve null si la clave no es válida.
+ */
+export function mesSiguiente(key: string): string | null {
+  const partes = partesMes(key);
+  if (!partes) return null;
+  return mesKey(new Date(Date.UTC(partes.year, partes.month, 1)));
+}
+
+/**
+ * Clave 'YYYY-MM' del mes actual según el reloj del usuario (calendario
+ * local, no UTC), igual que `toISODateLocal`.
+ */
+export function mesActual(): string {
+  const hoy = new Date();
+  const y = hoy.getFullYear();
+  const m = String(hoy.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
 export function diaSemana(fecha: Date): DiaSemana {
   // Para mostrar el día correcto en la zona del usuario, usamos los
   // componentes locales (que serán el día correcto en su zona horaria).

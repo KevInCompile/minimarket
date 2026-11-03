@@ -55,10 +55,19 @@ export function RetirosView({
   retiros,
   filtros,
   mesOptions,
+  anterior,
+  siguiente,
+  fechaInicial,
 }: {
   retiros: RetiroView[];
   filtros: FiltrosActivos;
   mesOptions: MesOption[];
+  /** Mes anterior para la flecha izquierda del selector (server). */
+  anterior?: string | null;
+  /** Mes siguiente para la flecha derecha del selector (server). */
+  siguiente?: string | null;
+  /** Fecha por defecto del formulario: la del mes que se está viendo. */
+  fechaInicial?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [estadoFiltros, setEstadoFiltros] = useState(filtros);
@@ -131,6 +140,7 @@ export function RetirosView({
               </SheetHeader>
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <RetiroForm
+                  fechaInicial={fechaInicial}
                   onClose={() => setOpen(false)}
                   onSuccess={() => setOpen(false)}
                 />
@@ -147,6 +157,8 @@ export function RetirosView({
             <MonthSelector
               options={mesOptions}
               currentMes={estadoFiltros.mes}
+              anterior={anterior}
+              siguiente={siguiente}
             />
           }
         >

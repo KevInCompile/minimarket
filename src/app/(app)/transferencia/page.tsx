@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
 import { requireTiendaId } from "@/lib/auth-guard";
-import { parseFiltrosComunes } from "@/lib/search-params";
+import {
+  navegacionMes,
+  parseFiltrosComunes,
+} from "@/lib/search-params";
 import { parseMesLabel, mesKey } from "@/lib/dates";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TransferenciaTable } from "./transferencia-table";
@@ -17,6 +20,10 @@ type Props = {
 export default async function TransferenciaPage({ searchParams }: Props) {
   const tiendaId = await requireTiendaId();
   const filtros = await parseFiltrosComunes(searchParams);
+
+  // Meses vecinos para las flechas del selector (la derecha se apaga en el
+  // mes actual).
+  const navegacion = navegacionMes(filtros.mes, filtros.hasta);
 
   const [transferencia, mesesConDatos] = await Promise.all([
     prisma.transferenciaDia.findMany({
@@ -39,6 +46,8 @@ export default async function TransferenciaPage({ searchParams }: Props) {
         hasta={filtros.hasta}
         mes={filtros.mes}
         mesOptions={mesOptions}
+        anterior={navegacion.anterior}
+        siguiente={navegacion.siguiente}
         subtitulo={
           <>
             {transferencia.length} días con Transferencia · Total recibido{" "}

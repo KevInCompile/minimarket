@@ -19,12 +19,18 @@ export function TransferenciaFilters({
   hasta,
   mes,
   mesOptions,
+  anterior,
+  siguiente,
   subtitulo,
 }: {
   desde: Date;
   hasta: Date;
   mes: string | null;
   mesOptions: MesOption[];
+  /** Mes anterior para la flecha izquierda del selector (server). */
+  anterior?: string | null;
+  /** Mes siguiente para la flecha derecha del selector (server). */
+  siguiente?: string | null;
   /** Línea meta del toolbar (conteo + total), formateada en el server. */
   subtitulo?: ReactNode;
 }) {
@@ -39,7 +45,12 @@ export function TransferenciaFilters({
         hasta={hasta}
         mes={mes}
         mesSelector={
-          <MonthSelector options={mesOptions} currentMes={mes} />
+          <MonthSelector
+            options={mesOptions}
+            currentMes={mes}
+            anterior={anterior}
+            siguiente={siguiente}
+          />
         }
       />
     </PageToolbar>

@@ -15,9 +15,16 @@ import { toISODateLocal } from "@/lib/dates";
 const INITIAL: CrearCierreState = { ok: true, ts: 0 };
 
 export function CrearCierreForm({
+  fechaInicial,
   onClose,
   onSuccess,
 }: {
+  /**
+   * Fecha por defecto ('YYYY-MM-DD'). La page la calcula con el período que
+   * el usuario está viendo: si está viendo un mes pasado, el formulario se
+   * abre con el último día de ese mes. Sin este prop se usa hoy.
+   */
+  fechaInicial?: string;
   onClose?: () => void;
   onSuccess?: () => void;
 }) {
@@ -51,7 +58,7 @@ export function CrearCierreForm({
           name="fecha"
           type="date"
           max={today}
-          defaultValue={today}
+          defaultValue={fechaInicial ?? today}
           required
         />
       </div>

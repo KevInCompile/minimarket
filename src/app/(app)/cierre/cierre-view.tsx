@@ -28,6 +28,9 @@ export function CierreView({
   hasta,
   mes,
   mesOptions,
+  anterior,
+  siguiente,
+  fechaInicial,
 }: {
   serie: CierreDiarioComputed[];
   pendientes: Pendiente[];
@@ -35,6 +38,12 @@ export function CierreView({
   hasta: Date;
   mes: string | null;
   mesOptions: MesOption[];
+  /** Mes anterior para la flecha izquierda del selector (server). */
+  anterior?: string | null;
+  /** Mes siguiente para la flecha derecha del selector (server). */
+  siguiente?: string | null;
+  /** Fecha por defecto del formulario: la del mes que se está viendo. */
+  fechaInicial?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -65,6 +74,7 @@ export function CierreView({
               </SheetHeader>
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <CrearCierreForm
+                  fechaInicial={fechaInicial}
                   onClose={() => setOpen(false)}
                   onSuccess={() => setOpen(false)}
                 />
@@ -78,6 +88,8 @@ export function CierreView({
           hasta={hasta}
           mes={mes}
           mesOptions={mesOptions}
+          anterior={anterior}
+          siguiente={siguiente}
         />
       </PageToolbar>
 

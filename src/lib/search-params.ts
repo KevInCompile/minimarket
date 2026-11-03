@@ -14,10 +14,14 @@
  */
 import {
   fromISODate,
+  mesActual,
+  mesAnterior,
   mesKey,
   mesRange,
+  mesSiguiente,
   startOfDayUTC,
   toISODate,
+  toISODateLocal,
   endOfDayUTC,
 } from "./dates";
 
@@ -93,6 +97,57 @@ export function filtrosToQuery(filtros: {
   }
   const s = params.toString();
   return s ? `?${s}` : "";
+}
+
+/**
+ * Fecha ('YYYY-MM-DD') por defecto de los formularios de registro
+ * (gasto, retiro, cierre) según el período que el usuario está viendo.
+ *
+ * La regla es "la fecha que está mirando el usuario":
+ *   - mes actual           → hoy
+ *   - mes pasado           → el último día de ese mes
+ *   - rango manual pasado  → el día en que termina el rango
+ *   - rango en el futuro   → hoy (nunca una fecha futura)
+ *
+ * Se usa el calendario LOCAL (`toISODateLocal`) porque el usuario piensa en
+ * su reloj: en Colombia (UTC-5) la fecha UTC ya es la del día siguiente
+ * después de las 19:00.
+ */
+export function fechaPorDefectoPara(hasta: Date): string {
+  const ahora = new Date();
+  const limite = hasta.getTime() < ahora.getTime() ? hasta : ahora;
+  return toISODateLocal(limite);
+}
+
+/**
+ * Meses vecinos al que el usuario está viendo, para las flechas de
+ * navegación del selector de mes.
+ */
+export type NavegacionMes = {
+  /** Clave 'YYYY-MM' del mes anterior (null si la clave no es válida). */
+  anterior: string | null;
+  /** Clave 'YYYY-MM' del mes siguiente (null si no se puede avanzar). */
+  siguiente: string | null;
+};
+
+/**
+ * Calcula los meses vecinos del período visible.
+ *
+ * El mes de referencia es `mes` cuando viene del atajo `?mes=YYYY-MM`; si
+ * no, es el mes en que termina el rango (`mesKey(hasta)`).
+ *
+ * `siguiente` solo existe cuando el mes de referencia es ESTRICTAMENTE
+ * anterior al mes actual: nunca se puede navegar al futuro. Por eso, en el
+ * mes actual la flecha derecha queda deshabilitada.
+ */
+export function navegacionMes(mes: string | null, hasta: Date): NavegacionMes {
+  const referencia = mes ?? mesKey(hasta);
+  const anterior = mesAnterior(referencia);
+  // Las claves 'YYYY-MM' se comparan bien como texto (mismo formato, mismo
+  // largo): '2026-09' < '2026-10' < '2027-01'.
+  const puedeAvanzar = referencia < mesActual();
+  const siguiente = puedeAvanzar ? mesSiguiente(referencia) : null;
+  return { anterior, siguiente };
 }
 
 function pickString(v: string | string[] | undefined): string | null {

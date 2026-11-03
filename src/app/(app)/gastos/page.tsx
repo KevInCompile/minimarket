@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/db";
 import { requireTiendaId } from "@/lib/auth-guard";
-import { parseFiltrosComunes } from "@/lib/search-params";
+import {
+  fechaPorDefectoPara,
+  navegacionMes,
+  parseFiltrosComunes,
+} from "@/lib/search-params";
 import { parseMesLabel, mesKey } from "@/lib/dates";
 import { GastosView } from "./gastos-view";
 import type { Prisma } from "@prisma/client";
@@ -22,6 +26,12 @@ export default async function GastosPage({ searchParams }: Props) {
   const tiendaId = await requireTiendaId();
 
   const filtros = await parseFiltrosComunes(searchParams);
+
+  // Meses vecinos para las flechas del selector (la derecha se apaga en el
+  // mes actual) y fecha por defecto del formulario: la del mes que el
+  // usuario está mirando, no la de hoy.
+  const navegacion = navegacionMes(filtros.mes, filtros.hasta);
+  const fechaInicial = fechaPorDefectoPara(filtros.hasta);
 
   // Filtros específicos de /gastos
   const proveedoresIds = (params.proveedores ?? "")
@@ -103,6 +113,9 @@ export default async function GastosPage({ searchParams }: Props) {
           agruparPorMes,
         }}
         mesOptions={mesOptions}
+        anterior={navegacion.anterior}
+        siguiente={navegacion.siguiente}
+        fechaInicial={fechaInicial}
       />
     </div>
   );
