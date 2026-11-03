@@ -106,10 +106,16 @@ export function BalanceCards({
   bg,
   tendencias,
   series,
+  etiquetaComparacion = "vs periodo anterior",
 }: {
   bg: BalanceGeneral;
   tendencias: TendenciasFlujos;
   series: SeriesKpi;
+  /**
+   * Rótulo de la comparación: "vs mes anterior" cuando el periodo visible es
+   * un mes de calendario y "vs periodo anterior" cuando es un rango libre.
+   */
+  etiquetaComparacion?: string;
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -143,6 +149,7 @@ export function BalanceCards({
             <IndicadorTendencia
               tendencia={t.tendencia}
               subeEsBueno={t.subeEsBueno ?? true}
+              etiquetaComparacion={etiquetaComparacion}
             />
           ) : (
             <p className="mt-1 truncate text-xs tabular-nums text-muted-foreground">
@@ -162,9 +169,11 @@ export function BalanceCards({
 function IndicadorTendencia({
   tendencia,
   subeEsBueno,
+  etiquetaComparacion,
 }: {
   tendencia: MetricaTendencia;
   subeEsBueno: boolean;
+  etiquetaComparacion: string;
 }) {
   // Sin datos del periodo anterior el porcentaje no existe: no se renderiza
   // nada en vez de un Infinity/NaN.
@@ -188,7 +197,7 @@ function IndicadorTendencia({
       <span className={color} aria-hidden>
         {flecha} {Math.abs(tendencia.pct).toFixed(1)}%
       </span>
-      <span className="font-normal text-muted-foreground">vs mes anterior</span>
+      <span className="font-normal text-muted-foreground">{etiquetaComparacion}</span>
     </p>
   );
 }

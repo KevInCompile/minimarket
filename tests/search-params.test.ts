@@ -13,6 +13,7 @@ import {
   filtrosToQuery,
   fechaPorDefectoPara,
   navegacionMes,
+  periodoComparacion,
 } from "../src/lib/search-params";
 
 describe("dates - toISODateLocal", () => {
@@ -238,6 +239,68 @@ describe("navegacionMes", () => {
     const nav = navegacionMes(null, new Date("2020-05-20T23:59:59.999Z"));
     expect(nav.anterior).toBe("2020-04");
     expect(nav.siguiente).toBe("2020-06");
+  });
+});
+
+describe("periodoComparacion", () => {
+  it("con `mes` compara contra el mes calendario anterior completo", () => {
+    const out = periodoComparacion(
+      "2026-10",
+      new Date("2026-10-01T00:00:00.000Z"),
+      new Date("2026-10-31T23:59:59.999Z"),
+    );
+    expect(out.esMes).toBe(true);
+    // Septiembre entero, no "los 31 días previos" (que sería ago 31 - sep 30).
+    expect(out.desde.toISOString().slice(0, 10)).toBe("2026-09-01");
+    expect(out.hasta.toISOString()).toBe("2026-09-30T23:59:59.999Z");
+  });
+
+  it("cruza el cambio de año: enero se compara contra diciembre", () => {
+    const out = periodoComparacion(
+      "2026-01",
+      new Date("2026-01-01T00:00:00.000Z"),
+      new Date("2026-01-31T23:59:59.999Z"),
+    );
+    expect(out.esMes).toBe(true);
+    expect(out.desde.toISOString().slice(0, 10)).toBe("2025-12-01");
+    expect(out.hasta.toISOString()).toBe("2025-12-31T23:59:59.999Z");
+  });
+
+  it("sin `mes` compara contra el rango anterior del mismo largo", () => {
+    const out = periodoComparacion(
+      null,
+      new Date("2026-10-01T00:00:00.000Z"),
+      new Date("2026-10-31T23:59:59.999Z"),
+    );
+    expect(out.esMes).toBe(false);
+    // 31 días: la ventana anterior es del 31 de agosto al 30 de septiembre.
+    expect(out.desde.toISOString().slice(0, 10)).toBe("2026-08-31");
+    expect(out.hasta.toISOString().slice(0, 10)).toBe("2026-09-30");
+  });
+
+  it("el mes anterior no es la ventana del mismo largo", () => {
+    // Febrero de 2026 tiene 28 días: la ventana del mismo largo sería del 3
+    // al 30 de enero, pero el mes calendario anterior es enero entero.
+    const out = periodoComparacion(
+      "2026-02",
+      new Date("2026-02-01T00:00:00.000Z"),
+      new Date("2026-02-28T23:59:59.999Z"),
+    );
+    expect(out.esMes).toBe(true);
+    expect(out.desde.toISOString().slice(0, 10)).toBe("2026-01-01");
+    expect(out.hasta.toISOString()).toBe("2026-01-31T23:59:59.999Z");
+  });
+
+  it("con una clave de mes inválida cae al rango anterior", () => {
+    const out = periodoComparacion(
+      "foo",
+      new Date("2026-10-01T00:00:00.000Z"),
+      new Date("2026-10-05T23:59:59.999Z"),
+    );
+    expect(out.esMes).toBe(false);
+    // 5 días: del 26 al 30 de septiembre.
+    expect(out.desde.toISOString().slice(0, 10)).toBe("2026-09-26");
+    expect(out.hasta.toISOString().slice(0, 10)).toBe("2026-09-30");
   });
 });
 

@@ -24,6 +24,7 @@ import {
   toISODateLocal,
   endOfDayUTC,
 } from "./dates";
+import { previousPeriodRange } from "./calc";
 
 export type FiltrosComunes = {
   /** Fecha inicial del rango (UTC, inicio del día). */
@@ -154,4 +155,48 @@ function pickString(v: string | string[] | undefined): string | null {
   if (v == null) return null;
   if (Array.isArray(v)) return v[0] ?? null;
   return v;
+}
+
+/**
+ * Periodo contra el que se compara el periodo que el usuario está viendo.
+ *
+ * `esMes` dice si la comparación es contra el mes calendario anterior (el
+ * caption dice "vs mes anterior") o contra un rango libre (el caption dice
+ * "vs periodo anterior").
+ */
+export type PeriodoComparacion = {
+  /** Inicio del periodo de comparación (UTC, inicio del día). */
+  desde: Date;
+  /** Fin del periodo de comparación (UTC, final del día). */
+  hasta: Date;
+  /** `true` cuando la comparación es contra el mes calendario anterior. */
+  esMes: boolean;
+};
+
+/**
+ * Decide contra qué periodo se compara el periodo visible.
+ *
+ * - Con `mes` ('YYYY-MM') la comparación es contra el MES CALENDARIO
+ *   ANTERIOR: "Octubre" se compara con "Septiembre" y no con "los 31 días
+ *   previos" (que serían del 31 de agosto al 30 de septiembre). Es lo que el
+ *   usuario espera cuando ve el rótulo "vs mes anterior".
+ * - Sin `mes` (rango manual `desde`/`hasta`) la comparación es contra el
+ *   rango inmediatamente anterior del mismo largo, que es lo que corresponde
+ *   a un período arbitrario.
+ * - Una clave de mes inválida cae al rango anterior: nunca se rompe la vista.
+ */
+export function periodoComparacion(
+  mes: string | null,
+  desde: Date,
+  hasta: Date,
+): PeriodoComparacion {
+  if (mes) {
+    const claveAnterior = mesAnterior(mes);
+    const rango = claveAnterior ? mesRange(claveAnterior) : null;
+    if (rango) {
+      return { desde: rango.desde, hasta: rango.hasta, esMes: true };
+    }
+  }
+  const previo = previousPeriodRange(desde, hasta);
+  return { desde: previo.desde, hasta: previo.hasta, esMes: false };
 }

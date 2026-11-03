@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition, useState } from "react";
 import {
   Bar,
@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toISODate } from "@/lib/dates";
+import { mesRange, toISODate } from "@/lib/dates";
 import { formatCOP, formatPercent } from "@/lib/format";
 import type { PuntoMes } from "@/lib/calc";
 import { BotonKebab } from "@/components/boton-kebab";
@@ -174,30 +174,54 @@ function SelectorPeriodo({
   desde,
   hasta,
   hoy,
+  mes,
 }: {
   desde: string;
   hasta: string;
   hoy: string;
+  /**
+   * Clave 'YYYY-MM' del atajo de mes en la URL. Cuando está, el periodo
+   * visible es el mes calendario completo (no un preset).
+   */
+  mes?: string | null;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
   // `hoy` llega del servidor como 'YYYY-MM' para que el cálculo sea idéntico
   // en servidor y cliente (sin hydration mismatch por zona horaria).
   const hoyDate = new Date(`${hoy}T00:00:00.000Z`);
+
+  // Un preset sólo puede quedar marcado si su rango es EXACTAMENTE el
+  // periodo que se está viendo. Con `?mes=YYYY-MM` el periodo es el mes
+  // calendario completo, así que un preset que corta en "hoy" ("Este mes",
+  // "Últimos 30 días", …) no debe quedar marcado: mentaría sobre el rango.
   const activo = PRESETES.find((p) => {
     const r = p.rango(hoyDate);
-    return toISODate(r.desde) === desde && toISODate(r.hasta) === hasta;
+    if (toISODate(r.desde) !== desde || toISODate(r.hasta) !== hasta) return false;
+    if (!mes) return true;
+    // Con mes explícito sólo vale un preset que cubra el mes entero.
+    const rangoMes = mesRange(mes);
+    return (
+      rangoMes !== null &&
+      toISODate(rangoMes.desde) === desde &&
+      toISODate(rangoMes.hasta) === hasta
+    );
   });
 
   const handleChange = (raw: string | null) => {
     const preset = PRESETES.find((p) => p.id === raw);
     if (!preset) return;
     const r = preset.rango(hoyDate);
-    const qs = new URLSearchParams({
-      desde: toISODate(r.desde),
-      hasta: toISODate(r.hasta),
-    }).toString();
+    // Se conservan los demás parámetros de la URL, pero el atajo de mes se
+    // borra: `mes` tiene prioridad sobre `desde`/`hasta` al resolver los
+    // filtros en el servidor, así que si se queda el preset no cambiaría nada.
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("mes");
+    params.set("desde", toISODate(r.desde));
+    params.set("hasta", toISODate(r.hasta));
+    const qs = params.toString();
     startTransition(() => router.push(`/?${qs}`));
   };
 
@@ -236,12 +260,15 @@ export function EvolucionMensual({
   desde,
   hasta,
   hoy,
+  mes,
   className,
 }: {
   data: PuntoMes[];
   desde: string;
   hasta: string;
   hoy: string;
+  /** Clave 'YYYY-MM' del atajo de mes en la URL (null si no aplica). */
+  mes?: string | null;
   className?: string;
 }) {
   const total = data.reduce((s, p) => s + p.total, 0);
@@ -255,7 +282,7 @@ export function EvolucionMensual({
           <CardTitle>Evolución de ventas</CardTitle>
           <CardDescription>Movimiento por mes</CardDescription>
         </div>
-        <SelectorPeriodo desde={desde} hasta={hasta} hoy={hoy} />
+        <SelectorPeriodo desde={desde} hasta={hasta} hoy={hoy} mes={mes} />
         <CardAction className="col-start-3 row-start-1">
           <BotonKebab titulo="Evolución de ventas" />
         </CardAction>

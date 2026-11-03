@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db";
 import {
   balanceGeneral,
   rankingProveedores,
-  previousPeriodRange,
   compararFlujos,
   serieMensual,
   serieMensualMetrica,
@@ -14,7 +13,12 @@ import {
   type RetiroForCalc,
   type TransferenciaForCalc,
 } from "@/lib/calc";
-import { startOfDayUTC, toISODate } from "@/lib/dates";
+import { startOfDayUTC, toISODate, parseMesLabel, mesKey, mesRange } from "@/lib/dates";
+import {
+  navegacionMes,
+  parseFiltrosComunes,
+  periodoComparacion,
+} from "@/lib/search-params";
 import { requireTiendaId } from "@/lib/auth-guard";
 import { BalanceCards } from "./balance-cards";
 import {
@@ -25,6 +29,7 @@ import {
 import { ProveedoresChart } from "./proveedores-chart";
 import { BotonKebab } from "@/components/boton-kebab";
 import { UltimosGastos } from "./ultimos-gastos";
+import { MonthSelector } from "@/components/filtros/month-selector";
 import {
   Card,
   CardAction,
@@ -35,7 +40,7 @@ import {
 } from "@/components/ui/card";
 
 type Props = {
-  searchParams: Promise<{ desde?: string; hasta?: string }>;
+  searchParams: Promise<{ desde?: string; hasta?: string; mes?: string }>;
 };
 
 export default async function DashboardPage({ searchParams }: Props) {
@@ -43,43 +48,67 @@ export default async function DashboardPage({ searchParams }: Props) {
   const tiendaId = await requireTiendaId();
   const params = await searchParams;
   const hoy = startOfDayUTC(new Date());
-  const desde = params.desde
-    ? new Date(`${params.desde}T00:00:00.000Z`)
-    : startOfMonthUTC();
-  const hasta = params.hasta ? new Date(`${params.hasta}T00:00:00.000Z`) : hoy;
 
-  // The previous window is fetched in the same queries so the period-over-period
-  // comparison costs no extra round-trips.
-  const prev = previousPeriodRange(desde, hasta);
+  // Mismo motor de filtros que las páginas con listas: `?mes=YYYY-MM` gana
+  // sobre `desde`/`hasta`, y si no hay nada se usa el mes actual.
+  const filtros = await parseFiltrosComunes(searchParams);
+
+  // Meses vecinos para las flechas del selector (la derecha se apaga en el
+  // mes actual).
+  const navegacion = navegacionMes(filtros.mes, filtros.hasta);
+
+  // Periodo contra el que se compara: si el usuario está viendo un mes, es
+  // el mes calendario anterior; si está viendo un rango libre, es el rango
+  // anterior del mismo largo.
+  const comparacion = periodoComparacion(filtros.mes, filtros.desde, filtros.hasta);
+  const prev = { desde: comparacion.desde, hasta: comparacion.hasta };
+  const etiquetaComparacion = comparacion.esMes
+    ? "vs mes anterior"
+    : "vs periodo anterior";
 
   // Los sparklines de las tarjetas KPI y el gráfico de evolución usan una
   // ventana fija de 12 meses que termina en el mes del periodo: así el eje X
   // siempre tiene 12 barras, aunque el periodo elegido sea de un solo mes.
-  const ventana = ultimos12Meses(hasta);
+  const ventana = ultimos12Meses(filtros.hasta);
   const desdeConsulta = prev.desde < ventana.desde ? prev.desde : ventana.desde;
-  const hastaConsulta = hasta > ventana.hasta ? hasta : ventana.hasta;
+  const hastaConsulta =
+    filtros.hasta > ventana.hasta ? filtros.hasta : ventana.hasta;
 
-  const [gastos, retiros, transferencia, cierres, ultimosGastos] = await Promise.all([
-    prisma.gasto.findMany({
-      where: { tiendaId, fecha: { gte: desdeConsulta, lte: hastaConsulta } },
-      include: { proveedor: { select: { nombre: true } } },
-    }),
-    prisma.retiro.findMany({
-      where: { tiendaId, fecha: { gte: desdeConsulta, lte: hastaConsulta } },
-    }),
-    prisma.transferenciaDia.findMany({
-      where: { tiendaId, fecha: { gte: desdeConsulta, lte: hastaConsulta } },
-    }),
-    prisma.cierreDiario.findMany({
-      where: { tiendaId, fecha: { gte: desdeConsulta, lte: hastaConsulta } },
-    }),
-    prisma.gasto.findMany({
-      where: { tiendaId },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-      include: { proveedor: { select: { nombre: true } } },
-    }),
-  ]);
+  const [gastos, retiros, transferencia, cierres, ultimosGastos, mesesConDatos] =
+    await Promise.all([
+      prisma.gasto.findMany({
+        where: {
+          tiendaId,
+          fecha: { gte: desdeConsulta, lte: hastaConsulta },
+        },
+        include: { proveedor: { select: { nombre: true } } },
+      }),
+      prisma.retiro.findMany({
+        where: {
+          tiendaId,
+          fecha: { gte: desdeConsulta, lte: hastaConsulta },
+        },
+      }),
+      prisma.transferenciaDia.findMany({
+        where: {
+          tiendaId,
+          fecha: { gte: desdeConsulta, lte: hastaConsulta },
+        },
+      }),
+      prisma.cierreDiario.findMany({
+        where: {
+          tiendaId,
+          fecha: { gte: desdeConsulta, lte: hastaConsulta },
+        },
+      }),
+      prisma.gasto.findMany({
+        where: { tiendaId },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+        include: { proveedor: { select: { nombre: true } } },
+      }),
+      obtenerMesesConDatos(tiendaId),
+    ]);
 
   const gastosForCalc = gastos.map(toGastoForCalc);
   const retirosForCalc = retiros.map(toRetiroForCalc);
@@ -90,12 +119,12 @@ export default async function DashboardPage({ searchParams }: Props) {
   // balance must be fed period-scoped arrays; otherwise the previous window
   // would leak into the current totals.
   const bg = balanceGeneral({
-    desde,
-    hasta,
-    cierres: enPeriodo(cierresForCalc, desde, hasta),
-    gastos: enPeriodo(gastosForCalc, desde, hasta),
-    retiros: enPeriodo(retirosForCalc, desde, hasta),
-    transferencia: enPeriodo(transferenciaForCalc, desde, hasta),
+    desde: filtros.desde,
+    hasta: filtros.hasta,
+    cierres: enPeriodo(cierresForCalc, filtros.desde, filtros.hasta),
+    gastos: enPeriodo(gastosForCalc, filtros.desde, filtros.hasta),
+    retiros: enPeriodo(retirosForCalc, filtros.desde, filtros.hasta),
+    transferencia: enPeriodo(transferenciaForCalc, filtros.desde, filtros.hasta),
   });
 
   const bgAnterior = balanceGeneral({
@@ -109,7 +138,10 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   const tendencias = compararFlujos(bg, bgAnterior);
 
-  const ranking = rankingProveedores(enPeriodo(gastosForCalc, desde, hasta), 8);
+  const ranking = rankingProveedores(
+    enPeriodo(gastosForCalc, filtros.desde, filtros.hasta),
+    8,
+  );
 
   const argsVentana = {
     desde: ventana.desde,
@@ -122,25 +154,56 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   const evolucion = serieMensual(argsVentana);
 
+  const mesOptions = mesesConDatos.map((k) => ({
+    value: k,
+    label: parseMesLabel(k) ?? k,
+  }));
+
+  // El rótulo del periodo incluye el nombre del mes cuando el rango viene de
+  // un atajo de mes, para que se entienda de un vistazo qué se está viendo.
+  const rangoTexto = `${toISODate(filtros.desde)} al ${toISODate(filtros.hasta)}`;
+  const periodoTexto = filtros.mes
+    ? `${parseMesLabel(filtros.mes) ?? filtros.mes} (${rangoTexto})`
+    : rangoTexto;
+
+  // El `mes` crudo de la URL (sólo si es una clave válida) es lo que le dice
+  // al dropdown de periodos del gráfico que el rango actual es un mes
+  // completo y no un preset.
+  const mesUrl = params.mes && mesRange(params.mes) ? params.mes : null;
+
   return (
     <div className="max-w-7xl space-y-6 p-6 lg:p-10">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-3xl font-bold tracking-tight">Balance general</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Periodo: {toISODate(desde)} al {toISODate(hasta)}
+            Periodo: {periodoTexto}
           </p>
+        </div>
+        {/* En mobile el selector baja a su propia fila: el título no se
+            aprieta. */}
+        <div className="w-full shrink-0 sm:w-80">
+          <MonthSelector
+            options={mesOptions}
+            currentMes={filtros.mes}
+            anterior={navegacion.anterior}
+            siguiente={navegacion.siguiente}
+          />
         </div>
       </header>
 
       <BalanceCards
         bg={bg}
         tendencias={tendencias}
+        etiquetaComparacion={etiquetaComparacion}
         series={{
           totalDisponible: serieMensualSaldo(argsVentana),
           efectivoGuardado: serieMensualMetrica(argsVentana, "efectivoGuardado"),
           gastos: serieMensualMetrica(argsVentana, "gastos"),
-          transferenciaRecibido: serieMensualMetrica(argsVentana, "transferenciaRecibido"),
+          transferenciaRecibido: serieMensualMetrica(
+            argsVentana,
+            "transferenciaRecibido",
+          ),
         }}
       />
 
@@ -148,9 +211,10 @@ export default async function DashboardPage({ searchParams }: Props) {
         <EvolucionMensual
           className="lg:col-span-2"
           data={evolucion}
-          desde={toISODate(desde)}
-          hasta={toISODate(hasta)}
+          desde={toISODate(filtros.desde)}
+          hasta={toISODate(filtros.hasta)}
           hoy={toISODate(hoy)}
+          mes={mesUrl}
         />
 
         <GastosPorFormaDePago
@@ -209,11 +273,6 @@ export default async function DashboardPage({ searchParams }: Props) {
   );
 }
 
-function startOfMonthUTC(): Date {
-  const d = startOfDayUTC(new Date());
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
-}
-
 /**
  * Ventana de los 12 meses que termina en el mes de `hasta`: el día 1 del mes
  * once meses antes hasta el último día del mes de `hasta` (UTC).
@@ -225,6 +284,54 @@ function ultimos12Meses(hasta: Date): { desde: Date; hasta: Date } {
     desde: new Date(Date.UTC(anio, mes - 11, 1)),
     hasta: new Date(Date.UTC(anio, mes + 1, 0, 23, 59, 59, 999)),
   };
+}
+
+/**
+ * Claves 'YYYY-MM' de los meses con al menos un movimiento en la tienda.
+ *
+ * El dashboard resume TODO el movimiento (gastos, retiros, transferencias y
+ * cierres), así que la lista es la unión de los meses con datos en cualquiera
+ * de esas tablas: un mes en el que sólo hubo un retiro también se puede ver.
+ *
+ * Devuelve los últimos 18 meses con datos; si la tienda no tiene nada, los
+ * últimos 12 meses (incluido el actual) para que el selector tenga UI
+ * utilizable.
+ */
+async function obtenerMesesConDatos(tiendaId: string): Promise<string[]> {
+  const result = await prisma.$queryRaw<Array<{ mes: string }>>`
+    SELECT mes FROM (
+      SELECT TO_CHAR(fecha, 'YYYY-MM') AS mes
+      FROM "Gasto"
+      WHERE "tiendaId" = ${tiendaId}
+      UNION
+      SELECT TO_CHAR(fecha, 'YYYY-MM')
+      FROM "Retiro"
+      WHERE "tiendaId" = ${tiendaId}
+      UNION
+      SELECT TO_CHAR(fecha, 'YYYY-MM')
+      FROM "TransferenciaDia"
+      WHERE "tiendaId" = ${tiendaId}
+      UNION
+      SELECT TO_CHAR(fecha, 'YYYY-MM')
+      FROM "CierreDiario"
+      WHERE "tiendaId" = ${tiendaId}
+    ) AS meses
+    ORDER BY mes DESC
+    LIMIT 18
+  `;
+  const fromData = result.map((r) => r.mes);
+
+  // Si no hay datos, devuelve los últimos 12 meses incluido el actual.
+  if (fromData.length === 0) {
+    const out: string[] = [];
+    const hoy = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() - i, 1));
+      out.push(mesKey(d));
+    }
+    return out;
+  }
+  return fromData;
 }
 
 /** Keeps only the rows whose fecha falls inside the inclusive window. */

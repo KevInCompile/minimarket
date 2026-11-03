@@ -110,7 +110,19 @@ export function MonthSelector({
 
       <Select value={currentValue} onValueChange={handleChange}>
         <SelectTrigger className="min-w-0 flex-1" aria-label="Mes">
-          <SelectValue placeholder="Mes" />
+          {/*
+            Los items viven en un portal que solo se monta al abrir el
+            dropdown, asi que `SelectValue` no puede resolver el id por
+            su cuenta y mostraria la clave cruda ("2026-10"). Formateamos
+            el valor explicitamente.
+          */}
+          <SelectValue>
+            {(value: string | null) =>
+              value === "all"
+                ? "Todos los meses"
+                : (options.find((o) => o.value === value)?.label ?? value)
+            }
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Todos los meses</SelectItem>
