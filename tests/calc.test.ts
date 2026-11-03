@@ -8,6 +8,7 @@ import {
   compararFlujos,
   serieMensual,
   serieMensualMetrica,
+  type SerieMensualArgs,
   type BalanceGeneral,
   type CierreInput,
   type GastoForCalc,
@@ -694,3 +695,66 @@ describe("serieMensualMetrica", () => {
   });
 });
 
+
+describe("serieMensual con dia de corte", () => {
+  const base: Omit<SerieMensualArgs, "desde" | "hasta" | "diaCorte"> = {
+    cierres: [],
+    gastos: [],
+    retiros: [],
+    transferencia: [],
+  };
+
+  it("con corte 1 la serie son los meses del calendario", () => {
+    const s = serieMensual({
+      ...base,
+      desde: new Date("2026-09-01T00:00:00Z"),
+      hasta: new Date("2026-11-30T00:00:00Z"),
+      diaCorte: 1,
+    });
+    expect(s.map((x) => x.key)).toEqual(["2026-09", "2026-10", "2026-11"]);
+  });
+
+  it("con corte 15 la serie son los periodos que empiezan el 15", () => {
+    // Del 15 de septiembre al 14 de noviembre hay DOS periodos:
+    // '2026-09' (15 sep -> 14 oct) y '2026-10' (15 oct -> 14 nov).
+    // El '2026-11' empieza el 15 de noviembre, fuera del rango.
+    const s = serieMensual({
+      ...base,
+      desde: new Date("2026-09-15T00:00:00Z"),
+      hasta: new Date("2026-11-14T00:00:00Z"),
+      diaCorte: 15,
+    });
+    expect(s.map((x) => x.key)).toEqual(["2026-09", "2026-10"]);
+  });
+
+  it("un dia anterior al corte cuenta para el periodo que empezo el mes pasado", () => {
+    // El 5 de octubre pertenece al periodo '2026-09' (15 sep -> 14 oct).
+    const s = serieMensual({
+      ...base,
+      desde: new Date("2026-09-15T00:00:00Z"),
+      hasta: new Date("2026-10-14T00:00:00Z"),
+      diaCorte: 15,
+      gastos: [
+        {
+          fecha: new Date("2026-10-05T00:00:00Z"),
+          proveedor: "X",
+          valor: 1000,
+          pagadoCon: "CAJA",
+        },
+      ],
+      cierres: [
+        {
+          fecha: new Date("2026-10-05T00:00:00Z"),
+          cajaApertura: 0,
+          cajaCierre: 0,
+          efectivoGuardado: 0,
+          efectivoRealContado: null,
+        },
+      ],
+    });
+    expect(s).toHaveLength(1);
+    // El gasto del 5 de octubre NO se descarta: suma al periodo '2026-09'.
+    expect(s[0].key).toBe("2026-09");
+    expect(s[0].total).toBe(1000);
+  });
+});

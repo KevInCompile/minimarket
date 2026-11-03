@@ -16,7 +16,12 @@
  */
 
 import type { PagadoCon, SaleDe } from "@prisma/client";
-import { startOfDayUTC, endOfDayUTC, mesKey } from "./dates";
+import {
+  startOfDayUTC,
+  endOfDayUTC,
+  normalizarDiaCorte,
+  periodoKeyDe,
+} from "./dates";
 
 export type CierreInput = {
   fecha: Date;
@@ -526,6 +531,12 @@ export type SerieMensualArgs = {
   gastos: GastoForCalc[];
   retiros: RetiroForCalc[];
   transferencia: TransferenciaForCalc[];
+  /**
+   * Día de corte de la tienda (1-28). Con 1 cada punto es un mes del
+   * calendario; con 15 cada punto es un período que va del 15 de un mes al
+   * 14 del siguiente.
+   */
+  diaCorte?: number;
 };
 
 const MESES_CORTOS = [
@@ -546,18 +557,49 @@ const MESES_CORTOS = [
 type MesDelRango = { key: string; label: string; anio: number; mes: number };
 
 /**
- * Meses de calendario que cubre el rango [desde, hasta], en orden ascendente.
- * Si `hasta` es anterior a `desde` colapsa al mes de `desde` (en vez de
+ * Año y mes (0-based) del período al que pertenece una fecha, según el día
+ * de corte de la tienda.
+ */
+function partesPeriodo(fecha: Date, diaCorte: number): {
+  anio: number;
+  mes: number;
+} {
+  const base = new Date(
+    Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth(), 1),
+  );
+  if (fecha.getUTCDate() < diaCorte) {
+    // El período empezó el mes anterior.
+    base.setUTCMonth(base.getUTCMonth() - 1);
+  }
+  return { anio: base.getUTCFullYear(), mes: base.getUTCMonth() };
+}
+
+/**
+ * Períodos que cubre el rango [desde, hasta], en orden ascendente.
+ *
+ * Con `diaCorte = 1` son los meses del calendario. Con `diaCorte = 15` son
+ * los períodos que empiezan el 15: el primero puede caer en el mes
+ * anterior si `desde` es anterior al 15.
+ *
+ * Si `hasta` es anterior a `desde` colapsa al período de `desde` (en vez de
  * devolver una lista vacía o infinita).
  */
-function mesesDelRango(desde: Date, hasta: Date): MesDelRango[] {
+function mesesDelRango(
+  desde: Date,
+  hasta: Date,
+  diaCorte = 1,
+): MesDelRango[] {
   const inicio = startOfDay(desde);
   const finBruto = startOfDay(hasta);
   const fin = finBruto.getTime() < inicio.getTime() ? inicio : finBruto;
 
+  const corte = normalizarDiaCorte(diaCorte);
+  const primero = partesPeriodo(inicio, corte);
+  const ultimo = partesPeriodo(fin, corte);
+
   const meses: MesDelRango[] = [];
-  let anio = inicio.getUTCFullYear();
-  let mes = inicio.getUTCMonth();
+  let anio = primero.anio;
+  let mes = primero.mes;
 
   for (;;) {
     meses.push({
@@ -566,7 +608,7 @@ function mesesDelRango(desde: Date, hasta: Date): MesDelRango[] {
       anio,
       mes,
     });
-    if (anio === fin.getUTCFullYear() && mes === fin.getUTCMonth()) return meses;
+    if (anio === ultimo.anio && mes === ultimo.mes) return meses;
     mes += 1;
     if (mes > 11) {
       mes = 0;
@@ -610,6 +652,7 @@ function serieMensualAcotada(args: SerieMensualArgs): SerieMensualArgs {
   return {
     desde: args.desde,
     hasta: args.hasta,
+    diaCorte: args.diaCorte,
     cierres: movementsEnRango(args.cierres, args.desde, args.hasta),
     gastos: movementsEnRango(args.gastos, args.desde, args.hasta),
     retiros: movementsEnRango(args.retiros, args.desde, args.hasta),
@@ -629,13 +672,17 @@ export function serieMensualMetrica(
   metrica: MetricaMensual,
 ): PuntoMes[] {
   const acotada = serieMensualAcotada(args);
-  const meses = mesesDelRango(acotada.desde, acotada.hasta);
+  const corte = normalizarDiaCorte(args.diaCorte);
+  const meses = mesesDelRango(acotada.desde, acotada.hasta, corte);
   const totalPorMes = new Map<string, number>(meses.map((m) => [m.key, 0]));
   const valor = VALOR_POR_METRICA[metrica];
 
   for (const dia of serieCierres(acotada)) {
-    // Cinturón de seguridad: un mes que no está en el pedido se descarta.
-    const key = mesKey(dia.fecha);
+    // El día se asigna al PERÍODO al que pertenece según el día de corte,
+    // no al mes del calendario. Con corte 15, el 5 de octubre cuenta para el
+    // período que empezó el 15 de septiembre: si se usara el mes del
+    // calendario, ese día se descartaría y el total quedaría mal.
+    const key = periodoKeyDe(dia.fecha, corte);
     if (!totalPorMes.has(key)) continue;
     totalPorMes.set(key, (totalPorMes.get(key) ?? 0) + valor(dia));
   }

@@ -67,7 +67,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   // Los sparklines de las tarjetas KPI y el gráfico de evolución usan una
   // ventana fija de 12 meses que termina en el mes del periodo: así el eje X
   // siempre tiene 12 barras, aunque el periodo elegido sea de un solo mes.
-  const ventana = ultimos12Meses(filtros.hasta);
+  const ventana = ultimos12Meses(filtros.hasta, diaCorte);
   const desdeConsulta = prev.desde < ventana.desde ? prev.desde : ventana.desde;
   const hastaConsulta =
     filtros.hasta > ventana.hasta ? filtros.hasta : ventana.hasta;
@@ -144,6 +144,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   const argsVentana = {
     desde: ventana.desde,
     hasta: ventana.hasta,
+    diaCorte,
     cierres: enPeriodo(cierresForCalc, ventana.desde, ventana.hasta),
     gastos: enPeriodo(gastosForCalc, ventana.desde, ventana.hasta),
     retiros: enPeriodo(retirosForCalc, ventana.desde, ventana.hasta),
@@ -267,12 +268,22 @@ export default async function DashboardPage({ searchParams }: Props) {
  * Ventana de los 12 meses que termina en el mes de `hasta`: el día 1 del mes
  * once meses antes hasta el último día del mes de `hasta` (UTC).
  */
-function ultimos12Meses(hasta: Date): { desde: Date; hasta: Date } {
-  const anio = hasta.getUTCFullYear();
-  const mes = hasta.getUTCMonth();
+function ultimos12Meses(hasta: Date, diaCorte = 1): {
+  desde: Date;
+  hasta: Date;
+} {
+  // La ventana cubre los últimos 12 PERÍODOS y termina en el que contiene
+  // `hasta`. Con corte 1 son 12 meses del calendario; con corte 15 son 12
+  // períodos que empiezan el 15.
+  //
+  // OJO: la clave del período es 'YYYY-MM' con el mes 1-based, pero
+  // `Date.UTC` cuenta los meses desde 0. Y el FINAL de un período cae
+  // en el mes siguiente (el período '2026-10' con corte 15 va del 15 de
+  // octubre al 14 de noviembre). Esto tiene que espejar `mesRange`.
+  const [anio, mes] = periodoKeyDe(hasta, diaCorte).split("-").map(Number);
   return {
-    desde: new Date(Date.UTC(anio, mes - 11, 1)),
-    hasta: new Date(Date.UTC(anio, mes + 1, 0, 23, 59, 59, 999)),
+    desde: new Date(Date.UTC(anio, mes - 1 - 11, diaCorte)),
+    hasta: new Date(Date.UTC(anio, mes, diaCorte - 1, 23, 59, 59, 999)),
   };
 }
 
