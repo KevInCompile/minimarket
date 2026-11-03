@@ -6,8 +6,6 @@ import {
   rankingProveedores,
   compararFlujos,
   serieMensual,
-  serieMensualMetrica,
-  serieMensualSaldo,
   type CierreInput,
   type GastoForCalc,
   type RetiroForCalc,
@@ -197,15 +195,6 @@ export default async function DashboardPage({ searchParams }: Props) {
         bg={bg}
         tendencias={tendencias}
         etiquetaComparacion={etiquetaComparacion}
-        series={{
-          totalDisponible: serieMensualSaldo(argsVentana),
-          efectivoGuardado: serieMensualMetrica(argsVentana, "efectivoGuardado"),
-          gastos: serieMensualMetrica(argsVentana, "gastos"),
-          transferenciaRecibido: serieMensualMetrica(
-            argsVentana,
-            "transferenciaRecibido",
-          ),
-        }}
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

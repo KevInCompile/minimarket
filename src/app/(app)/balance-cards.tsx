@@ -9,8 +9,7 @@ import {
 } from "lucide-react";
 import { cn } from "cn";
 import { formatCOP } from "@/lib/format";
-import type { BalanceGeneral, MetricaTendencia, PuntoMes } from "@/lib/calc";
-import { Sparkline } from "./dashboard-charts";
+import type { BalanceGeneral, MetricaTendencia } from "@/lib/calc";
 import { BotonKebab } from "@/components/boton-kebab";
 
 export type TendenciasFlujos = {
@@ -19,22 +18,6 @@ export type TendenciasFlujos = {
   transferenciaRecibido: MetricaTendencia;
   efectivoGuardado: MetricaTendencia;
 };
-
-/**
- * Una serie mensual por tarjeta. Todas salen de `calc.ts` con las mismas claves
- * de mes, así que los cuatro sparklines comparten el eje X.
- */
-export type SeriesKpi = {
-  totalDisponible: PuntoMes[];
-  efectivoGuardado: PuntoMes[];
-  gastos: PuntoMes[];
-  transferenciaRecibido: PuntoMes[];
-};
-
-const COLOR_SKY = "#0284c7";
-const COLOR_ESMERALDA = "#10b981";
-const COLOR_ROSA = "#f43f5e";
-const COLOR_VIOLETA = "#8b5cf6";
 
 type Tarjeta = {
   titulo: string;
@@ -46,19 +29,13 @@ type Tarjeta = {
   icon: LucideIcon;
   /** Clases Tailwind del chip: fondo tintado + icono en el acento. */
   chip: string;
-  accent: string;
-  serie: PuntoMes[];
 };
 
 /**
  * Sólo los flujos llevan tendencia: los saldos reinician el acumulador en cada
  * llamada a `balanceGeneral()`, así que compararlos entre periodos mentiría.
  */
-function tarjetas(
-  bg: BalanceGeneral,
-  t: TendenciasFlujos,
-  series: SeriesKpi,
-): Tarjeta[] {
+function tarjetas(bg: BalanceGeneral, t: TendenciasFlujos): Tarjeta[] {
   return [
     {
       titulo: "Total disponible",
@@ -66,8 +43,6 @@ function tarjetas(
       detalle: `${formatCOP(bg.saldoEfectivoActual)} efectivo · ${formatCOP(bg.saldoTransferenciaActual)} transferencia`,
       icon: Banknote,
       chip: "bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-400",
-      accent: COLOR_SKY,
-      serie: series.totalDisponible,
     },
     {
       titulo: "Efectivo guardado",
@@ -76,8 +51,6 @@ function tarjetas(
       subeEsBueno: true,
       icon: Coins,
       chip: "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400",
-      accent: COLOR_ESMERALDA,
-      serie: series.efectivoGuardado,
     },
     {
       titulo: "Gastos del periodo",
@@ -86,8 +59,6 @@ function tarjetas(
       subeEsBueno: false,
       icon: Receipt,
       chip: "bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400",
-      accent: COLOR_ROSA,
-      serie: series.gastos,
     },
     {
       titulo: "Transferencia recibida",
@@ -96,8 +67,6 @@ function tarjetas(
       subeEsBueno: true,
       icon: Smartphone,
       chip: "bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400",
-      accent: COLOR_VIOLETA,
-      serie: series.transferenciaRecibido,
     },
   ];
 }
@@ -105,12 +74,10 @@ function tarjetas(
 export function BalanceCards({
   bg,
   tendencias,
-  series,
   etiquetaComparacion = "vs periodo anterior",
 }: {
   bg: BalanceGeneral;
   tendencias: TendenciasFlujos;
-  series: SeriesKpi;
   /**
    * Rótulo de la comparación: "vs mes anterior" cuando el periodo visible es
    * un mes de calendario y "vs periodo anterior" cuando es un rango libre.
@@ -119,7 +86,7 @@ export function BalanceCards({
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {tarjetas(bg, tendencias, series).map((t) => (
+      {tarjetas(bg, tendencias).map((t) => (
         <article
           key={t.titulo}
           className="flex flex-col rounded-xl border border-border bg-card p-4 shadow-sm"
@@ -158,7 +125,6 @@ export function BalanceCards({
           )}
 
           <div className="mt-auto pt-3">
-            <Sparkline data={t.serie} color={t.accent} />
           </div>
         </article>
       ))}

@@ -61,57 +61,6 @@ type Porcion = {
   color: string;
 };
 
-/**
- * Sparkline de barras para las tarjetas KPI: 12 meses teñidos con el acento de
- * la tarjeta. Con la serie vacía o en cero muestra un estado vacío en vez de
- * dejar una caja sin contenido.
- */
-export function Sparkline({
-  data,
-  color,
-  className,
-}: {
-  data: PuntoMes[];
-  color: string;
-  className?: string;
-}) {
-  const hayDatos = data.some((p) => p.total !== 0);
-
-  if (!hayDatos) {
-    return (
-      <div
-        className={cn(
-          "flex h-12 items-center text-xs text-muted-foreground",
-          className,
-        )}
-      >
-        Sin datos en el periodo
-      </div>
-    );
-  }
-
-  return (
-    <div className={cn("h-12 w-full", className)}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={data}
-          margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
-          barCategoryGap="20%"
-        >
-          <XAxis dataKey="label" hide />
-          <Bar
-            dataKey="total"
-            fill={color}
-            fillOpacity={0.9}
-            radius={[2, 2, 0, 0]}
-            isAnimationActive={false}
-          />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Selector de periodo
 // ---------------------------------------------------------------------------

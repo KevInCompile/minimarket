@@ -8,7 +8,6 @@ import {
   compararFlujos,
   serieMensual,
   serieMensualMetrica,
-  serieMensualSaldo,
   type BalanceGeneral,
   type CierreInput,
   type GastoForCalc,
@@ -695,54 +694,3 @@ describe("serieMensualMetrica", () => {
   });
 });
 
-describe("serieMensualSaldo", () => {
-  it("devuelve el saldo acumulado al cierre de cada mes", () => {
-    // enero: último día con datos = 20/01 → efectivo 100000 - 5000 (gasto
-    // EFECTIVO) = 95000, transferencia 0
-    // febrero: último día = 11/02 → efectivo 295000, transferencia 50000 - 7000
-    // (gasto TRANSFERENCIA) = 43000
-    // marzo: último día = 16/03 → efectivo 591000 (retiro EFECTIVO de 4000),
-    // transferencia 43000
-    const serie = serieMensualSaldo(argsMensuales);
-
-    expect(serie).toEqual([
-      { key: "2026-01", label: "ene", total: 95000 },
-      { key: "2026-02", label: "feb", total: 338000 },
-      { key: "2026-03", label: "mar", total: 634000 },
-    ]);
-  });
-
-  it("el último mes coincide con el totalDisponible de balanceGeneral", () => {
-    const bg = balanceGeneral(argsMensuales);
-    const serie = serieMensualSaldo(argsMensuales);
-
-    expect(bg.totalDisponible).toBe(634000);
-    expect(serie[serie.length - 1].total).toBe(bg.totalDisponible);
-  });
-
-  it("ignora días de meses que no están en el rango", () => {
-    const serie = serieMensualSaldo({
-      ...argsMensuales,
-      cierres: [
-        { fecha: D("2025-12-31"), cajaApertura: 0, cajaCierre: 0, efectivoGuardado: 999999, efectivoRealContado: null },
-        ...cierresMensuales,
-      ],
-    });
-
-    expect(serie[0]).toEqual({ key: "2026-01", label: "ene", total: 95000 });
-  });
-
-  it("devuelve ceros en una ventana sin datos", () => {
-    const serie = serieMensualSaldo({
-      desde: D("2026-01-01"),
-      hasta: D("2026-12-31"),
-      cierres: [],
-      gastos: [],
-      retiros: [],
-      transferencia: [],
-    });
-
-    expect(serie).toHaveLength(12);
-    expect(serie.every((p) => p.total === 0)).toBe(true);
-  });
-});

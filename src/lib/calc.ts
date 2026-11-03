@@ -656,36 +656,6 @@ export function serieMensual(args: SerieMensualArgs): PuntoMes[] {
 }
 
 /**
- * Serie mensual del saldo total disponible (efectivo acumulado +
- * Transferencia acumulada) al cierre de cada mes.
- *
- * A diferencia de las métricas de flujo, el saldo sí es acumulativo: para cada
- * mes se corre la serie hasta el último día de ese mes y se toma el acumulado
- * del último día con datos. Por eso `serieCierres()` reinicia los acumulados en
- * cada llamada — el valor de un mes NO es comparable con el saldo del mismo
- * mes calculado sobre otra ventana.
- */
-export function serieMensualSaldo(args: SerieMensualArgs): PuntoMes[] {
-  const acotada = serieMensualAcotada(args);
-
-  return mesesDelRango(acotada.desde, acotada.hasta).map((m) => {
-    const finDelMes = new Date(
-      Date.UTC(m.anio, m.mes + 1, 0, 23, 59, 59, 999),
-    );
-    const ultimo = serieCierres({ ...acotada, hasta: finDelMes })
-      .filter((c) => mesKey(c.fecha) === m.key)
-      .at(-1);
-    return {
-      key: m.key,
-      label: m.label,
-      total:
-        (ultimo?.efectivoAcumulado ?? 0) +
-        (ultimo?.transferenciaAcumulado ?? 0),
-    };
-  });
-}
-
-/**
  * Re-export para utilidad.
  */
 export { sameDay };
