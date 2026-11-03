@@ -22,6 +22,7 @@ export function TransferenciaFilters({
   anterior,
   siguiente,
   subtitulo,
+  actions,
 }: {
   desde: Date;
   hasta: Date;
@@ -33,12 +34,15 @@ export function TransferenciaFilters({
   siguiente?: string | null;
   /** Línea meta del toolbar (conteo + total), formateada en el server. */
   subtitulo?: ReactNode;
+  /** Acciones del toolbar (ej. el botón "Registrar transferencia"). */
+  actions?: ReactNode;
 }) {
   return (
     <PageToolbar
       title="Transferencia"
       icon={Smartphone}
       subtitle={subtitulo}
+      actions={actions}
     >
       <FiltrosBar
         desde={desde}

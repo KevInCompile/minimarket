@@ -135,7 +135,7 @@ model Retiro {
 
 model TransferenciaDia {
   id        String   @id @default(cuid())
-  fecha     DateTime @unique @db.Date
+  fecha     DateTime @db.Date
   total     Int
   tiendaId  String
   tienda    Tienda   @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
@@ -143,12 +143,16 @@ model TransferenciaDia {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   updatedAt DateTime @updatedAt
 
+  // Un renglón por día POR TIENDA: el unique es compuesto, no global.
+  // Con un unique global sobre `fecha` el upsert de una tienda se emparejaba
+  // con la fila de otra y le robaba (le cambiaba el `tiendaId`).
+  @@unique([fecha, tiendaId])
   @@index([tiendaId])
 }
 
 model CierreDiario {
   id                  String   @id @default(cuid())
-  fecha               DateTime @unique @db.Date
+  fecha               DateTime @db.Date
   cajaApertura        Int      @default(0)
   cajaCierre          Int      @default(0)
   efectivoGuardado    Int      @default(0)
@@ -159,6 +163,8 @@ model CierreDiario {
   user                User     @relation(fields: [userIdCierre], references: [id], onDelete: Cascade)
   updatedAt           DateTime @updatedAt
 
+  // Un cierre por día POR TIENDA: el unique es compuesto, no global.
+  @@unique([fecha, tiendaId])
   @@index([tiendaId])
 }
 

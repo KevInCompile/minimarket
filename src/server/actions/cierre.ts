@@ -58,15 +58,18 @@ export async function guardarCierreAction(
   const real: number | null =
     typeof efectivoRealContado === "number" ? efectivoRealContado : null;
 
+  // El upsert empareja por (fecha, tiendaId), NO solo por fecha: el unique
+  // es compuesto. Con un unique global, el `update` de una tienda se
+  // aplicaba sobre la fila de otra y le cambiaba el `tiendaId` (la tienda B
+  // se apropiaba del renglón de la tienda A).
   await prisma.cierreDiario.upsert({
-    where: { fecha: fechaDate },
+    where: { fecha_tiendaId: { fecha: fechaDate, tiendaId } },
     update: {
       cajaApertura,
       cajaCierre,
       efectivoGuardado,
       efectivoRealContado: real,
       userIdCierre: user.id,
-      tiendaId,
     },
     create: {
       fecha: fechaDate,
@@ -110,7 +113,8 @@ export async function crearCierreVacioAction(
   const hoy = startOfDayUTC(new Date());
   if (fecha > hoy) return errState("No puede crear un cierre para un día futuro.");
 
-  const existe = await prisma.cierreDiario.findUnique({ where: { fecha } });
+  // La fecha ya no es única global: se busca dentro de la tienda.
+  const existe = await prisma.cierreDiario.findFirst({ where: { fecha, tiendaId } });
   if (existe) return errState("Ya existe un cierre para esa fecha.");
 
   await prisma.cierreDiario.create({
@@ -139,7 +143,8 @@ export async function eliminarCierreAction(formData: FormData): Promise<void> {
 
   const fecha = fromISODate(parsed.data.fecha);
 
-  const cierre = await prisma.cierreDiario.findUnique({ where: { fecha } });
+  // El cierre se busca dentro de la tienda: `fecha` ya no es único global.
+  const cierre = await prisma.cierreDiario.findFirst({ where: { fecha, tiendaId } });
   if (!cierre) return;
   if (cierre.tiendaId !== tiendaId) return;
 
@@ -150,7 +155,9 @@ export async function eliminarCierreAction(formData: FormData): Promise<void> {
   ]);
   if (gastos > 0 || retiros > 0 || transferencia > 0) return;
 
-  await prisma.cierreDiario.delete({ where: { fecha } });
+  await prisma.cierreDiario.delete({
+    where: { fecha_tiendaId: { fecha, tiendaId } },
+  });
   revalidatePath("/cierre");
   revalidatePath("/");
 }

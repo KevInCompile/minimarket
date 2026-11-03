@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { requireTiendaId } from "@/lib/auth-guard";
 import {
+  fechaPorDefectoPara,
   navegacionMes,
   parseFiltrosComunes,
 } from "@/lib/search-params";
@@ -8,6 +9,10 @@ import { parseMesLabel, mesKey } from "@/lib/dates";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TransferenciaTable } from "./transferencia-table";
 import { TransferenciaFilters } from "./transferencia-filters";
+import {
+  TransferenciaRegistroFab,
+  TransferenciaRegistroToolbar,
+} from "./transferencia-form";
 
 type Props = {
   searchParams: Promise<{
@@ -22,8 +27,11 @@ export default async function TransferenciaPage({ searchParams }: Props) {
   const filtros = await parseFiltrosComunes(searchParams);
 
   // Meses vecinos para las flechas del selector (la derecha se apaga en el
-  // mes actual).
+  // mes actual) y fecha por defecto del formulario de registro: la del mes
+  // que el usuario está mirando, no la de hoy (si está viendo octubre, el
+  // formulario se abre con el 2026-10-31).
   const navegacion = navegacionMes(filtros.mes, filtros.hasta);
+  const fechaInicial = fechaPorDefectoPara(filtros.hasta);
 
   const [transferencia, mesesConDatos] = await Promise.all([
     prisma.transferenciaDia.findMany({
@@ -60,13 +68,15 @@ export default async function TransferenciaPage({ searchParams }: Props) {
             </span>
           </>
         }
+        actions={<TransferenciaRegistroToolbar fechaInicial={fechaInicial} />}
       />
 
       <Card>
         <CardHeader>
           <CardTitle>Transferencia recibido por día</CardTitle>
           <CardDescription>
-            Un solo renglón por día. Editá el valor directamente.
+            Un solo renglón por día. Editá el valor directamente, o usá
+            «Registrar transferencia» para un día que no está en el rango.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -81,6 +91,9 @@ export default async function TransferenciaPage({ searchParams }: Props) {
           />
         </CardContent>
       </Card>
+
+      {/* Mobile: FAB que abre la hoja inferior con el mismo formulario. */}
+      <TransferenciaRegistroFab fechaInicial={fechaInicial} />
     </div>
   );
 }

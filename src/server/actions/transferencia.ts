@@ -26,9 +26,13 @@ export async function guardarTransferenciaAction(
 
   const fecha = fromISODate(fechaStr);
 
+  // El upsert empareja por (fecha, tiendaId), NO solo por fecha: el unique
+  // es compuesto. Con un unique global, el `update` de una tienda se
+  // aplicaba sobre la fila de otra y le cambiaba el `tiendaId` (la tienda B
+  // se apropiaba del renglón de la tienda A).
   await prisma.transferenciaDia.upsert({
-    where: { fecha },
-    update: { total, userId: user.id, tiendaId },
+    where: { fecha_tiendaId: { fecha, tiendaId } },
+    update: { total, userId: user.id },
     create: { fecha, total, userId: user.id, tiendaId },
   });
 
