@@ -52,3 +52,4 @@ prisma/backups/
 
 # Feature documents de ODD (son temporales por fase)
 odd/
+cmp.ts
