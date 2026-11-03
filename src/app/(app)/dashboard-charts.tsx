@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mesRange, toISODate } from "@/lib/dates";
+import { mesRange, periodoKeyDe, toISODate } from "@/lib/dates";
 import { formatCOP, formatPercent } from "@/lib/format";
 import type { PuntoMes } from "@/lib/calc";
 import { BotonKebab } from "@/components/boton-kebab";
@@ -70,7 +70,7 @@ const MS_PER_DAY = 86_400_000;
 type PresetPeriodo = {
   id: string;
   etiqueta: string;
-  rango: (hoy: Date) => { desde: Date; hasta: Date };
+  rango: (hoy: Date, diaCorte: number) => { desde: Date; hasta: Date };
 };
 
 /**
@@ -81,11 +81,11 @@ type PresetPeriodo = {
 const PRESETES: PresetPeriodo[] = [
   {
     id: "mes",
-    etiqueta: "Este mes",
-    rango: (hoy) => ({
-      desde: new Date(
-        Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), 1),
-      ),
+    etiqueta: "Este período",
+    // Del inicio del período en curso hasta hoy. Con corte 1 el período es
+    // el mes calendario; con corte 15 va del 15 del mes anterior.
+    rango: (hoy, diaCorte) => ({
+      desde: mesRange(periodoKeyDe(hoy, diaCorte), diaCorte)?.desde ?? hoy,
       hasta: hoy,
     }),
   },
@@ -99,31 +99,38 @@ const PRESETES: PresetPeriodo[] = [
   },
   {
     id: "3m",
-    etiqueta: "Últimos 3 meses",
-    rango: (hoy) => ({
-      desde: new Date(
-        Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() - 2, 1),
-      ),
+    etiqueta: "Últimos 3 períodos",
+    rango: (hoy, diaCorte) => ({
+      desde: inicioDePeriodos(hoy, diaCorte, 2),
       hasta: hoy,
     }),
   },
   {
     id: "12m",
-    etiqueta: "Últimos 12 meses",
-    rango: (hoy) => ({
-      desde: new Date(
-        Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() - 11, 1),
-      ),
+    etiqueta: "Últimos 12 períodos",
+    rango: (hoy, diaCorte) => ({
+      desde: inicioDePeriodos(hoy, diaCorte, 11),
       hasta: hoy,
     }),
   },
 ];
 
+/**
+ * Inicio del período que está `cuantos` períodos antes del que contiene
+ * `hoy`. Con corte 1 es el día 1 de ese mes; con corte 15, el día 15.
+ */
+function inicioDePeriodos(hoy: Date, diaCorte: number, cuantos: number): Date {
+  const clave = periodoKeyDe(hoy, diaCorte);
+  const [anio, mes] = clave.split("-").map(Number);
+  // OJO: la clave es 1-based y Date.UTC cuenta desde 0.
+  return new Date(Date.UTC(anio, mes - 1 - cuantos, diaCorte));
+}
 function SelectorPeriodo({
   desde,
   hasta,
   hoy,
   mes,
+  diaCorte = 1,
 }: {
   desde: string;
   hasta: string;
@@ -133,6 +140,8 @@ function SelectorPeriodo({
    * visible es el mes calendario completo (no un preset).
    */
   mes?: string | null;
+  /** Dia de corte de la tienda (1-28), para que los presets usen periodos. */
+  diaCorte?: number;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -147,11 +156,11 @@ function SelectorPeriodo({
   // calendario completo, así que un preset que corta en "hoy" ("Este mes",
   // "Últimos 30 días", …) no debe quedar marcado: mentaría sobre el rango.
   const activo = PRESETES.find((p) => {
-    const r = p.rango(hoyDate);
+    const r = p.rango(hoyDate, diaCorte);
     if (toISODate(r.desde) !== desde || toISODate(r.hasta) !== hasta) return false;
     if (!mes) return true;
-    // Con mes explícito sólo vale un preset que cubra el mes entero.
-    const rangoMes = mesRange(mes);
+    // Con mes explícito sólo vale un preset que cubra el periodo entero.
+    const rangoMes = mesRange(mes, diaCorte);
     return (
       rangoMes !== null &&
       toISODate(rangoMes.desde) === desde &&
@@ -162,7 +171,7 @@ function SelectorPeriodo({
   const handleChange = (raw: string | null) => {
     const preset = PRESETES.find((p) => p.id === raw);
     if (!preset) return;
-    const r = preset.rango(hoyDate);
+    const r = preset.rango(hoyDate, diaCorte);
     // Se conservan los demás parámetros de la URL, pero el atajo de mes se
     // borra: `mes` tiene prioridad sobre `desde`/`hasta` al resolver los
     // filtros en el servidor, así que si se queda el preset no cambiaría nada.
@@ -210,6 +219,7 @@ export function EvolucionMensual({
   hasta,
   hoy,
   mes,
+  diaCorte = 1,
   className,
 }: {
   data: PuntoMes[];
@@ -218,6 +228,8 @@ export function EvolucionMensual({
   hoy: string;
   /** Clave 'YYYY-MM' del atajo de mes en la URL (null si no aplica). */
   mes?: string | null;
+  /** Dia de corte de la tienda (1-28). */
+  diaCorte?: number;
   className?: string;
 }) {
   const total = data.reduce((s, p) => s + p.total, 0);
@@ -231,7 +243,13 @@ export function EvolucionMensual({
           <CardTitle>Evolución de ventas</CardTitle>
           <CardDescription>Movimiento por mes</CardDescription>
         </div>
-        <SelectorPeriodo desde={desde} hasta={hasta} hoy={hoy} mes={mes} />
+        <SelectorPeriodo
+          desde={desde}
+          hasta={hasta}
+          hoy={hoy}
+          mes={mes}
+          diaCorte={diaCorte}
+        />
         <CardAction className="col-start-3 row-start-1">
           <BotonKebab titulo="Evolución de ventas" />
         </CardAction>

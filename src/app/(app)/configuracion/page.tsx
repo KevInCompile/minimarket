@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Settings } from "lucide-react";
 import { DiaCorteForm } from "./configuracion-view";
-import { etiquetaPeriodo } from "@/lib/dates";
+import { etiquetaPeriodo, periodoKeyDe } from "@/lib/dates";
 
 export default async function ConfiguracionPage() {
   const tienda = await requireTienda();
@@ -16,7 +16,7 @@ export default async function ConfiguracionPage() {
 
   // Un ejemplo de cómo queda el período actual con este corte.
   const hoy = new Date();
-  const claveActual = periodoActualDe(hoy, diaCorte);
+  const claveActual = periodoKeyDe(hoy, diaCorte);
   const ejemplo = etiquetaPeriodo(claveActual, diaCorte);
 
   return (
@@ -52,14 +52,4 @@ export default async function ConfiguracionPage() {
       </Card>
     </div>
   );
-}
-
-/** Clave del período en curso según el día de corte. */
-function periodoActualDe(hoy: Date, diaCorte: number): string {
-  const dia = hoy.getUTCDate();
-  const ref =
-    dia >= diaCorte
-      ? new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), 1))
-      : new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() - 1, 1));
-  return `${ref.getUTCFullYear()}-${String(ref.getUTCMonth() + 1).padStart(2, "0")}`;
 }
