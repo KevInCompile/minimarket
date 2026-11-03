@@ -118,6 +118,14 @@ export function GastosView({
           </>
         }
         activeFilters={filtrosActivos}
+        period={
+          <MonthSelector
+            options={mesOptions}
+            currentMes={estadoFiltros.mes}
+            anterior={anterior}
+            siguiente={siguiente}
+          />
+        }
         actions={
           /* Desktop: botón en el toolbar que abre un panel lateral */
           <Sheet open={openPanel} onOpenChange={setOpenPanel}>
@@ -139,6 +147,8 @@ export function GastosView({
                 <GastoForm
                   proveedores={proveedores}
                   fechaInicial={fechaInicial}
+                  desde={estadoFiltros.desde}
+                  hasta={estadoFiltros.hasta}
                   onClose={cerrar}
                   onSuccess={cerrar}
                 />
@@ -151,14 +161,6 @@ export function GastosView({
           desde={estadoFiltros.desde}
           hasta={estadoFiltros.hasta}
           mes={estadoFiltros.mes}
-          mesSelector={
-            <MonthSelector
-              options={mesOptions}
-              currentMes={estadoFiltros.mes}
-              anterior={anterior}
-              siguiente={siguiente}
-            />
-          }
         >
           <GastosFiltrosExtra
             proveedores={proveedores}
@@ -231,6 +233,8 @@ export function GastosView({
             <GastoForm
               proveedores={proveedores}
               fechaInicial={fechaInicial}
+              desde={estadoFiltros.desde}
+              hasta={estadoFiltros.hasta}
               onClose={cerrar}
               onSuccess={cerrar}
             />

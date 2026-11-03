@@ -16,7 +16,7 @@ import { CierreCards } from "./cierre-cards";
 import { CierreFilters } from "./cierre-filters";
 import { ResumenPeriodo } from "./resumen-periodo";
 import { PageToolbar } from "@/components/page-toolbar";
-import type { MesOption } from "@/components/filtros/month-selector";
+import { MonthSelector, type MesOption } from "@/components/filtros/month-selector";
 import type { CierreDiarioComputed } from "@/lib/calc";
 
 type Pendiente = string;
@@ -54,6 +54,14 @@ export function CierreView({
         icon={ClipboardCheck}
         iconClassName="text-sky-600 dark:text-sky-400"
         subtitle={`${serie.length} días`}
+        period={
+          <MonthSelector
+            options={mesOptions}
+            currentMes={mes}
+            anterior={anterior}
+            siguiente={siguiente}
+          />
+        }
         actions={
           /* Desktop: botón en el toolbar que abre un panel lateral */
           <Sheet open={open} onOpenChange={setOpen}>
@@ -75,6 +83,8 @@ export function CierreView({
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <CrearCierreForm
                   fechaInicial={fechaInicial}
+                  desde={desde}
+                  hasta={hasta}
                   onClose={() => setOpen(false)}
                   onSuccess={() => setOpen(false)}
                 />
@@ -83,14 +93,7 @@ export function CierreView({
           </Sheet>
         }
       >
-        <CierreFilters
-          desde={desde}
-          hasta={hasta}
-          mes={mes}
-          mesOptions={mesOptions}
-          anterior={anterior}
-          siguiente={siguiente}
-        />
+        <CierreFilters desde={desde} hasta={hasta} mes={mes} />
       </PageToolbar>
 
       <ResumenPeriodo serie={serie} />

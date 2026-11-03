@@ -13,6 +13,9 @@ import { FiltrosBar } from "@/components/filtros/filtros-bar";
  * `PageToolbar` y el panel de filtros dentro de su Sheet. `subtitulo` lo
  * arma la page (server) para que el formato de moneda se haga una sola vez,
  * en el server.
+ *
+ * El selector de mes va VISIBLE en el toolbar (la navegación principal) y
+ * el panel solo queda con el rango manual.
  */
 export function TransferenciaFilters({
   desde,
@@ -42,21 +45,17 @@ export function TransferenciaFilters({
       title="Transferencia"
       icon={Smartphone}
       subtitle={subtitulo}
+      period={
+        <MonthSelector
+          options={mesOptions}
+          currentMes={mes}
+          anterior={anterior}
+          siguiente={siguiente}
+        />
+      }
       actions={actions}
     >
-      <FiltrosBar
-        desde={desde}
-        hasta={hasta}
-        mes={mes}
-        mesSelector={
-          <MonthSelector
-            options={mesOptions}
-            currentMes={mes}
-            anterior={anterior}
-            siguiente={siguiente}
-          />
-        }
-      />
+      <FiltrosBar desde={desde} hasta={hasta} mes={mes} />
     </PageToolbar>
   );
 }

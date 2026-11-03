@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo, type ReactNode } from "react";
+import { useRef, useState, useMemo, type ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { X, Filter, SlidersHorizontal, ChevronDown } from "lucide-react";
@@ -22,9 +22,13 @@ import { parseMesLabel } from "@/lib/dates";
  *   ┌─ Navegación temporal ──────────────────────────┐
  *   │  Mes          │  Desde         │  Hasta        │
  *   └────────────────────────────────────────────────┘
- *   ┌─ Filtros específicos ───────┬─ Acciones ──────┐
+ *   ┌─ Filtros específicos ─────── ┬─ Acciones ──────┐
  *   │  Proveedores │ Buscar │ ☐   │  Limpiar │Filtrar│
  *   └─────────────────────────────┴─────────────────┘
+ *
+ * El selector de mes (`mesSelector`) es OPCIONAL: las páginas lo muestran
+ * ahora en el toolbar, visible, y acá solo se usa el rango manual
+ * (`desde`/`hasta`) como ajuste fino.
  */
 export function FiltrosBar({
   desde,
@@ -52,6 +56,11 @@ export function FiltrosBar({
   const searchParams = useSearchParams();
 
   const [expandido, setExpandido] = useState(false);
+  // El form propio: `reset()` necesita los nombres de los campos para
+  // limpiar la URL. Buscarlo con `document.querySelector("form")` era
+  // frágil: la página puede tener otro form antes (el de registro, que
+  // vive en un Sheet).
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Cuántos filtros específicos (no temporales) están activos.
   // Usado para el badge del botón "Filtros" en mobile.
@@ -79,14 +88,25 @@ export function FiltrosBar({
     const newDesde = formData.get("desde")?.toString() ?? "";
     const newHasta = formData.get("hasta")?.toString() ?? "";
 
-    if (newDesde || newHasta) {
+    // El rango manual se aplica SOLO si el usuario lo movió. El mes vive
+    // ahora en el toolbar (visible, fuera de este panel): si al aplicar un
+    // filtro de proveedor se borrara el `mes`, el selector del toolbar se
+    // volvería a "Todos los meses" aunque el período siga siendo el mismo.
+    const rangoCambio =
+      newDesde !== toInputDate(desde) || newHasta !== toInputDate(hasta);
+
+    if (rangoCambio) {
+      // Un rango manual manda sobre el atajo de mes.
       params.delete("mes");
-      params.set("desde", newDesde);
-      params.set("hasta", newHasta);
+      if (newDesde) params.set("desde", newDesde);
+      else params.delete("desde");
+      if (newHasta) params.set("hasta", newHasta);
+      else params.delete("hasta");
     }
 
     for (const [key, value] of formData.entries()) {
-      if (key === "desde" || key === "hasta") continue;
+      // `desde`/`hasta` se resuelven arriba; `mes` lo maneja el toolbar.
+      if (key === "desde" || key === "hasta" || key === "mes") continue;
       const s = value.toString();
       if (s === "" || s == null) {
         params.delete(key);
@@ -106,7 +126,7 @@ export function FiltrosBar({
     params.delete("mes");
     params.delete("desde");
     params.delete("hasta");
-    const form = document.querySelector("form") as HTMLFormElement | null;
+    const form = formRef.current;
     if (form) {
       for (const key of new FormData(form).keys()) {
         if (key !== "mes") params.delete(key);
@@ -120,8 +140,36 @@ export function FiltrosBar({
 
   const hasActiveFilters = searchParams.toString().length > 0;
 
+  // Acciones del panel. Se renderizan SIEMPRE: hay páginas sin filtros
+  // propios (/transferencia, /cierre) y su panel debe poder aplicar igual
+  // el rango manual.
+  const acciones = (
+    <div
+      className="flex w-full items-center gap-2 md:ml-auto md:w-auto md:pl-4 md:border-l
+                 md:border-border"
+    >
+      {hasActiveFilters && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={reset}
+          className="text-muted-foreground"
+        >
+          <X className="size-3.5" />
+          Limpiar
+        </Button>
+      )}
+      <Button type="submit" size="sm" className="flex-1 md:flex-none">
+        <Filter className="size-3.5" />
+        Filtrar
+      </Button>
+    </div>
+  );
+
   return (
     <form
+      ref={formRef}
       method="GET"
       onSubmit={submit}
       className="flex flex-col gap-3"
@@ -203,6 +251,8 @@ export function FiltrosBar({
                 </Field>
               </>
             )}
+            {/* Sin filtros propios, las acciones van en esta misma fila. */}
+            {!children && acciones}
           </div>
         )}
 
@@ -211,27 +261,7 @@ export function FiltrosBar({
           <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
             {children}
 
-            <div
-              className="flex w-full items-center gap-2 md:ml-auto md:w-auto md:pl-4 md:border-l
-                         md:border-border"
-            >
-              {hasActiveFilters && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={reset}
-                  className="text-muted-foreground"
-                >
-                  <X className="size-3.5" />
-                  Limpiar
-                </Button>
-              )}
-              <Button type="submit" size="sm" className="flex-1 md:flex-none">
-                <Filter className="size-3.5" />
-                Filtrar
-              </Button>
-            </div>
+            {acciones}
           </div>
         )}
       </div>

@@ -15,6 +15,12 @@ import {
   navegacionMes,
   periodoComparacion,
 } from "../src/lib/search-params";
+import {
+  debeNavegar,
+  mesDeFecha,
+  periodoContiene,
+  urlDelPeriodo,
+} from "../src/components/filtros/ir-al-periodo";
 
 describe("dates - toISODateLocal", () => {
   // El constructor local de Date garantiza que la hora sea local sin
@@ -320,5 +326,95 @@ describe("fechaPorDefectoPara", () => {
     const futuro = new Date(2099, 0, 15, 12, 0, 0);
     const ahora = new Date();
     expect(fechaPorDefectoPara(futuro)).toBe(toISODateLocal(ahora));
+  });
+});
+
+// ── Navegación al período del registro guardado ────────────────────────────
+//
+// La regla es pura: si la fecha guardada NO está en el período visible, se
+// navega al mes que la contiene; si está, no se navega (el usuario sigue
+// trabajando en la misma vista).
+describe("ir-al-periodo - periodoContiene", () => {
+  const desde = new Date("2026-10-01T00:00:00.000Z");
+  const hasta = new Date("2026-10-31T23:59:59.999Z");
+
+  it("devuelve true para una fecha dentro del rango", () => {
+    expect(
+      periodoContiene(new Date("2026-10-30T00:00:00.000Z"), desde, hasta),
+    ).toBe(true);
+  });
+
+  it("devuelve false para una fecha fuera del rango", () => {
+    expect(
+      periodoContiene(new Date("2026-09-30T00:00:00.000Z"), desde, hasta),
+    ).toBe(false);
+    expect(
+      periodoContiene(new Date("2026-11-01T00:00:00.000Z"), desde, hasta),
+    ).toBe(false);
+  });
+
+  it("incluye los bordes del rango", () => {
+    expect(periodoContiene(desde, desde, hasta)).toBe(true);
+    expect(periodoContiene(hasta, desde, hasta)).toBe(true);
+  });
+
+  it("compara por día, no por instante: cualquier hora del último día entra", () => {
+    expect(
+      periodoContiene(new Date("2026-10-31T18:30:00.000Z"), desde, hasta),
+    ).toBe(true);
+  });
+});
+
+describe("ir-al-periodo - mesDeFecha", () => {
+  it("devuelve la clave YYYY-MM en UTC", () => {
+    expect(mesDeFecha(new Date("2026-10-30T00:00:00.000Z"))).toBe("2026-10");
+    expect(mesDeFecha(new Date("2026-01-01T00:00:00.000Z"))).toBe("2026-01");
+  });
+});
+
+describe("ir-al-periodo - debeNavegar", () => {
+  const desde = new Date("2026-11-01T00:00:00.000Z");
+  const hasta = new Date("2026-11-30T23:59:59.999Z");
+
+  it("navega cuando la fecha guardada está fuera del período visible", () => {
+    expect(
+      debeNavegar(new Date("2026-10-30T00:00:00.000Z"), desde, hasta),
+    ).toBe(true);
+  });
+
+  it("no navega cuando la fecha guardada ya está visible", () => {
+    expect(
+      debeNavegar(new Date("2026-11-05T00:00:00.000Z"), desde, hasta),
+    ).toBe(false);
+  });
+
+  it("no navega si no se conoce el período visible", () => {
+    expect(
+      debeNavegar(new Date("2026-10-30T00:00:00.000Z"), undefined, undefined),
+    ).toBe(false);
+  });
+});
+
+describe("ir-al-periodo - urlDelPeriodo", () => {
+  it("conserva los demás searchParams y quita el rango manual", () => {
+    const url = urlDelPeriodo(
+      "/gastos",
+      "mes=2026-09&proveedores=abc&desde=2026-09-01&hasta=2026-09-30",
+      new Date("2026-10-30T00:00:00.000Z"),
+    );
+    expect(url.startsWith("/gastos?")).toBe(true);
+    expect(url).toContain("mes=2026-10");
+    expect(url).toContain("proveedores=abc");
+    expect(url).not.toContain("desde=");
+    expect(url).not.toContain("hasta=");
+  });
+
+  it("funciona sin searchParams previos", () => {
+    const url = urlDelPeriodo(
+      "/cierre",
+      "",
+      new Date("2026-10-30T00:00:00.000Z"),
+    );
+    expect(url).toBe("/cierre?mes=2026-10");
   });
 });

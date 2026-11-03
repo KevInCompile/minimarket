@@ -121,6 +121,14 @@ export function RetirosView({
           </>
         }
         activeFilters={filtrosActivos}
+        period={
+          <MonthSelector
+            options={mesOptions}
+            currentMes={estadoFiltros.mes}
+            anterior={anterior}
+            siguiente={siguiente}
+          />
+        }
         actions={
           /* Desktop: botón en el toolbar que abre un panel lateral */
           <Sheet open={open} onOpenChange={setOpen}>
@@ -141,6 +149,8 @@ export function RetirosView({
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <RetiroForm
                   fechaInicial={fechaInicial}
+                  desde={estadoFiltros.desde}
+                  hasta={estadoFiltros.hasta}
                   onClose={() => setOpen(false)}
                   onSuccess={() => setOpen(false)}
                 />
@@ -153,14 +163,6 @@ export function RetirosView({
           desde={estadoFiltros.desde}
           hasta={estadoFiltros.hasta}
           mes={estadoFiltros.mes}
-          mesSelector={
-            <MonthSelector
-              options={mesOptions}
-              currentMes={estadoFiltros.mes}
-              anterior={anterior}
-              siguiente={siguiente}
-            />
-          }
         >
           <RetirosFiltrosExtra
             tiposSeleccionados={estadoFiltros.tiposSeleccionados}

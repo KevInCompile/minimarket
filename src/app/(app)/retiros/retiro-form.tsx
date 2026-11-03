@@ -18,6 +18,7 @@ import { toISODateLocal } from "@/lib/dates";
 import { Plus, AlertCircle } from "lucide-react";
 import { formatCOP } from "@/lib/format";
 import { useState } from "react";
+import { useIrAlPeriodo } from "@/components/filtros/ir-al-periodo";
 
 const INITIAL: RetiroState = { ok: true, ts: 0 };
 
@@ -51,6 +52,8 @@ const SALE_DE = [
 
 export function RetiroForm({
   fechaInicial,
+  desde,
+  hasta,
   onClose,
   onSuccess,
 }: {
@@ -60,13 +63,23 @@ export function RetiroForm({
    * abre con el último día de ese mes. Sin este prop se usa hoy.
    */
   fechaInicial?: string;
+  /**
+   * Período que el usuario está viendo. Si el retiro se guarda FUERA de ese
+   * período, la app navega al mes del retiro para que el registro nuevo se
+   * vea de una vez.
+   */
+  desde?: Date;
+  hasta?: Date;
   onClose?: () => void;
   onSuccess?: () => void;
 }) {
   const [state, action, pending] = useActionState(crearRetiroAction, INITIAL);
   const lastTs = useRef(0);
+  // Fecha con la que se guardó (la toma el input al enviar el formulario).
+  const fechaGuardadaRef = useRef("");
   const [valor, setValor] = useState("");
   const [saleDe, setSaleDe] = useState<string>("EFECTIVO");
+  const irAlPeriodo = useIrAlPeriodo({ desde, hasta });
 
   const handleSaleDe = (v: string | null) => setSaleDe(v ?? "EFECTIVO");
 
@@ -79,15 +92,24 @@ export function RetiroForm({
         toast.success("Retiro registrado");
         onSuccess?.();
         onClose?.();
+        // Solo navega si la fecha quedó fuera del período visible.
+        irAlPeriodo(fechaGuardadaRef.current);
       }
     }
-  }, [state, onSuccess, onClose]);
+  }, [state, onSuccess, onClose, irAlPeriodo]);
 
   const valorNum = Number(valor.replace(/[^0-9]/g, "")) || 0;
   const saleDeInfo = SALE_DE.find((s) => s.value === saleDe);
 
   return (
-    <form action={action} className="space-y-4">
+    <form
+      action={action}
+      onSubmit={(e) => {
+        const fd = new FormData(e.currentTarget);
+        fechaGuardadaRef.current = fd.get("fecha")?.toString() ?? "";
+      }}
+      className="space-y-4"
+    >
       <div className="space-y-2">
         <Label htmlFor="fecha">Fecha</Label>
         <Input

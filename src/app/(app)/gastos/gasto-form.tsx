@@ -16,6 +16,7 @@ import { toISODateLocal } from "@/lib/dates";
 import { formatCOP } from "@/lib/format";
 import { Plus, Trash2 } from "lucide-react";
 import { crearGastoAction, type GastoState } from "@/server/actions/gastos";
+import { useIrAlPeriodo } from "@/components/filtros/ir-al-periodo";
 
 const INITIAL: GastoState = { ok: true, ts: 0 };
 
@@ -65,6 +66,8 @@ function nuevaFila(id: number): Fila {
 export function GastoForm({
   proveedores,
   fechaInicial,
+  desde,
+  hasta,
   onClose,
   onSuccess,
 }: {
@@ -75,6 +78,13 @@ export function GastoForm({
    * abre con el último día de ese mes. Sin este prop se usa hoy.
    */
   fechaInicial?: string;
+  /**
+   * Período que el usuario está viendo. Si el lote de gastos se guarda FUERA
+   * de ese período, la app navega al mes correspondiente UNA sola vez, cuando
+   * termina el guardado (no mientras el usuario sigue agregando filas).
+   */
+  desde?: Date;
+  hasta?: Date;
   onClose?: () => void;
   onSuccess?: () => void;
 }) {
@@ -88,6 +98,8 @@ export function GastoForm({
   const siguienteIdRef = useRef(1);
   // Cuántas filas se enviaron en el último submit (para el mensaje del toast).
   const conteoEnvioRef = useRef(0);
+  // Fecha con la que se guardó el lote (la toma el input al enviar).
+  const fechaGuardadaRef = useRef("");
   const filasRef = useRef(filas);
   // Inputs de proveedor por fila, para enfocar el de la fila nueva.
   const inputsProveedor = useRef(new Map<number, HTMLInputElement | null>());
@@ -96,6 +108,7 @@ export function GastoForm({
   // panel de escritorio y la hoja inferior de mobile) y, sin prefijo, los ids
   // se repetirían: el `label` apuntaría al input del otro formulario.
   const uid = useId();
+  const irAlPeriodo = useIrAlPeriodo({ desde, hasta });
 
   useEffect(() => {
     filasRef.current = filas;
@@ -124,10 +137,13 @@ export function GastoForm({
         setEpoch((e) => e + 1);
         onSuccess?.();
         onClose?.();
+        // Una sola navegación por lote, y solo si la fecha quedó fuera del
+        // período visible.
+        irAlPeriodo(fechaGuardadaRef.current);
       }
       lastOkRef.current = state.ok;
     }
-  }, [state, onSuccess, onClose]);
+  }, [state, onSuccess, onClose, irAlPeriodo]);
 
   const agregarFila = useCallback(() => {
     const id = siguienteIdRef.current++;
@@ -160,8 +176,10 @@ export function GastoForm({
   return (
     <form
       action={action}
-      onSubmit={() => {
+      onSubmit={(e) => {
         conteoEnvioRef.current = filasRef.current.length;
+        const fd = new FormData(e.currentTarget);
+        fechaGuardadaRef.current = fd.get("fecha")?.toString() ?? "";
       }}
       className="space-y-5"
     >
