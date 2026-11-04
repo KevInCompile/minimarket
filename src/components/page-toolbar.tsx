@@ -92,8 +92,8 @@ export function PageToolbar({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-4">
-      <div className="min-w-0 md:flex-1">
+    <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-4">
+      <div className="min-w-0 md:shrink">
         {subtitle ? (
           <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {subtitle}
@@ -103,16 +103,23 @@ export function PageToolbar({
           {Icon ? (
             <Icon className={cn("size-6 shrink-0 md:size-7", iconClassName)} />
           ) : null}
-          {title}
+          {/* El texto se recorta en vez de desbordar la caja: en un
+              contenedor angosto (como /transferencia) el título se
+              encogía y su texto se montaba encima del selector de mes. */}
+          <span className="truncate">{title}</span>
         </h1>
       </div>
 
-      {/* Control de período: visible, nunca dentro del panel de filtros. */}
+      {/* Control de período: visible, nunca dentro del panel de filtros.
+          El ancho es flexible (con tope) para no robarle espacio al
+          título ni a las acciones en contenedores angostos. */}
       {period ? (
-        <div className="w-full shrink-0 md:w-72 md:flex-none">{period}</div>
+        <div className="w-full shrink-0 md:w-auto md:min-w-[180px] md:max-w-[288px] md:flex-none">
+          {period}
+        </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2 md:justify-end">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-end">
         {actions}
 
         {children ? (
