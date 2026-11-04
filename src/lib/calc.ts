@@ -23,6 +23,15 @@ import {
   periodoKeyDe,
 } from "./dates";
 
+/**
+ * Saldo con el que arranca un período. El acumulado es una cuenta corriente:
+ * el saldo de hoy es el de ayer más lo que hoy entró y salió.
+ */
+export type SaldoInicial = {
+  efectivo: number;
+  transferencia: number;
+};
+
 export type CierreInput = {
   fecha: Date;
   cajaApertura: number;
@@ -226,6 +235,13 @@ export function serieCierres(args: {
   gastos: GastoForCalc[];
   retiros: RetiroForCalc[];
   transferencia: TransferenciaForCalc[];
+  /**
+   * Saldo con el que arranca el período. Si no se pasa, arranca en 0, que es
+   * lo correcto para una serie que cubre todo el historial desde el
+   * principio, pero NO para ver un período suelto: ahí el saldo arrastrado
+   * se perdería.
+   */
+  saldoInicial?: SaldoInicial;
 }): CierreDiarioComputed[] {
   const { desde, hasta, cierres, gastos, retiros, transferencia } = args;
 
@@ -262,8 +278,10 @@ export function serieCierres(args: {
     .map((k) => new Date(k))
     .sort((a, b) => a.getTime() - b.getTime());
 
-  let prevEfec = 0;
-  let prevNequi = 0;
+  // El acumulado es una cuenta corriente: parte del saldo que había al
+  // empezar el período, no de cero.
+  let prevEfec = args.saldoInicial?.efectivo ?? 0;
+  let prevNequi = args.saldoInicial?.transferencia ?? 0;
   const result: CierreDiarioComputed[] = [];
 
   for (const day of sortedDays) {
@@ -315,6 +333,11 @@ export function balanceGeneral(args: {
   gastos: GastoForCalc[];
   retiros: RetiroForCalc[];
   transferencia: TransferenciaForCalc[];
+  /**
+   * Saldo acumulado antes del primer día del período. Sin esto, el saldo
+   * arrancaría en cero y se perdería lo que quedó del período anterior.
+   */
+  saldoInicial?: SaldoInicial;
 }): BalanceGeneral {
   const serie = serieCierres(args);
   const ultimo = serie[serie.length - 1];
@@ -372,6 +395,9 @@ export function balanceGeneral(args: {
     gastos: args.gastos,
     retiros: args.retiros,
     transferencia: args.transferencia,
+    // Mismo saldo inicial que la serie del período: si no, el saldo final
+    // saldría de cero y perdería lo arrastrado.
+    saldoInicial: args.saldoInicial,
   });
   const ultimoCompleto = serieCompleta[serieCompleta.length - 1];
 

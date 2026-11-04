@@ -409,14 +409,22 @@ export function generarDatos(opciones: OpcionesSeed = {}): DatosSeed {
     // muestra como "pendientes".
     const hayCierre = !esDomingo && rng.chance(0.88);
 
-    let ventasEfectivo = 0;
     if (hayCierre) {
-      ventasEfectivo = rng.multiplo(180_000, 850_000, 5_000);
+      const ventasEfectivo = rng.multiplo(180_000, 850_000, 5_000);
       const cajaApertura = rng.multiplo(150_000, 500_000, 5_000);
       const cajaCierre = Math.max(
         0,
         cajaApertura + ventasEfectivo - gastadoCaja - retiradoCaja,
       );
+
+      // Los acumulados se mueven ANTES de calcular el conteo real: el
+      // conteo es lo que se contó AL FINAL del dia, o sea despues de
+      // aplicar los movimientos del dia. Si se calculara antes, el conteo
+      // quedaria desfasado un dia y el descuadre de la app compararia el
+      // conteo de hoy contra el acumulado de ayer.
+      efectivoAcumulado += ventasEfectivo - gastadoEfectivo - retiradoEfectivo;
+      transferenciaAcumulado +=
+        totalTransferencia - gastadoTransferencia - retiradoTransferencia;
 
       // El conteo real coincide con el acumulado salvo en un par de
       // dias, para que se vea el caso del descuadre.
@@ -432,15 +440,14 @@ export function generarDatos(opciones: OpcionesSeed = {}): DatosSeed {
         efectivoRealContado: conConteo ? efectivoAcumulado + desvio : null,
         usuario: 0,
       });
+    } else {
+      // Sin cierre no hay guardado, pero los movimientos del dia igual
+      // restan del acumulado (mismo criterio que `calc.ts`). La
+      // Transferencia recibida es un movimiento del dia y suma siempre.
+      efectivoAcumulado -= gastadoEfectivo + retiradoEfectivo;
+      transferenciaAcumulado +=
+        totalTransferencia - gastadoTransferencia - retiradoTransferencia;
     }
-
-    // Los acumulados se mueven TODOS los dias, cierre o no, igual que en
-    // `calc.ts`: el efectivo guardado solo entra si hubo cierre (si no,
-    // vale 0), pero la Transferencia recibida es un movimiento del dia y
-    // suma siempre.
-    efectivoAcumulado += ventasEfectivo - gastadoEfectivo - retiradoEfectivo;
-    transferenciaAcumulado +=
-      totalTransferencia - gastadoTransferencia - retiradoTransferencia;
 
     if (transferenciaAcumulado < 0) diasTransferenciaNegativa += 1;
   }

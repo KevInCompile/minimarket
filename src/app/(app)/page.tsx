@@ -18,6 +18,7 @@ import {
   periodoComparacion,
 } from "@/lib/search-params";
 import { requireTienda } from "@/lib/auth-guard";
+import { saldosInicialesHasta } from "@/lib/saldos";
 import { BalanceCards } from "./balance-cards";
 import {
   EvolucionMensual,
@@ -113,12 +114,22 @@ export default async function DashboardPage({ searchParams }: Props) {
   const transferenciaForCalc = transferencia.map(toTransferenciaForCalc);
   const cierresForCalc = cierres.map(toCierreInput);
 
+  // El acumulado es una cuenta corriente: el saldo del período arranca con
+  // lo que había antes de su primer día. Sin esto, lo que quedó del período
+  // anterior se perdería (ej. si el 31 quedó -45.000, el 1 de noviembre
+  // tiene que empezar en -45.000, no en 0).
+  const [saldoActual, saldoAnterior] = await Promise.all([
+    saldosInicialesHasta(tiendaId, filtros.desde),
+    saldosInicialesHasta(tiendaId, prev.desde),
+  ]);
+
   // serieCierres() iterates every day present in the arrays it receives, so each
   // balance must be fed period-scoped arrays; otherwise the previous window
   // would leak into the current totals.
   const bg = balanceGeneral({
     desde: filtros.desde,
     hasta: filtros.hasta,
+    saldoInicial: saldoActual,
     cierres: enPeriodo(cierresForCalc, filtros.desde, filtros.hasta),
     gastos: enPeriodo(gastosForCalc, filtros.desde, filtros.hasta),
     retiros: enPeriodo(retirosForCalc, filtros.desde, filtros.hasta),
@@ -128,6 +139,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   const bgAnterior = balanceGeneral({
     desde: prev.desde,
     hasta: prev.hasta,
+    saldoInicial: saldoAnterior,
     cierres: enPeriodo(cierresForCalc, prev.desde, prev.hasta),
     gastos: enPeriodo(gastosForCalc, prev.desde, prev.hasta),
     retiros: enPeriodo(retirosForCalc, prev.desde, prev.hasta),

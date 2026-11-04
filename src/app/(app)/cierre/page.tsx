@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { serieCierres } from "@/lib/calc";
 import { CierreView } from "./cierre-view";
 import { requireTienda } from "@/lib/auth-guard";
+import { saldosInicialesHasta } from "@/lib/saldos";
 import {
   fechaPorDefectoPara,
   navegacionMes,
@@ -45,8 +46,13 @@ export default async function CierrePage({ searchParams }: Props) {
       obtenerMesesConDatos(tiendaId, diaCorte),
     ]);
 
+  // El acumulado arrastra lo que había antes del período: el saldo de cada
+  // día es la cuenta corriente, no un cálculo desde cero.
+  const saldoInicial = await saldosInicialesHasta(tiendaId, filtros.desde);
+
   const serie = serieCierres({
     desde: filtros.desde,
+    saldoInicial,
     hasta: filtros.hasta,
     cierres: cierres.map((c) => ({
       fecha: c.fecha,

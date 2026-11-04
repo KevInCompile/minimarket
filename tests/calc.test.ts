@@ -758,3 +758,100 @@ describe("serieMensual con dia de corte", () => {
     expect(s[0].total).toBe(1000);
   });
 });
+
+describe("saldo acumulado: arrastre entre periodos", () => {
+  const dia = (y: number, m: number, d: number) =>
+    new Date(Date.UTC(y, m - 1, d));
+
+  it("el acumulado arranca en el saldo inicial, no en cero", () => {
+    const serie = serieCierres({
+      desde: dia(2026, 10, 2),
+      hasta: dia(2026, 10, 3),
+      cierres: [
+        {
+          fecha: dia(2026, 10, 2),
+          cajaApertura: 0,
+          cajaCierre: 0,
+          efectivoGuardado: 100_000,
+          efectivoRealContado: null,
+        },
+      ],
+      gastos: [],
+      retiros: [],
+      transferencia: [],
+      saldoInicial: { efectivo: -45_000, transferencia: 0 },
+    });
+    // -45.000 (arrastrado) + 100.000 (guardado) = 55.000
+    expect(serie.at(-1)?.efectivoAcumulado).toBe(55_000);
+  });
+
+  it("sin saldo inicial el acumulado arranca en cero", () => {
+    const serie = serieCierres({
+      desde: dia(2026, 10, 2),
+      hasta: dia(2026, 10, 3),
+      cierres: [
+        {
+          fecha: dia(2026, 10, 2),
+          cajaApertura: 0,
+          cajaCierre: 0,
+          efectivoGuardado: 100_000,
+          efectivoRealContado: null,
+        },
+      ],
+      gastos: [],
+      retiros: [],
+      transferencia: [],
+    });
+    expect(serie.at(-1)?.efectivoAcumulado).toBe(100_000);
+  });
+
+  it("un gasto en efectivo resta del saldo arrastrado", () => {
+    const serie = serieCierres({
+      desde: dia(2026, 10, 2),
+      hasta: dia(2026, 10, 3),
+      cierres: [
+        {
+          fecha: dia(2026, 10, 2),
+          cajaApertura: 0,
+          cajaCierre: 0,
+          efectivoGuardado: 200_000,
+          efectivoRealContado: null,
+        },
+      ],
+      gastos: [
+        {
+          fecha: dia(2026, 10, 2),
+          proveedor: "X",
+          valor: 45_000,
+          pagadoCon: "EFECTIVO",
+        },
+      ],
+      retiros: [],
+      transferencia: [],
+      saldoInicial: { efectivo: -45_000, transferencia: 0 },
+    });
+    // -45.000 + 200.000 - 45.000 = 110.000
+    expect(serie.at(-1)?.efectivoAcumulado).toBe(110_000);
+  });
+
+  it("balanceGeneral devuelve el saldo con el arrastre aplicado", () => {
+    const bg = balanceGeneral({
+      desde: dia(2026, 10, 2),
+      hasta: dia(2026, 10, 3),
+      cierres: [
+        {
+          fecha: dia(2026, 10, 2),
+          cajaApertura: 0,
+          cajaCierre: 0,
+          efectivoGuardado: 200_000,
+          efectivoRealContado: null,
+        },
+      ],
+      gastos: [],
+      retiros: [],
+      transferencia: [],
+      saldoInicial: { efectivo: -45_000, transferencia: 0 },
+    });
+    expect(bg.saldoEfectivoActual).toBe(155_000);
+  });
+});
