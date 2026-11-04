@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { useMemo, useTransition } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { etiquetaPeriodo } from "@/lib/dates";
+import {
+  etiquetaPeriodo,
+  fromISODate,
+  mesRange,
+  navegacionMes,
+  periodoVisible,
+} from "@/lib/dates";
+import { muestraSelectorPeriodo } from "@/lib/nav";
+import { cn } from "@/lib/utils";
 
 export type MesOption = {
   /** Clave 'YYYY-MM'. Usa "all" para "Todos". */
@@ -21,80 +29,105 @@ export type MesOption = {
 };
 
 /**
- * Dropdown para elegir un mes como atajo de rango temporal, con flechas de
- * navegación al mes anterior y al mes siguiente.
+ * Selector de mes, con flechas de navegación.
  *
- * - "all" (Todos) → limpia los filtros de fecha.
+ * Se autoabastece de la URL: lee `mes` de los searchParams y calcula los
+ * períodos vecinos. Eso permite ponerlo en la barra superior, que vive en
+ * el layout (un server component que no se vuelve a renderizar al cambiar
+ * la URL), sin que quede mostrando el mes viejo.
+ *
+ * - "Todos los meses" → limpia el filtro de fecha.
  * - Cualquier "YYYY-MM" → navega a ?mes=YYYY-MM (el server resuelve el rango).
- * - Las flechas hacen lo mismo que el dropdown, pero sin abrirlo: saltan al
- *   mes vecino del que se está viendo.
- *
- * El componente vive como cliente porque necesita `router.push`.
- * Los meses se reciben como prop desde el server (que es quien sabe
- * qué meses tienen datos según la DB).
- *
- * `anterior` y `siguiente` los calcula el server (`navegacionMes`): la
- * flecha derecha llega en null cuando ya se está en el mes actual, y en ese
- * caso queda deshabilitada para no dejar registrar en el futuro.
+ * - Las flechas saltan al período vecino del que se está viendo.
  */
 export function MonthSelector({
   options,
-  currentMes,
-  anterior,
-  siguiente,
   diaCorte = 1,
+  hoy,
+  className,
 }: {
+  /** Períodos con datos, para el dropdown. */
   options: MesOption[];
-  currentMes: string | null;
-  /** Clave 'YYYY-MM' del mes anterior (null si no hay). */
-  anterior?: string | null;
-  /** Clave 'YYYY-MM' del mes siguiente (null si no se puede avanzar). */
-  siguiente?: string | null;
-  /**
-   * Día de corte de la tienda (1-28). Sirve para etiquetar un período que
-   * no está en la lista de opciones (por ejemplo, un período futuro al que
-   * se llega escribiendo la URL a mano).
-   */
+  /** Día de corte de la tienda (1-28). */
   diaCorte?: number;
+  /**
+   * Fecha de hoy en 'YYYY-MM-DD', calculada por el server. Se usa en vez
+   * de `new Date()` para que el server y el browser coincidan siempre y no
+   * haya mismatch de hidratación en el borde del corte.
+   */
+  hoy: string;
+  className?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  /**
-   * Navega a `?mes=YYYY-MM` conservando el resto de los searchParams
-   * (filtros específicos por página, como proveedor, saleDe, etc.).
-   */
-  const irAMes = (value: string) => {
+  // El período visible sale de la URL. Con `?mes=` es explícito; sin rango
+  // manual es el período en curso; con rango manual no hay un único
+  // período, así que el selector queda en "Todos".
+  const currentMes = useMemo(
+    () =>
+      periodoVisible(
+        {
+          mes: searchParams.get("mes"),
+          desde: searchParams.get("desde"),
+          hasta: searchParams.get("hasta"),
+        },
+        fromISODate(hoy),
+        diaCorte,
+      ),
+    [searchParams, hoy, diaCorte],
+  );
+
+  // El rango visible, para calcular los vecinos cuando no hay `mes` explícito.
+  const hasta = useMemo(() => {
+    if (currentMes) {
+      const rango = mesRange(currentMes, diaCorte);
+      return rango?.hasta ?? fromISODate(hoy);
+    }
+    const hastaUrl = searchParams.get("hasta");
+    return hastaUrl ? fromISODate(hastaUrl) : fromISODate(hoy);
+  }, [currentMes, diaCorte, hoy, searchParams]);
+
+  const nav = useMemo(
+    () => navegacionMes(currentMes, hasta, diaCorte, fromISODate(hoy)),
+    [currentMes, hasta, diaCorte, hoy],
+  );
+
+  // El selector solo aparece en las páginas cuyo contenido cambia con el
+  // período. Las rutas administrativas se resuelven con pathname para no
+  // depender de un layout que vuelve a renderizar en cada navegación.
+  if (!muestraSelectorPeriodo(pathname)) return null;
+
+  const irAMes = (key: string | null) => {
+    if (!key) return;
+    // Mantener el resto de los searchParams intactos (filtros específicos
+    // por página, como proveedor, saleDe, etc.).
     const params = new URLSearchParams(searchParams.toString());
-    params.set("mes", value);
+    params.set("mes", key);
     // Si hay mes seleccionado, no tiene sentido conservar desde/hasta
     // porque el rango se sobreescribe.
     params.delete("desde");
     params.delete("hasta");
-
     const qs = params.toString();
-    const url = qs ? `${pathname}?${qs}` : pathname;
-    startTransition(() => router.push(url));
+    startTransition(() =>
+      router.push(qs ? `${pathname}?${qs}` : pathname),
+    );
   };
 
   const handleChange = (raw: string | null) => {
     if (!raw) return;
-    const value = raw === "all" ? null : raw;
-
-    if (value) {
-      irAMes(value);
+    if (raw === "all") {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("mes");
+      const qs = params.toString();
+      startTransition(() =>
+        router.push(qs ? `${pathname}?${qs}` : pathname),
+      );
       return;
     }
-
-    // "Todos los meses": se quita el atajo de mes y se conservan el resto
-    // de los searchParams.
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("mes");
-    const qs = params.toString();
-    const url = qs ? `${pathname}?${qs}` : pathname;
-    startTransition(() => router.push(url));
+    irAMes(raw);
   };
 
   // Para evitar problemas con el Select (que renderiza un item por value),
@@ -102,15 +135,14 @@ export function MonthSelector({
   const currentValue = currentMes ?? "all";
 
   return (
-    <div className="flex w-full items-center gap-1">
+    <div className={cn("flex w-full items-center gap-1", className)}>
       <Button
         type="button"
         variant="ghost"
         size="icon"
         aria-label="Mes anterior"
         title="Mes anterior"
-        // Siempre habilitado: el mes anterior siempre existe.
-        onClick={() => anterior && irAMes(anterior)}
+        onClick={() => irAMes(nav.anterior)}
         className="shrink-0 text-muted-foreground"
       >
         <ChevronLeft />
@@ -150,8 +182,8 @@ export function MonthSelector({
         size="icon"
         aria-label="Mes siguiente"
         title="Mes siguiente"
-        disabled={!siguiente}
-        onClick={() => siguiente && irAMes(siguiente)}
+        disabled={!nav.siguiente}
+        onClick={() => irAMes(nav.siguiente)}
         className="shrink-0 text-muted-foreground"
       >
         <ChevronRight />

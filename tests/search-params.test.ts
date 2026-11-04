@@ -10,6 +10,8 @@ import {
   normalizarDiaCorte,
   periodoKeyDe,
   etiquetaPeriodo,
+  periodoVisible,
+  periodosIniciales,
 } from "../src/lib/dates";
 import {
   parseFiltrosComunes,
@@ -248,6 +250,58 @@ describe("navegacionMes", () => {
     const nav = navegacionMes(null, new Date("2020-05-20T23:59:59.999Z"));
     expect(nav.anterior).toBe("2020-04");
     expect(nav.siguiente).toBe("2020-06");
+  });
+});
+
+describe("periodoVisible", () => {
+  const hoy = new Date("2026-10-20T00:00:00.000Z");
+
+  it("usa el mes explícito cuando la URL lo contiene", () => {
+    expect(
+      periodoVisible({ mes: "2026-09" }, hoy, 1),
+    ).toBe("2026-09");
+  });
+
+  it("ignora un mes inválido y vuelve al período en curso", () => {
+    expect(
+      periodoVisible({ mes: "2026-99" }, hoy, 15),
+    ).toBe("2026-10");
+  });
+
+  it("deja el selector en Todos cuando hay un rango manual", () => {
+    expect(
+      periodoVisible(
+        { desde: "2026-09-01", hasta: "2026-09-30" },
+        hoy,
+        1,
+      ),
+    ).toBeNull();
+  });
+
+  it("da prioridad al mes explícito sobre un rango manual", () => {
+    expect(
+      periodoVisible(
+        {
+          mes: "2026-09",
+          desde: "2026-01-01",
+          hasta: "2026-01-31",
+        },
+        hoy,
+        1,
+      ),
+    ).toBe("2026-09");
+  });
+});
+
+describe("periodosIniciales", () => {
+  it("incluye el período en curso y los anteriores según el día de corte", () => {
+    expect(
+      periodosIniciales(
+        new Date("2026-10-20T00:00:00.000Z"),
+        15,
+        3,
+      ),
+    ).toEqual(["2026-10", "2026-09", "2026-08"]);
   });
 });
 

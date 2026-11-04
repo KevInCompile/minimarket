@@ -26,9 +26,8 @@ import { parseMesLabel } from "@/lib/dates";
  *   │  Proveedores │ Buscar │ ☐   │  Limpiar │Filtrar│
  *   └─────────────────────────────┴─────────────────┘
  *
- * El selector de mes (`mesSelector`) es OPCIONAL: las páginas lo muestran
- * ahora en el toolbar, visible, y acá solo se usa el rango manual
- * (`desde`/`hasta`) como ajuste fino.
+ * El selector de mes vive en la barra superior; acá solo se usa el rango
+ * manual (`desde`/`hasta`) como ajuste fino.
  */
 export function FiltrosBar({
   desde,
@@ -36,7 +35,6 @@ export function FiltrosBar({
   mes,
   children,
   showDates = true,
-  mesSelector,
   onApplied,
   alwaysExpanded = false,
 }: {
@@ -45,7 +43,6 @@ export function FiltrosBar({
   mes: string | null;
   children?: ReactNode;
   showDates?: boolean;
-  mesSelector?: ReactNode;
   /** Se invoca al final de `submit()` y de `reset()`, después de `router.push`. */
   onApplied?: () => void;
   /** `true` omite el resumen colapsable de mobile: el panel se ve siempre. */
@@ -89,9 +86,9 @@ export function FiltrosBar({
     const newHasta = formData.get("hasta")?.toString() ?? "";
 
     // El rango manual se aplica SOLO si el usuario lo movió. El mes vive
-    // ahora en el toolbar (visible, fuera de este panel): si al aplicar un
-    // filtro de proveedor se borrara el `mes`, el selector del toolbar se
-    // volvería a "Todos los meses" aunque el período siga siendo el mismo.
+    // en la barra superior (fuera de este panel): si al aplicar un filtro de
+    // proveedor se borrara el `mes`, el selector volvería a "Todos los meses"
+    // aunque el período siga siendo el mismo.
     const rangoCambio =
       newDesde !== toInputDate(desde) || newHasta !== toInputDate(hasta);
 
@@ -222,35 +219,26 @@ export function FiltrosBar({
         )}
       >
         {/* Fila 1: navegación temporal */}
-        {(mesSelector || showDates) && (
+        {showDates && (
           <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
-            {mesSelector && (
-              <Field label="Mes" className="min-w-[160px] md:min-w-[180px]">
-                {mesSelector}
-              </Field>
-            )}
-            {showDates && (
-              <>
-                <Field label="Desde" className="min-w-[140px] md:w-[160px]">
-                  <Input
-                    key={`desde-${desde.getTime()}`}
-                    type="date"
-                    name="desde"
-                    defaultValue={toInputDate(desde)}
-                    className="w-full"
-                  />
-                </Field>
-                <Field label="Hasta" className="min-w-[140px] md:w-[160px]">
-                  <Input
-                    key={`hasta-${hasta.getTime()}`}
-                    type="date"
-                    name="hasta"
-                    defaultValue={toInputDate(hasta)}
-                    className="w-full"
-                  />
-                </Field>
-              </>
-            )}
+            <Field label="Desde" className="min-w-[140px] md:w-[160px]">
+              <Input
+                key={`desde-${desde.getTime()}`}
+                type="date"
+                name="desde"
+                defaultValue={toInputDate(desde)}
+                className="w-full"
+              />
+            </Field>
+            <Field label="Hasta" className="min-w-[140px] md:w-[160px]">
+              <Input
+                key={`hasta-${hasta.getTime()}`}
+                type="date"
+                name="hasta"
+                defaultValue={toInputDate(hasta)}
+                className="w-full"
+              />
+            </Field>
             {/* Sin filtros propios, las acciones van en esta misma fila. */}
             {!children && acciones}
           </div>

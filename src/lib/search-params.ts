@@ -17,13 +17,15 @@ import {
   mesAnterior,
   periodoKeyDe,
   mesRange,
-  mesSiguiente,
   startOfDayUTC,
   toISODate,
   toISODateLocal,
   endOfDayUTC,
 } from "./dates";
 import { previousPeriodRange } from "./calc";
+
+export { navegacionMes } from "./dates";
+export type { NavegacionMes } from "./dates";
 
 export type FiltrosComunes = {
   /** Fecha inicial del rango (UTC, inicio del día). */
@@ -122,43 +124,6 @@ export function fechaPorDefectoPara(hasta: Date): string {
   const ahora = new Date();
   const limite = hasta.getTime() < ahora.getTime() ? hasta : ahora;
   return toISODateLocal(limite);
-}
-
-/**
- * Períodos vecinos al que el usuario está viendo, para las flechas de
- * navegación del selector de período.
- */
-export type NavegacionMes = {
-  /** Clave 'YYYY-MM' del período anterior (null si la clave no es válida). */
-  anterior: string | null;
-  /** Clave 'YYYY-MM' del período siguiente (null si no se puede avanzar). */
-  siguiente: string | null;
-};
-
-/**
- * Calcula los períodos vecinos del período visible.
- *
- * El período de referencia es `mes` cuando viene del atajo `?mes=YYYY-MM`; si
- * no, es el período en que termina el rango.
- *
- * `siguiente` solo existe cuando el período de referencia es ESTRICTAMENTE
- * anterior al período en curso: nunca se puede navegar al futuro. Con día
- * de corte 15 y hoy 3 de noviembre, el período en curso es el que empezó el
- * 15 de octubre, así que la flecha derecha queda deshabilitada en ése.
- */
-export function navegacionMes(
-  mes: string | null,
-  hasta: Date,
-  diaCorte = 1,
-): NavegacionMes {
-  const referencia = mes ?? periodoKeyDe(hasta, diaCorte);
-  const anterior = mesAnterior(referencia);
-  // Las claves 'YYYY-MM' se comparan bien como texto (mismo formato, mismo
-  // largo): '2026-09' < '2026-10' < '2027-01'.
-  const enCurso = periodoKeyDe(new Date(), diaCorte);
-  const puedeAvanzar = referencia < enCurso;
-  const siguiente = puedeAvanzar ? mesSiguiente(referencia) : null;
-  return { anterior, siguiente };
 }
 
 function pickString(v: string | string[] | undefined): string | null {

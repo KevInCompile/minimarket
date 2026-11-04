@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/card";
 import { RetirosTable } from "./retiros-table";
 import { RetiroForm } from "./retiro-form";
-import { MonthSelector, type MesOption } from "@/components/filtros/month-selector";
 import { FiltrosBar } from "@/components/filtros/filtros-bar";
 import { RetirosFiltrosExtra } from "./retiros-filtros-extra";
 
@@ -54,20 +53,10 @@ type FiltrosActivos = {
 export function RetirosView({
   retiros,
   filtros,
-  mesOptions,
-  anterior,
-  siguiente,
   fechaInicial,
-  diaCorte = 1,
 }: {
-  diaCorte?: number;
   retiros: RetiroView[];
   filtros: FiltrosActivos;
-  mesOptions: MesOption[];
-  /** Mes anterior para la flecha izquierda del selector (server). */
-  anterior?: string | null;
-  /** Mes siguiente para la flecha derecha del selector (server). */
-  siguiente?: string | null;
   /** Fecha por defecto del formulario: la del mes que se está viendo. */
   fechaInicial?: string;
 }) {
@@ -123,15 +112,6 @@ export function RetirosView({
           </>
         }
         activeFilters={filtrosActivos}
-        period={
-          <MonthSelector
-            options={mesOptions}
-            currentMes={estadoFiltros.mes}
-            anterior={anterior}
-            siguiente={siguiente}
-              diaCorte={diaCorte}
-          />
-        }
         actions={
           /* Desktop: botón en el toolbar que abre un panel lateral */
           <Sheet open={open} onOpenChange={setOpen}>

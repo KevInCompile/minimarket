@@ -157,6 +157,89 @@ export function periodoKeyDe(fecha: Date, diaCorte = 1): string {
   return mesKey(ref);
 }
 
+/** Parámetros de URL que determinan el período visible. */
+export type ParametrosPeriodoVisible = {
+  mes?: string | null;
+  desde?: string | null;
+  hasta?: string | null;
+};
+
+/**
+ * Período que debe mostrar el selector de mes.
+ *
+ * Sigue la misma prioridad que `parseFiltrosComunes`: un `mes` válido gana,
+ * un rango manual no corresponde a un único período y, si no hay filtros,
+ * se muestra el período en curso.
+ */
+export function periodoVisible(
+  params: ParametrosPeriodoVisible,
+  hoy: Date,
+  diaCorte = 1,
+): string | null {
+  if (params.mes && mesRange(params.mes, diaCorte)) {
+    return params.mes;
+  }
+  if (params.desde && params.hasta) {
+    return null;
+  }
+  return periodoKeyDe(hoy, diaCorte);
+}
+
+/**
+ * Períodos recientes para dejar utilizable el selector cuando una tienda
+ * todavía no tiene movimientos. El primero es el período en curso.
+ */
+export function periodosIniciales(
+  hoy: Date,
+  diaCorte = 1,
+  cantidad = 12,
+): string[] {
+  const total = Math.max(0, Math.trunc(cantidad));
+  const periodos: string[] = [];
+  let actual: string | null = periodoKeyDe(hoy, diaCorte);
+
+  for (let i = 0; i < total && actual; i++) {
+    periodos.push(actual);
+    actual = mesAnterior(actual);
+  }
+
+  return periodos;
+}
+
+/** Períodos vecinos al que el usuario está viendo. */
+export type NavegacionMes = {
+  /** Clave 'YYYY-MM' del período anterior (null si la clave no es válida). */
+  anterior: string | null;
+  /** Clave 'YYYY-MM' del período siguiente (null si no se puede avanzar). */
+  siguiente: string | null;
+};
+
+/**
+ * Calcula los períodos vecinos del período visible.
+ *
+ * `siguiente` solo existe cuando el período de referencia es estrictamente
+ * anterior al período en curso: nunca se puede navegar al futuro.
+ */
+export function navegacionMes(
+  mes: string | null,
+  hasta: Date,
+  diaCorte = 1,
+  /**
+   * "Ahora" inyectable. El cliente lo pasa con el valor calculado por el
+   * server para mantener server y browser en el mismo período.
+   */
+  ahora: Date = new Date(),
+): NavegacionMes {
+  const referencia = mes ?? periodoKeyDe(hasta, diaCorte);
+  const anterior = mesAnterior(referencia);
+  // Las claves 'YYYY-MM' se comparan bien como texto (mismo formato, mismo
+  // largo): '2026-09' < '2026-10' < '2027-01'.
+  const enCurso = periodoKeyDe(ahora, diaCorte);
+  const puedeAvanzar = referencia < enCurso;
+  const siguiente = puedeAvanzar ? mesSiguiente(referencia) : null;
+  return { anterior, siguiente };
+}
+
 /**
  * Etiqueta legible de un período, según su día de corte.
  *

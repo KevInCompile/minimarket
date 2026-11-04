@@ -8,6 +8,14 @@ import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileSidebar } from "@/components/mobile-sidebar";
 import { PageIdentity, SidebarNav } from "@/components/sidebar-nav";
+import { MonthSelector } from "@/components/filtros/month-selector";
+import { obtenerMesesConDatos } from "@/lib/meses";
+import {
+  etiquetaPeriodo,
+  normalizarDiaCorte,
+  startOfDayUTC,
+  toISODate,
+} from "@/lib/dates";
 import { LogOut } from "lucide-react";
 
 const ROLE_STYLE: Record<string, { bg: string; text: string; label: string }> = {
@@ -38,12 +46,30 @@ export default async function AppLayout({
   const isAdmin = session.user.role === "ADMIN";
   const roleStyle = ROLE_STYLE[session.user.role] ?? ROLE_STYLE.CAJERO;
 
-  // Traer el nombre de la tienda del user
+  // Traer el nombre de la tienda del user, su día de corte y los períodos
+  // con datos (para el selector de mes de la barra superior).
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { tienda: { select: { nombre: true } } },
+    select: {
+      tiendaId: true,
+      tienda: { select: { nombre: true, diaCorte: true } },
+    },
   });
   const nombreTienda = user?.tienda?.nombre ?? "";
+  const diaCorte = normalizarDiaCorte(user?.tienda?.diaCorte);
+
+  const mesesConDatos = await obtenerMesesConDatos(
+    user?.tiendaId ?? "",
+    diaCorte,
+  );
+  const mesOptions = mesesConDatos.map((k) => ({
+    value: k,
+    label: etiquetaPeriodo(k, diaCorte) ?? k,
+  }));
+
+  // 'hoy' lo calcula el server para que el selector del cliente use el
+  // mismo valor y no haya mismatch de hidratación en el borde del corte.
+  const hoy = toISODate(startOfDayUTC(new Date()));
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -106,10 +132,18 @@ export default async function AppLayout({
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileSidebar isAdmin={isAdmin} nombreTienda={nombreTienda} />
 
-        {/* Barra superior: identidad de la ruta a la izquierda, slot de
-            acciones de página a la derecha (Export/Share llegan después). */}
-        <div className="z-30 flex items-center justify-between gap-3 border-b border-border bg-background/85 px-4 py-2 backdrop-blur md:sticky md:top-0 md:px-10">
-          <PageIdentity />
+        {/* Barra superior: título e icono de la ruta a la izquierda,
+            selector de período cuando corresponde y tema a la derecha. */}
+        <div className="z-30 flex items-start justify-between gap-3 border-b border-border bg-background/85 px-4 py-2 backdrop-blur sm:items-center md:sticky md:top-0 md:px-10">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
+            <PageIdentity />
+            <MonthSelector
+              options={mesOptions}
+              diaCorte={diaCorte}
+              hoy={hoy}
+              className="order-3 w-full basis-full sm:order-none sm:w-auto sm:basis-auto md:w-72"
+            />
+          </div>
           <div className="flex shrink-0 items-center gap-2">
             <ThemeToggle />
           </div>

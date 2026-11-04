@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { Smartphone } from "lucide-react";
 import { PageToolbar } from "@/components/page-toolbar";
-import { MonthSelector, type MesOption } from "@/components/filtros/month-selector";
 import { FiltrosBar } from "@/components/filtros/filtros-bar";
 
 /**
@@ -14,29 +13,19 @@ import { FiltrosBar } from "@/components/filtros/filtros-bar";
  * arma la page (server) para que el formato de moneda se haga una sola vez,
  * en el server.
  *
- * El selector de mes va VISIBLE en el toolbar (la navegación principal) y
- * el panel solo queda con el rango manual.
+ * El selector de mes vive en la barra superior; este panel queda con el
+ * rango manual.
  */
 export function TransferenciaFilters({
   desde,
   hasta,
   mes,
-  mesOptions,
-  anterior,
-  siguiente,
   subtitulo,
   actions,
-  diaCorte = 1,
 }: {
-  diaCorte?: number;
   desde: Date;
   hasta: Date;
   mes: string | null;
-  mesOptions: MesOption[];
-  /** Mes anterior para la flecha izquierda del selector (server). */
-  anterior?: string | null;
-  /** Mes siguiente para la flecha derecha del selector (server). */
-  siguiente?: string | null;
   /** Línea meta del toolbar (conteo + total), formateada en el server. */
   subtitulo?: ReactNode;
   /** Acciones del toolbar (ej. el botón "Registrar transferencia"). */
@@ -47,15 +36,6 @@ export function TransferenciaFilters({
       title="Transferencia"
       icon={Smartphone}
       subtitle={subtitulo}
-      period={
-        <MonthSelector
-          options={mesOptions}
-          currentMes={mes}
-          anterior={anterior}
-          siguiente={siguiente}
-              diaCorte={diaCorte}
-        />
-      }
       actions={actions}
     >
       <FiltrosBar desde={desde} hasta={hasta} mes={mes} />

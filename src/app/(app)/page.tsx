@@ -14,7 +14,6 @@ import {
 } from "@/lib/calc";
 import { startOfDayUTC, toISODate, etiquetaPeriodo, mesRange, periodoKeyDe } from "@/lib/dates";
 import {
-  navegacionMes,
   parseFiltrosComunes,
   periodoComparacion,
 } from "@/lib/search-params";
@@ -29,7 +28,6 @@ import {
 import { ProveedoresChart } from "./proveedores-chart";
 import { BotonKebab } from "@/components/boton-kebab";
 import { UltimosGastos } from "./ultimos-gastos";
-import { MonthSelector } from "@/components/filtros/month-selector";
 import {
   Card,
   CardAction,
@@ -53,10 +51,6 @@ export default async function DashboardPage({ searchParams }: Props) {
   // sobre `desde`/`hasta`, y si no hay nada se usa el mes actual.
   const filtros = await parseFiltrosComunes(searchParams, undefined, diaCorte);
 
-  // Meses vecinos para las flechas del selector (la derecha se apaga en el
-  // mes actual).
-  const navegacion = navegacionMes(filtros.mes, filtros.hasta, diaCorte);
-
   // Periodo contra el que se compara: si el usuario está viendo un mes, es
   // el mes calendario anterior; si está viendo un rango libre, es el rango
   // anterior del mismo largo.
@@ -74,7 +68,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   const hastaConsulta =
     filtros.hasta > ventana.hasta ? filtros.hasta : ventana.hasta;
 
-  const [gastos, retiros, transferencia, cierres, ultimosGastos, mesesConDatos] =
+  const [gastos, retiros, transferencia, cierres, ultimosGastos] =
     await Promise.all([
       prisma.gasto.findMany({
         where: {
@@ -107,7 +101,6 @@ export default async function DashboardPage({ searchParams }: Props) {
         take: 8,
         include: { proveedor: { select: { nombre: true } } },
       }),
-      obtenerMesesConDatos(tiendaId, diaCorte),
     ]);
 
   const gastosForCalc = gastos.map(toGastoForCalc);
@@ -175,11 +168,6 @@ export default async function DashboardPage({ searchParams }: Props) {
   const evolucion =
     periodosEnRango <= 1 ? serieDiaria(argsRango) : serieMensual(argsRango);
 
-  const mesOptions = mesesConDatos.map((k) => ({
-    value: k,
-    label: etiquetaPeriodo(k, diaCorte) ?? k,
-  }));
-
   // El rótulo del periodo incluye el nombre del mes cuando el rango viene de
   // un atajo de mes, para que se entienda de un vistazo qué se está viendo.
   const rangoTexto = `${toISODate(filtros.desde)} al ${toISODate(filtros.hasta)}`;
@@ -200,17 +188,6 @@ export default async function DashboardPage({ searchParams }: Props) {
           <p className="mt-1 text-sm text-muted-foreground">
             Periodo: {periodoTexto}
           </p>
-        </div>
-        {/* En mobile el selector baja a su propia fila: el título no se
-            aprieta. */}
-        <div className="w-full shrink-0 sm:w-80">
-          <MonthSelector
-            options={mesOptions}
-            currentMes={filtros.mes}
-            anterior={navegacion.anterior}
-            siguiente={navegacion.siguiente}
-              diaCorte={diaCorte}
-          />
         </div>
       </header>
 
@@ -318,64 +295,6 @@ function ultimos12Meses(hasta: Date, diaCorte = 1): {
     desde: new Date(Date.UTC(anio, mes - 1 - 11, diaCorte)),
     hasta: new Date(Date.UTC(anio, mes, diaCorte - 1, 23, 59, 59, 999)),
   };
-}
-
-/**
- * Claves 'YYYY-MM' de los meses con al menos un movimiento en la tienda.
- *
- * El dashboard resume TODO el movimiento (gastos, retiros, transferencias y
- * cierres), así que la lista es la unión de los meses con datos en cualquiera
- * de esas tablas: un mes en el que sólo hubo un retiro también se puede ver.
- *
- * Devuelve los últimos 18 meses con datos; si la tienda no tiene nada, los
- * últimos 12 meses (incluido el actual) para que el selector tenga UI
- * utilizable.
- */
-async function obtenerMesesConDatos(
-  tiendaId: string,
-  diaCorte: number,
-): Promise<string[]> {
-  // El período se ancla al día de corte de la tienda: una fecha del 20 de
-  // octubre, con corte 15, pertenece al período que empezó el 15 de
-  // octubre. Por eso no se agrupa por mes calendario sino por período.
-  const clavePeriodo = `TO_CHAR(
-    fecha - (CASE WHEN EXTRACT(DAY FROM fecha) < ${diaCorte}
-                  THEN INTERVAL '1 month' ELSE INTERVAL '0 days' END),
-    'YYYY-MM')`;
-  const result = await prisma.$queryRaw<Array<{ mes: string }>>`
-    SELECT mes FROM (
-      SELECT ${clavePeriodo} AS mes
-      FROM "Gasto"
-      WHERE "tiendaId" = ${tiendaId}
-      UNION
-      SELECT ${clavePeriodo}
-      FROM "Retiro"
-      WHERE "tiendaId" = ${tiendaId}
-      UNION
-      SELECT ${clavePeriodo}
-      FROM "TransferenciaDia"
-      WHERE "tiendaId" = ${tiendaId}
-      UNION
-      SELECT ${clavePeriodo}
-      FROM "CierreDiario"
-      WHERE "tiendaId" = ${tiendaId}
-    ) AS meses
-    ORDER BY mes DESC
-    LIMIT 18
-  `;
-  const fromData = result.map((r) => r.mes);
-
-  // Si no hay datos, devuelve los últimos 12 períodos incluido el actual.
-  if (fromData.length === 0) {
-    const out: string[] = [];
-    const hoy = new Date();
-    for (let i = 0; i < 12; i++) {
-      const d = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() - i, 1));
-      out.push(periodoKeyDe(d, diaCorte));
-    }
-    return out;
-  }
-  return fromData;
 }
 
 /** Keeps only the rows whose fecha falls inside the inclusive window. */

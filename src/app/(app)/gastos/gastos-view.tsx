@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/card";
 import { GastosTable } from "./gastos-table";
 import { GastoForm } from "./gasto-form";
-import { MonthSelector, type MesOption } from "@/components/filtros/month-selector";
 import { FiltrosBar } from "@/components/filtros/filtros-bar";
 import { GastosFiltrosExtra } from "./gastos-filtros-extra";
 
@@ -50,21 +49,11 @@ export function GastosView({
   gastos,
   proveedores,
   filtros,
-  mesOptions,
-  anterior,
-  siguiente,
   fechaInicial,
-  diaCorte = 1,
 }: {
-  diaCorte?: number;
   gastos: GastoView[];
   proveedores: Proveedor[];
   filtros: FiltrosEfectivos;
-  mesOptions: MesOption[];
-  /** Mes anterior para la flecha izquierda del selector (server). */
-  anterior?: string | null;
-  /** Mes siguiente para la flecha derecha del selector (server). */
-  siguiente?: string | null;
   /** Fecha por defecto del formulario: la del mes que se está viendo. */
   fechaInicial?: string;
 }) {
@@ -120,15 +109,6 @@ export function GastosView({
           </>
         }
         activeFilters={filtrosActivos}
-        period={
-          <MonthSelector
-            options={mesOptions}
-            currentMes={estadoFiltros.mes}
-            anterior={anterior}
-            siguiente={siguiente}
-              diaCorte={diaCorte}
-          />
-        }
         actions={
           /* Desktop: botón en el toolbar que abre un panel lateral */
           <Sheet open={openPanel} onOpenChange={setOpenPanel}>

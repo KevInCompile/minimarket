@@ -141,3 +141,39 @@ export function navItemsFor(
     s.items.filter((i) => isAdmin || !i.adminOnly),
   );
 }
+
+/** Regla de ruta activa compartida por el menú y la barra superior. */
+export function rutaActiva(pathname: string, href: string): boolean {
+  return pathname === href || (href !== "/" && pathname.startsWith(href));
+}
+
+/**
+ * Item de navegación que corresponde a la ruta actual. La barra superior lo
+ * usa para obtener el título y el icono sin duplicar el catálogo.
+ */
+export function navItemForPathname(
+  pathname: string,
+  sections: NavSection[] = NAV_SECTIONS,
+  isAdmin = true,
+): NavItem | undefined {
+  return navItemsFor(sections, isAdmin).find((item) =>
+    rutaActiva(pathname, item.href),
+  );
+}
+
+/** Páginas cuyos datos cambian según el período seleccionado. */
+const RUTAS_CON_PERIODO = [
+  "/",
+  "/cierre",
+  "/transferencia",
+  "/gastos",
+  "/retiros",
+] as const;
+
+/**
+ * Indica si la ruta actual debe mostrar el selector de mes. Las páginas
+ * administrativas que no filtran por fecha no lo muestran.
+ */
+export function muestraSelectorPeriodo(pathname: string): boolean {
+  return (RUTAS_CON_PERIODO as readonly string[]).includes(pathname);
+}

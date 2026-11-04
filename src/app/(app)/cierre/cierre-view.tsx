@@ -16,7 +16,6 @@ import { CierreCards } from "./cierre-cards";
 import { CierreFilters } from "./cierre-filters";
 import { ResumenPeriodo } from "./resumen-periodo";
 import { PageToolbar } from "@/components/page-toolbar";
-import { MonthSelector, type MesOption } from "@/components/filtros/month-selector";
 import type { CierreDiarioComputed } from "@/lib/calc";
 
 type Pendiente = string;
@@ -27,23 +26,13 @@ export function CierreView({
   desde,
   hasta,
   mes,
-  mesOptions,
-  anterior,
-  siguiente,
   fechaInicial,
-  diaCorte = 1,
 }: {
-  diaCorte?: number;
   serie: CierreDiarioComputed[];
   pendientes: Pendiente[];
   desde: Date;
   hasta: Date;
   mes: string | null;
-  mesOptions: MesOption[];
-  /** Mes anterior para la flecha izquierda del selector (server). */
-  anterior?: string | null;
-  /** Mes siguiente para la flecha derecha del selector (server). */
-  siguiente?: string | null;
   /** Fecha por defecto del formulario: la del mes que se está viendo. */
   fechaInicial?: string;
 }) {
@@ -56,15 +45,6 @@ export function CierreView({
         icon={ClipboardCheck}
         iconClassName="text-sky-600 dark:text-sky-400"
         subtitle={`${serie.length} días`}
-        period={
-          <MonthSelector
-            options={mesOptions}
-            currentMes={mes}
-            anterior={anterior}
-            siguiente={siguiente}
-              diaCorte={diaCorte}
-          />
-        }
         actions={
           /* Desktop: botón en el toolbar que abre un panel lateral */
           <Sheet open={open} onOpenChange={setOpen}>

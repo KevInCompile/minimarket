@@ -44,11 +44,6 @@ type PanelControl = {
  * `Sheet`. Sin `children` no se renderiza el botón "Filtros" (páginas sin
  * filtros).
  *
- * El control de período (`period`, normalmente el `MonthSelector`) NO va en
- * el panel: se renderiza VISIBLE, junto al título. Si viviera dentro del
- * `Sheet` el usuario no tendría forma de saber en qué mes está mirando sin
- * abrir primero un panel.
- *
  * El `Badge` cuenta solo filtros NO temporales (proveedor, búsqueda, agrupar
  * por mes). Los temporales (mes / desde / hasta) son el estado por defecto de
  * la lista, así que un badge por ellos solo distracte.
@@ -63,10 +58,6 @@ export type PageToolbarProps = {
   /** Línea meta sobre el título (conteo, total). Se renderiza dentro de un
    *  `<p>`, así que pasa markup inline (`span`, fragmento), nunca bloques. */
   subtitle?: ReactNode;
-  /** Control de período (ej. el `MonthSelector`). Se renderiza VISIBLE: en
-   *  mobile baja a su propia fila y en desktop queda entre el título y el
-   *  grupo de acciones. */
-  period?: ReactNode;
   /** Acciones de página (ej. el `Sheet` de "Nuevo gasto"). Se renderizan en
    *  el grupo derecho, antes del botón "Filtros". */
   actions?: ReactNode;
@@ -82,7 +73,6 @@ export function PageToolbar({
   icon: Icon,
   iconClassName,
   subtitle,
-  period,
   actions,
   activeFilters = 0,
   children,
@@ -109,15 +99,6 @@ export function PageToolbar({
           <span className="truncate">{title}</span>
         </h1>
       </div>
-
-      {/* Control de período: visible, nunca dentro del panel de filtros.
-          El ancho es flexible (con tope) para no robarle espacio al
-          título ni a las acciones en contenedores angostos. */}
-      {period ? (
-        <div className="w-full shrink-0 md:w-auto md:min-w-[180px] md:max-w-[288px] md:flex-none">
-          {period}
-        </div>
-      ) : null}
 
       <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-end">
         {actions}

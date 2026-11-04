@@ -3,9 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, LayoutDashboard, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { NAV_SECTIONS, type NavItem, type NavSection } from "@/lib/nav";
+import {
+  NAV_SECTIONS,
+  navItemForPathname,
+  rutaActiva,
+  type NavItem,
+  type NavSection,
+} from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 /**
@@ -161,35 +167,27 @@ export function SidebarNav({
 }
 
 /**
- * Identidad de la ruta activa para la barra superior.
- *
- * Muestra la SECCIÓN a la que pertenece la página ("Dinero", "Operación",
- * …), no el nombre de la página: el título de la página ya está en grande
- * en el contenido, y repetirlo en la barra superior era redundante. La
- * sección aporta el contexto que el título de la página no da.
+ * Identidad de la ruta activa para la barra superior: icono + label tomados
+ * de `NAV_SECTIONS`, así que sigue a la navegación sin duplicar el catálogo.
+ * Las páginas que no están en el menú (ej. `/importar`) caen al último
+ * segmento de la URL.
  */
 export function PageIdentity({ className }: { className?: string }) {
   const pathname = usePathname();
-
-  const seccion = NAV_SECTIONS.find((s) =>
-    s.items.some((i) => esRutaActiva(pathname, i.href)),
-  );
-
-  // Páginas fuera del menú (ej. `/importar`): se cae al último segmento.
-  const fallback = pathname.split("/").filter(Boolean).pop() ?? "balance";
+  const item = navItemForPathname(pathname);
+  const Icon = item?.icon ?? LayoutDashboard;
+  const label =
+    item?.label ??
+    (pathname.split("/").filter(Boolean).pop() ?? "Balance");
 
   return (
     <div className={cn("flex min-w-0 items-center gap-2", className)}>
-      <span className="truncate text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {seccion?.title ?? fallback}
-      </span>
+      <Icon
+        className={cn("size-4 shrink-0", item?.iconClass ?? "text-muted-foreground")}
+      />
+      <span className="truncate text-sm font-semibold tracking-tight">{label}</span>
     </div>
   );
-}
-
-/** Regla de ruta activa, compartida por el nav y la barra superior. */
-export function esRutaActiva(pathname: string, href: string): boolean {
-  return pathname === href || (href !== "/" && pathname.startsWith(href));
 }
 
 /**
@@ -218,7 +216,7 @@ function SidebarNavLink({
   pathname: string;
   onNavigate?: () => void;
 }) {
-  const active = esRutaActiva(pathname, item.href);
+  const active = rutaActiva(pathname, item.href);
   return (
     <Link
       href={item.href}
