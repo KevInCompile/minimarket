@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileSidebar } from "@/components/mobile-sidebar";
 import { PageIdentity, SidebarNav } from "@/components/sidebar-nav";
-import { LogOut, MoreHorizontal } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 const ROLE_STYLE: Record<string, { bg: string; text: string; label: string }> = {
   ADMIN: {
@@ -100,9 +100,6 @@ export default async function AppLayout({
               </Button>
             </form>
           </div>
-          <div className="flex justify-end">
-            <ThemeToggle />
-          </div>
         </div>
       </aside>
 
@@ -114,15 +111,7 @@ export default async function AppLayout({
         <div className="z-30 flex items-center justify-between gap-3 border-b border-border bg-background/85 px-4 py-2 backdrop-blur md:sticky md:top-0 md:px-10">
           <PageIdentity />
           <div className="flex shrink-0 items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              title="Más opciones"
-              aria-label="Más opciones"
-            >
-              <MoreHorizontal className="size-4" />
-            </Button>
+            <ThemeToggle />
           </div>
         </div>
 
