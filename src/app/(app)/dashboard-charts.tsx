@@ -236,12 +236,18 @@ export function EvolucionMensual({
   const maximo = data.reduce((m, p) => (p.total > m ? p.total : m), 0);
   const hayDatos = maximo > 0;
 
+  // El grano depende de cuántas barras hay: si el rango cae dentro de un
+  // solo período, el desglose es por día; si abarca varios, por período.
+  const porDia = data.length > 0 && /^\d+$/.test(data[0]!.label);
+
   return (
     <Card className={cn("border-border shadow-sm", className)}>
       <CardHeader className="grid-cols-[1fr_auto_auto] items-center gap-3">
         <div className="min-w-0">
           <CardTitle>Evolución de ventas</CardTitle>
-          <CardDescription>Movimiento por mes</CardDescription>
+          <CardDescription>
+            {porDia ? "Movimiento por día" : "Movimiento por período"}
+          </CardDescription>
         </div>
         <SelectorPeriodo
           desde={desde}

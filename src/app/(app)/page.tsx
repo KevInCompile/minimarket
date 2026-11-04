@@ -6,6 +6,7 @@ import {
   rankingProveedores,
   compararFlujos,
   serieMensual,
+  serieDiaria,
   type CierreInput,
   type GastoForCalc,
   type RetiroForCalc,
@@ -153,17 +154,26 @@ export default async function DashboardPage({ searchParams }: Props) {
     8,
   );
 
-  const argsVentana = {
-    desde: ventana.desde,
-    hasta: ventana.hasta,
+  // El gráfico de evolución sigue el RANGO SELECCIONADO, no una ventana
+  // fija: si su titular dijera 'Este período' y mostrara la suma de doce
+  // períodos, el número no coincidiría con las tarjetas de arriba.
+  //
+  // El grano es adaptativo: si el rango cae dentro de un solo período, una
+  // barra por período sería una barra solitaria, así que se desglosa por
+  // día. Si abarca varios períodos, va una barra por período.
+  const argsRango = {
+    desde: filtros.desde,
+    hasta: filtros.hasta,
     diaCorte,
-    cierres: enPeriodo(cierresForCalc, ventana.desde, ventana.hasta),
-    gastos: enPeriodo(gastosForCalc, ventana.desde, ventana.hasta),
-    retiros: enPeriodo(retirosForCalc, ventana.desde, ventana.hasta),
-    transferencia: enPeriodo(transferenciaForCalc, ventana.desde, ventana.hasta),
+    cierres: enPeriodo(cierresForCalc, filtros.desde, filtros.hasta),
+    gastos: enPeriodo(gastosForCalc, filtros.desde, filtros.hasta),
+    retiros: enPeriodo(retirosForCalc, filtros.desde, filtros.hasta),
+    transferencia: enPeriodo(transferenciaForCalc, filtros.desde, filtros.hasta),
   };
 
-  const evolucion = serieMensual(argsVentana);
+  const periodosEnRango = cuentaPeriodos(filtros.desde, filtros.hasta, diaCorte);
+  const evolucion =
+    periodosEnRango <= 1 ? serieDiaria(argsRango) : serieMensual(argsRango);
 
   const mesOptions = mesesConDatos.map((k) => ({
     value: k,
@@ -280,6 +290,17 @@ export default async function DashboardPage({ searchParams }: Props) {
  * Ventana de los 12 meses que termina en el mes de `hasta`: el día 1 del mes
  * once meses antes hasta el último día del mes de `hasta` (UTC).
  */
+/**
+ * Cuántos períodos distintos cubre un rango.
+ */
+function cuentaPeriodos(desde: Date, hasta: Date, diaCorte: number): number {
+  const primero = periodoKeyDe(desde, diaCorte);
+  const ultimo = periodoKeyDe(hasta, diaCorte);
+  const [a1, m1] = primero.split("-").map(Number);
+  const [a2, m2] = ultimo.split("-").map(Number);
+  return (a2 - a1) * 12 + (m2 - m1) + 1;
+}
+
 function ultimos12Meses(hasta: Date, diaCorte = 1): {
   desde: Date;
   hasta: Date;

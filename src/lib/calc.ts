@@ -21,6 +21,7 @@ import {
   endOfDayUTC,
   normalizarDiaCorte,
   periodoKeyDe,
+  toISODate,
 } from "./dates";
 
 /**
@@ -684,6 +685,44 @@ function serieMensualAcotada(args: SerieMensualArgs): SerieMensualArgs {
     retiros: movementsEnRango(args.retiros, args.desde, args.hasta),
     transferencia: movementsEnRango(args.transferencia, args.desde, args.hasta),
   };
+}
+
+/**
+ * Serie diaria de una métrica de flujo: un punto por día del rango.
+ *
+ * Se usa cuando el rango seleccionado cae dentro de un solo período: en
+ * ese caso una barra por período sería una sola barra solitaria, y el
+ * detalle útil es el día a día.
+ *
+ * Los días sin movimiento se incluyen con valor 0 para que el gráfico no
+ * tenga huecos.
+ */
+export function serieDiaria(
+  args: SerieMensualArgs,
+  metrica: MetricaMensual = "totalVenta",
+): PuntoMes[] {
+  const acotada = serieMensualAcotada(args);
+  const valor = VALOR_POR_METRICA[metrica];
+
+  const porDia = new Map<string, number>();
+  for (const dia of serieCierres(acotada)) {
+    const key = toISODate(dia.fecha);
+    porDia.set(key, (porDia.get(key) ?? 0) + valor(dia));
+  }
+
+  // Se recorren todos los días del rango, aunque no tengan movimientos.
+  const puntos: PuntoMes[] = [];
+  const inicio = startOfDay(acotada.desde);
+  const fin = startOfDay(acotada.hasta);
+  for (let t = inicio.getTime(); t <= fin.getTime(); t += 86_400_000) {
+    const key = toISODate(new Date(t));
+    puntos.push({
+      key,
+      label: String(new Date(t).getUTCDate()),
+      total: porDia.get(key) ?? 0,
+    });
+  }
+  return puntos;
 }
 
 /**

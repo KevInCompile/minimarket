@@ -8,6 +8,7 @@ import {
   compararFlujos,
   serieMensual,
   serieMensualMetrica,
+  serieDiaria,
   type SerieMensualArgs,
   type BalanceGeneral,
   type CierreInput,
@@ -853,5 +854,44 @@ describe("saldo acumulado: arrastre entre periodos", () => {
       saldoInicial: { efectivo: -45_000, transferencia: 0 },
     });
     expect(bg.saldoEfectivoActual).toBe(155_000);
+  });
+});
+
+describe("serieDiaria", () => {
+  it("devuelve un punto por dia del rango, incluyendo los que no se mueven", () => {
+    const s = serieDiaria({
+      desde: new Date("2026-10-01T00:00:00Z"),
+      hasta: new Date("2026-10-04T00:00:00Z"),
+      diaCorte: 1,
+      cierres: [
+        {
+          fecha: new Date("2026-10-02T00:00:00Z"),
+          cajaApertura: 0,
+          cajaCierre: 0,
+          efectivoGuardado: 100_000,
+          efectivoRealContado: null,
+        },
+      ],
+      gastos: [],
+      retiros: [],
+      transferencia: [],
+    });
+    // 4 días, uno con movimiento y tres en cero.
+    expect(s).toHaveLength(4);
+    expect(s.map((x) => x.label)).toEqual(["1", "2", "3", "4"]);
+    expect(s.map((x) => x.total)).toEqual([0, 100_000, 0, 0]);
+  });
+
+  it("con dia de corte 15 el rango sigue siendo dia a dia", () => {
+    const s = serieDiaria({
+      desde: new Date("2026-10-15T00:00:00Z"),
+      hasta: new Date("2026-10-17T00:00:00Z"),
+      diaCorte: 15,
+      cierres: [],
+      gastos: [],
+      retiros: [],
+      transferencia: [],
+    });
+    expect(s.map((x) => x.key)).toEqual(["2026-10-15", "2026-10-16", "2026-10-17"]);
   });
 });
