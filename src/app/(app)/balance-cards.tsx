@@ -10,7 +10,6 @@ import {
 import { cn } from "cn";
 import { formatCOP } from "@/lib/format";
 import type { BalanceGeneral, MetricaTendencia } from "@/lib/calc";
-import { BotonKebab } from "@/components/boton-kebab";
 
 export type TendenciasFlujos = {
   gastos: MetricaTendencia;
@@ -105,7 +104,6 @@ export function BalanceCards({
                 {t.titulo}
               </span>
             </div>
-            <BotonKebab titulo={t.titulo} className="-mt-1 -mr-1" />
           </div>
 
           <p className="mt-3 text-xl font-bold tabular-nums text-foreground xl:text-2xl">

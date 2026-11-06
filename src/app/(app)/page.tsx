@@ -26,11 +26,9 @@ import {
   RetirosPorOrigen,
 } from "./dashboard-charts";
 import { ProveedoresChart } from "./proveedores-chart";
-import { BotonKebab } from "@/components/boton-kebab";
 import { UltimosGastos } from "./ultimos-gastos";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -220,14 +218,11 @@ export default async function DashboardPage({ searchParams }: Props) {
         />
 
         <Card className="border-border shadow-sm">
-          <CardHeader className="grid-cols-[1fr_auto] items-center">
+          <CardHeader>
             <div className="min-w-0">
               <CardTitle>Últimos gastos</CardTitle>
               <CardDescription>Registrados recientemente</CardDescription>
             </div>
-            <CardAction>
-              <BotonKebab titulo="Últimos gastos" />
-            </CardAction>
           </CardHeader>
           <CardContent>
             <UltimosGastos
@@ -243,14 +238,11 @@ export default async function DashboardPage({ searchParams }: Props) {
         </Card>
 
         <Card className="border-border shadow-sm">
-          <CardHeader className="grid-cols-[1fr_auto] items-center">
+          <CardHeader>
             <div className="min-w-0">
               <CardTitle>Gastos por proveedor</CardTitle>
               <CardDescription>Top del periodo</CardDescription>
             </div>
-            <CardAction>
-              <BotonKebab titulo="Gastos por proveedor" />
-            </CardAction>
           </CardHeader>
           <CardContent>
             <Suspense fallback={null}>

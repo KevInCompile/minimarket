@@ -5,7 +5,6 @@ import { Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -19,7 +18,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { BotonKebab } from "@/components/boton-kebab";
 import { UsuarioForm, UsuarioList } from "./usuario-form";
 
 type UsuarioView = {
@@ -77,19 +75,15 @@ export function UsuariosView({
         </Sheet>
       </header>
 
-      {/* Mismo panel blanco del dashboard: lista sobre `bg-card`, con
-          encabezado de título a la izquierda y kebab a la derecha. */}
+      {/* Mismo panel blanco del dashboard: lista sobre `bg-card`. */}
       <Card className="border-border shadow-sm">
-        <CardHeader className="grid-cols-[1fr_auto] items-center">
+        <CardHeader>
           <div className="min-w-0">
             <CardTitle>Usuarios del sistema</CardTitle>
             <CardDescription>
               Página solo para ADMIN; el proxy manda al cajero a /forbidden
             </CardDescription>
           </div>
-          <CardAction>
-            <BotonKebab titulo="Usuarios del sistema" />
-          </CardAction>
         </CardHeader>
         <CardContent>
           <UsuarioList

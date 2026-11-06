@@ -16,7 +16,6 @@ import {
 import { cn } from "cn";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -32,7 +31,6 @@ import {
 import { mesRange, periodoKeyDe, toISODate } from "@/lib/dates";
 import { formatCOP, formatPercent } from "@/lib/format";
 import type { PuntoMes } from "@/lib/calc";
-import { BotonKebab } from "@/components/boton-kebab";
 
 /**
  * Gráficos del dashboard.
@@ -242,7 +240,7 @@ export function EvolucionMensual({
 
   return (
     <Card className={cn("border-border shadow-sm", className)}>
-      <CardHeader className="grid-cols-[1fr_auto_auto] items-center gap-3">
+      <CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
         <div className="min-w-0">
           <CardTitle>Evolución de ventas</CardTitle>
           <CardDescription>
@@ -256,9 +254,6 @@ export function EvolucionMensual({
           mes={mes}
           diaCorte={diaCorte}
         />
-        <CardAction className="col-start-3 row-start-1">
-          <BotonKebab titulo="Evolución de ventas" />
-        </CardAction>
       </CardHeader>
 
       <CardContent>
@@ -364,14 +359,11 @@ function PanelDonut({
 
   return (
     <Card className={cn("border-border shadow-sm", className)}>
-      <CardHeader className="grid-cols-[1fr_auto] items-center">
+      <CardHeader>
         <div className="min-w-0">
           <CardTitle>{titulo}</CardTitle>
           <CardDescription>{descripcion}</CardDescription>
         </div>
-        <CardAction>
-          <BotonKebab titulo={titulo} />
-        </CardAction>
       </CardHeader>
 
       <CardContent>
