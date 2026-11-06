@@ -5,6 +5,7 @@ import type { PagadoCon } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { fromISODate } from "@/lib/dates";
 import { requireValidUser, requireAdmin, requireTiendaId } from "@/lib/auth-guard";
+import { snapshotEsDeEstaTienda } from "@/lib/tenant";
 import { okState, errState, type ActionState } from "./_state";
 
 export type GastoState = ActionState;
@@ -232,12 +233,20 @@ export async function eliminarGastoAction(
 export async function restaurarGastoAction(
   snapshot: GastoSnapshot,
 ): Promise<GastoState> {
-  const user = await requireValidUser();
+  const user = await requireAdmin();
+  const tiendaId = await requireTiendaId();
+
+  // El snapshot viene del cliente (via el boton "Deshacer"), asi que su
+  // tiendaId no es confiable: se valida contra la sesion y se escribe
+  // siempre con el de la sesion.
+  if (!snapshotEsDeEstaTienda(snapshot.tiendaId, tiendaId)) {
+    return errState("No tiene permisos para restaurar este gasto.");
+  }
 
   const proveedor = await prisma.proveedor.upsert({
-    where: { nombre_tiendaId: { nombre: snapshot.proveedorNombre, tiendaId: snapshot.tiendaId } },
+    where: { nombre_tiendaId: { nombre: snapshot.proveedorNombre, tiendaId } },
     update: {},
-    create: { nombre: snapshot.proveedorNombre, tiendaId: snapshot.tiendaId },
+    create: { nombre: snapshot.proveedorNombre, tiendaId },
   });
 
   await prisma.gasto.create({
@@ -248,8 +257,8 @@ export async function restaurarGastoAction(
       valor: snapshot.valor,
       pagadoCon: snapshot.pagadoCon,
       nota: snapshot.nota,
-      userId: snapshot.userId === user.id ? user.id : user.id,
-      tiendaId: snapshot.tiendaId,
+      userId: user.id,
+      tiendaId,
     },
   });
 

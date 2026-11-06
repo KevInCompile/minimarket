@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { fromISODate } from "@/lib/dates";
 import { requireAdmin, requireTiendaId } from "@/lib/auth-guard";
+import { snapshotEsDeEstaTienda } from "@/lib/tenant";
 import { okState, errState, type ActionState } from "./_state";
 import type { TipoRetiro, SaleDe } from "@prisma/client";
 
@@ -113,6 +114,14 @@ export async function restaurarRetiroAction(
   snapshot: RetiroSnapshot,
 ): Promise<RetiroState> {
   const user = await requireAdmin();
+  const tiendaId = await requireTiendaId();
+
+  // El snapshot viene del cliente (via el boton "Deshacer"), asi que su
+  // tiendaId no es confiable: se valida contra la sesion y se escribe
+  // siempre con el de la sesion.
+  if (!snapshotEsDeEstaTienda(snapshot.tiendaId, tiendaId)) {
+    return errState("No tiene permisos para restaurar este retiro.");
+  }
 
   await prisma.retiro.create({
     data: {
@@ -124,7 +133,7 @@ export async function restaurarRetiroAction(
       saleDe: snapshot.saleDe,
       nota: snapshot.nota,
       userId: user.id,
-      tiendaId: snapshot.tiendaId,
+      tiendaId,
     },
   });
 
