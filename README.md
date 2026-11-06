@@ -6,6 +6,9 @@ efectivo, retiros, Transferencia, cierre diario con acumulado de efectivo y Tran
 descuadres), pero como aplicación web multi-tenant con roles, trazabilidad por
 usuario y motor de cálculo.
 
+> El `.xlsx` no está en el repo: es el archivo original que la app reemplaza.
+> La fixture con la que se verifica la paridad vive en `tests/calc.test.ts`.
+
 ## Stack
 
 - **Next.js 16** (App Router, Turbopack, RSC)
@@ -81,6 +84,8 @@ pnpm dev
 
 ```
 src/
+  auth.ts                              NextAuth config (Credentials, JWT, roles)
+  proxy.ts                             auth + RBAC (renombrado desde middleware en Next 16)
   app/
     layout.tsx                       root layout (theme, fonts)
     globals.css
@@ -128,8 +133,6 @@ tests/
   search-params.test.ts              64 tests de resolución de filtros
   seed.test.ts                       19 tests del generador y las guardas del seed
   nav.test.ts                        2 tests del catálogo de navegación
-proxy.ts                             auth + RBAC (renombrado desde middleware en Next 16)
-auth.ts                              NextAuth config (Credentials, JWT, roles)
 next.config.ts                       habilita experimental.authInterrupts
 ```
 

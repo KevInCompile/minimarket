@@ -80,10 +80,12 @@ números. Flags: `--meses=6`, `--semilla=42`, `--mantener`, `--forzar`.
 ## Paridad con el Excel
 
 `tests/calc.test.ts` (32 tests) reproduce los totales del Excel
-`Control_Caja_Septiembre_2026.xlsx` con las hojas transaccionales como única
-fuente de verdad: total gastos **$2.750.878**, retiros efectivo $900.000 ·
-Transferencia $300.000, transferencia recibido $898.200, punto más bajo del
-efectivo $210.000 (Miércoles 02/09), descuadre del Jueves 17/09 **−$93.777**.
+`Control_Caja_Septiembre_2026.xlsx` (el `.xlsx` no está en el repo: es el
+archivo original que la app reemplaza; la fixture vive en el test) con las
+hojas transaccionales como única fuente de verdad: total gastos **$2.750.878**,
+retiros efectivo $900.000 · Transferencia $300.000, transferencia recibido
+$898.200, punto más bajo del efectivo $210.000 (Miércoles 02/09), descuadre
+del Jueves 17/09 **−$93.777**.
 
 Los totales hardcodeados de la hoja "Balance general" del Excel no coinciden:
 eran manuales y arrastraban inconsistencias.
