@@ -15,10 +15,12 @@ type Option = { value: string; label: string };
  * si hay items, "Coca-Cola, Altipal +1" si los items caben en una línea.
  *
  * Los valores se guardan en un `<input type="hidden" name=` para que el
- * FiltrosBar los recoja del FormData igual que un select nativo.
+ * FiltrosBar los recoja del FormData igual que un select nativo. Es un
+ * input por valor, así que el form GET produce una clave repetida
+ * (?proveedores=id1&proveedores=id2).
  *
- * El input hidden usa comma-separated values (CSV) como convención,
- * y FiltrosBar/page los parsea con `.split(",").
+ * La page la parsea con `parseMultiParam()` de `@/lib/search-params`,
+ * que tolera tanto la clave repetida como el CSV.
  */
 export function MultiSelect({
   options,

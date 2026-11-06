@@ -4,6 +4,7 @@ import {
   fechaPorDefectoPara,
   parseFiltrosComunes,
   parseMultiParam,
+  pickTextParam,
 } from "@/lib/search-params";
 import { GastosView } from "./gastos-view";
 import type { Prisma } from "@prisma/client";
@@ -15,7 +16,7 @@ type Props = {
     mes?: string;
     proveedores?: string | string[];
     pagadoCon?: string | string[];
-    q?: string;
+    q?: string | string[];
     agrupar?: string;
   }>;
 };
@@ -30,7 +31,7 @@ export default async function GastosPage({ searchParams }: Props) {
   // Filtros específicos de /gastos
   const proveedoresIds = parseMultiParam(params.proveedores);
   const pagadoConList = parseMultiParam(params.pagadoCon);
-  const q = (params.q ?? "").trim();
+  const q = pickTextParam(params.q).trim();
   const agruparPorMes = params.agrupar === "1";
 
   // Query: gastos en el rango, con filtros específicos aplicados

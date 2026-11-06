@@ -5,6 +5,7 @@ import {
   fechaPorDefectoPara,
   parseFiltrosComunes,
   parseMultiParam,
+  pickTextParam,
 } from "@/lib/search-params";
 import type { Prisma } from "@prisma/client";
 
@@ -15,7 +16,7 @@ type Props = {
     mes?: string;
     tipo?: string | string[];
     saleDe?: string | string[];
-    q?: string;
+    q?: string | string[];
     agrupar?: string;
   }>;
 };
@@ -29,7 +30,7 @@ export default async function RetirosPage({ searchParams }: Props) {
   // Filtros específicos de /retiros
   const tiposList = parseMultiParam(params.tipo);
   const saleDeList = parseMultiParam(params.saleDe);
-  const q = (params.q ?? "").trim();
+  const q = pickTextParam(params.q).trim();
   const agruparPorMes = params.agrupar === "1";
 
   const where: Prisma.RetiroWhereInput = {

@@ -20,6 +20,7 @@ import {
   navegacionMes,
   periodoComparacion,
   parseMultiParam,
+  pickTextParam,
 } from "../src/lib/search-params";
 import {
   debeNavegar,
@@ -598,5 +599,21 @@ describe("parseMultiParam", () => {
       "id2",
       "id3",
     ]);
+  });
+});
+
+describe("pickTextParam", () => {
+  it("devuelve cadena vacía cuando el parámetro no está", () => {
+    expect(pickTextParam(undefined)).toBe("");
+  });
+
+  it("devuelve el texto tal cual", () => {
+    expect(pickTextParam("  pan  ")).toBe("  pan  ");
+  });
+
+  it("con clave repetida toma el primer valor", () => {
+    // ?q=pan&q=leche llega como string[]; sin normalizar, .trim() revienta
+    // con TypeError y la page da 500.
+    expect(pickTextParam(["pan", "leche"])).toBe("pan");
   });
 });

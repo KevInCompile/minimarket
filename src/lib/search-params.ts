@@ -133,6 +133,20 @@ function pickString(v: string | string[] | undefined): string | null {
 }
 
 /**
+ * Lee un parámetro de texto de la URL.
+ *
+ * `q` es un input de texto libre, así que solo tiene un valor. Pero si
+ * alguien escribe `?q=pan&q=leche` a mano, Next.js lo entrega como
+ * `string[]` y `(params.q ?? "").trim()` revienta con `TypeError` → 500.
+ * Acá se toma el primer valor, que es lo que el input muestra.
+ */
+export function pickTextParam(v: string | string[] | undefined): string {
+  if (v == null) return "";
+  if (Array.isArray(v)) return v[0] ?? "";
+  return v;
+}
+
+/**
  * Parsea un filtro multi-select en una lista de valores.
  *
  * Hay dos formatos en circulación y los dos tienen que funcionar:
