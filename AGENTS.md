@@ -20,6 +20,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Server actions** en `src/server/actions/<entidad>.ts`. Exportan funciones `useActionState`-friendly que devuelven `{ ok?: true, error?: string }`.
 - **Páginas autenticadas** viven en `src/app/(app)/` con sidebar y theme provider.
 - **RBAC**: rutas `/retiros`, `/pedidos`, `/proveedores`, `/usuarios`, `/importar` son solo ADMIN. El proxy redirige a `/forbidden` si el cajero intenta entrar.
+- **Multi-tenant**: todo registro operativo lleva `tiendaId`. Toda consulta a Prisma filtra por `tiendaId` (sacalo del `where` y el dato se fuga entre tiendas).
 
 ## Comandos frecuentes
 

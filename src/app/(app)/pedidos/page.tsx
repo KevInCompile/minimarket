@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { requireTiendaId } from "@/lib/auth-guard";
 import { PedidosView } from "./pedidos-view";
 
 type PedidoViewRow = {
@@ -10,7 +11,9 @@ type PedidoViewRow = {
 };
 
 export default async function PedidosPage() {
+  const tiendaId = await requireTiendaId();
   const pedidos = await prisma.pedidoNota.findMany({
+    where: { tiendaId },
     orderBy: [{ dia: "asc" }, { createdAt: "asc" }],
     include: { proveedor: { select: { nombre: true } } },
   });
