@@ -129,8 +129,9 @@ coherencia entre los inputs nativos y el submit del form.
    un bloque por mes.
 
 **Importante:** los inputs nativos del slot usan `name=` para mantener
-la convención del form GET. Los multi-select reciben una key con valores
-CSV (ej. `?proveedores=id1,id2`), y la page los parsea.
+la convención del form GET. Los multi-select emiten una clave repetida
+(ej. `?proveedores=id1&proveedores=id2`), y la page la parsea con
+`parseMultiParam()` (tolerante a `string` y `string[]`).
 
 ## Motor de cálculo
 

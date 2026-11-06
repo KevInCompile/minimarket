@@ -133,6 +133,37 @@ function pickString(v: string | string[] | undefined): string | null {
 }
 
 /**
+ * Parsea un filtro multi-select en una lista de valores.
+ *
+ * Hay dos formatos en circulación y los dos tienen que funcionar:
+ *
+ *  - **Clave repetida**: `?proveedores=id1&proveedores=id2`. Es lo que
+ *    produce el `MultiSelect`, que emite un `<input type="hidden" name=>`
+ *    por valor seleccionado. Next.js entrega esto como `string[]`.
+ *  - **CSV**: `?proveedores=id1,id2`. Es lo que se escribe a mano en la
+ *    barra de direcciones o lo que queda al copiar una URL.
+ *
+ * Antes esta lógica era un `(params.x ?? "").split(",")` suelto en cada
+ * page: con la clave repetida `params.x` es un array y `.split` no existe
+ * → `TypeError` y la página entera revienta con 500. Acá se normalizan
+ * los dos formatos, se descartan los vacíos y se quitan los duplicados.
+ */
+export function parseMultiParam(
+  v: string | string[] | undefined,
+): string[] {
+  if (v == null) return [];
+  const partes = Array.isArray(v) ? v : [v];
+  const out: string[] = [];
+  for (const parte of partes) {
+    for (const item of parte.split(",")) {
+      const limpio = item.trim();
+      if (limpio && !out.includes(limpio)) out.push(limpio);
+    }
+  }
+  return out;
+}
+
+/**
  * Periodo contra el que se compara el periodo que el usuario está viendo.
  *
  * `esMes` dice si la comparación es contra el mes calendario anterior (el

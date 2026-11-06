@@ -19,6 +19,7 @@ import {
   fechaPorDefectoPara,
   navegacionMes,
   periodoComparacion,
+  parseMultiParam,
 } from "../src/lib/search-params";
 import {
   debeNavegar,
@@ -572,5 +573,30 @@ describe("periodos con dia de corte", () => {
       expect(r.desde.toISOString().slice(0, 10)).toBe("2026-09-15");
       expect(r.hasta.toISOString().slice(0, 10)).toBe("2026-10-14");
     });
+  });
+});
+
+describe("parseMultiParam", () => {
+  it("devuelve una lista vacía cuando el parámetro no está", () => {
+    expect(parseMultiParam(undefined)).toEqual([]);
+    expect(parseMultiParam("")).toEqual([]);
+  });
+
+  it("parte una clave repetida (string[])", () => {
+    // Es lo que Next.js entrega cuando el MultiSelect emite un input
+    // hidden por valor: ?proveedores=id1&proveedores=id2
+    expect(parseMultiParam(["id1", "id2"])).toEqual(["id1", "id2"]);
+  });
+
+  it("parte una clave con valores CSV", () => {
+    expect(parseMultiParam("id1,id2")).toEqual(["id1", "id2"]);
+  });
+
+  it("mezcla CSV y repetidos sin dejar vacíos ni duplicados", () => {
+    expect(parseMultiParam(["id1,id2", "id3", "", "id1"])).toEqual([
+      "id1",
+      "id2",
+      "id3",
+    ]);
   });
 });

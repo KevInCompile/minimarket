@@ -4,6 +4,7 @@ import { requireTienda } from "@/lib/auth-guard";
 import {
   fechaPorDefectoPara,
   parseFiltrosComunes,
+  parseMultiParam,
 } from "@/lib/search-params";
 import type { Prisma } from "@prisma/client";
 
@@ -12,8 +13,8 @@ type Props = {
     desde?: string;
     hasta?: string;
     mes?: string;
-    tipo?: string;
-    saleDe?: string;
+    tipo?: string | string[];
+    saleDe?: string | string[];
     q?: string;
     agrupar?: string;
   }>;
@@ -26,8 +27,8 @@ export default async function RetirosPage({ searchParams }: Props) {
   const fechaInicial = fechaPorDefectoPara(filtros.hasta);
 
   // Filtros específicos de /retiros
-  const tiposList = (params.tipo ?? "").split(",").filter(Boolean);
-  const saleDeList = (params.saleDe ?? "").split(",").filter(Boolean);
+  const tiposList = parseMultiParam(params.tipo);
+  const saleDeList = parseMultiParam(params.saleDe);
   const q = (params.q ?? "").trim();
   const agruparPorMes = params.agrupar === "1";
 
