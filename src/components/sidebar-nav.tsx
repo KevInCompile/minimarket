@@ -169,7 +169,7 @@ export function SidebarNav({
 /**
  * Identidad de la ruta activa para la barra superior: icono + label tomados
  * de `NAV_SECTIONS`, así que sigue a la navegación sin duplicar el catálogo.
- * Las páginas que no están en el menú (ej. `/importar`) caen al último
+ * Las páginas que no están en el menú (ej. `/configuracion`) caen al último
  * segmento de la URL.
  */
 export function PageIdentity({ className }: { className?: string }) {

@@ -19,7 +19,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Fechas siempre en UTC** (`src/lib/dates.ts`) para evitar saltos por zona horaria. Los seriales del Excel se convierten con `excelSerialToDate(serial)`.
 - **Server actions** en `src/server/actions/<entidad>.ts`. Exportan funciones `useActionState`-friendly que devuelven `{ ok?: true, error?: string }`.
 - **Páginas autenticadas** viven en `src/app/(app)/` con sidebar y theme provider.
-- **RBAC**: rutas `/retiros`, `/pedidos`, `/proveedores`, `/usuarios`, `/importar` son solo ADMIN. El proxy redirige a `/forbidden` si el cajero intenta entrar.
+- **RBAC**: rutas `/retiros`, `/pedidos`, `/proveedores`, `/usuarios`, `/configuracion` son solo ADMIN. El proxy redirige a `/forbidden` si el cajero intenta entrar. `/registro` es público (alta de tienda).
 - **Multi-tenant**: todo registro operativo lleva `tiendaId`. Toda consulta a Prisma filtra por `tiendaId` (sacalo del `where` y el dato se fuga entre tiendas).
 
 ## Comandos frecuentes
@@ -67,11 +67,26 @@ Si la DB está vacía o los datos están corruptos, usar el Time Travel de Neon 
 
 ## Datos del seed
 
-- 1 ADMIN (`admin@ejemplo.com` / `admin123`)
-- 1 CAJERO (`cajero@ejemplo.com` / `cajero123`)
-- 37 proveedores, 56 gastos, 3 retiros, 13 Transferencia, 18 cierres, 7 pedidos (nota)
+El seed **no** replica el Excel: genera datos sintéticos deterministas
+(`prisma/seed-data.ts`) para los últimos 12 meses. Misma semilla → mismos
+números. Flags: `--meses=6`, `--semilla=42`, `--mantener`, `--forzar`.
 
-Período: 02/09/2026 al 19/09/2026.
+- Tienda `Tienda Demo` (`tienda-demo`).
+- 5 usuarios: `admin@ejemplo.com` / `admin123` (ADMIN), `cajero@ejemplo.com` /
+  `cajero123` (CAJERO), `cajero2@`, `cajero3@` (CAJERO), `supervisor@ejemplo.com` (ADMIN).
+- 29 proveedores (el último queda inactivo para probar el filtro), ~2.000 gastos,
+  ~170 retiros, ~210 días con Transferencia, ~265 cierres, 18 pedidos (nota).
+
+## Paridad con el Excel
+
+`tests/calc.test.ts` (32 tests) reproduce los totales del Excel
+`Control_Caja_Septiembre_2026.xlsx` con las hojas transaccionales como única
+fuente de verdad: total gastos **$2.750.878**, retiros efectivo $900.000 ·
+Transferencia $300.000, transferencia recibido $898.200, punto más bajo del
+efectivo $210.000 (Miércoles 02/09), descuadre del Jueves 17/09 **−$93.777**.
+
+Los totales hardcodeados de la hoja "Balance general" del Excel no coinciden:
+eran manuales y arrastraban inconsistencias.
 
 ## Filtros y agrupación por mes
 
@@ -144,16 +159,9 @@ gastos del día, entrada estimada, descuadre) salen de
 
 ## Próximas fases
 
-- **Fase 3**: export a Excel, integración con Transferencia API.
-
-## Importador (Fase 2)
-
-- **Parser**: `src/lib/excel-parser.ts` (funciona con path o Buffer).
-- **Staging**: `src/lib/excel-staging.ts` guarda uploads en `os.tmpdir()` con hash-based ID.
-- **Server actions**: `src/server/actions/import.ts` con `parseImportAction` (preview), `commitImportAction` (atomic con snapshot), `revertImportAction` (restaura desde snapshot).
-- **Schema**: cada tabla tiene `importId?` apuntando al log; el log tiene `snapshot Json?` con el estado pre-import.
-- **UI**: `/importar` con upload form + preview + historial con botón revertir.
-- **Reglas del parser**:
-  - Filtra filas TOTAL/footer usando `MIN_VALID_SERIAL = 39814` (Excel 2009+).
-  - Para días en Cierre diario con gastos totales pero sin registros en Gastos, crea un gasto "Varios (importado)" para que cuadren los totales.
-- **Tests**: `tests/import.test.ts` cubre parse + roundtrip commit/revert (10/10 pasando).
+- **Pendiente**: export a Excel/CSV, PWA instalable + offline, API REST + JWT
+  (ver `docs/fase-mobile-flutter.md`), reportes imprimibles, Transferencia API,
+  auditoría de cambios, paginación real en `/gastos` y `/retiros`.
+- **No existe** un importador `.xlsx` en el repo (el schema `ImportLog` se
+  dropeó en la migración `20260924192844_drop_import_log`). Si se agrega, la
+  ruta `/importar` debe ir en `ADMIN_ONLY_PREFIXES` de `src/proxy.ts`.

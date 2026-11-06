@@ -3,7 +3,8 @@
 Reemplazo del Excel `Control_Caja_Septiembre_2026.xlsx` para el control de caja
 diario de una tienda. Mismo flujo de trabajo que el Excel (gastos pagados de caja / de
 efectivo, retiros, Transferencia, cierre diario con acumulado de efectivo y Transferencia,
-descuadres), pero como aplicación web multi-tenant con roles, auditoría y motor de cálculo.
+descuadres), pero como aplicación web multi-tenant con roles, trazabilidad por
+usuario y motor de cálculo.
 
 ## Stack
 
@@ -13,7 +14,7 @@ descuadres), pero como aplicación web multi-tenant con roles, auditoría y moto
 - **Postgres** + **Prisma 6**
 - **NextAuth v5** (Credentials)
 - **Tailwind 4** + **shadcn/ui (preset nova / Base UI)**
-- **Recharts** + **SheetJS (xlsx)**
+- **Recharts**
 - **Vitest**
 
 ## Empezar
@@ -85,75 +86,52 @@ src/
     globals.css
     login/page.tsx                   formulario de inicio de sesión
     forbidden/page.tsx               403 cuando el cajero entra a una zona admin
+    registro/                        alta publica: crea tienda + usuario ADMIN
     api/auth/[...nextauth]/route.ts  handler NextAuth
+    api/health/route.ts              healthcheck de DB + config de Auth
     (app)/
       layout.tsx                     layout autenticado (sidebar + theme + logout)
       page.tsx                       dashboard "Balance general"
-      gastos/                        tabla + alta de gastos
+      balance-cards.tsx              4 tarjetas KPI con tendencia
+      dashboard-charts.tsx           evolución + donuts de formas de pago
+      gastos/                        tabla + alta multiple de gastos
       retiros/                       tabla + alta de retiros (solo ADMIN)
       transferencia/                         tabla inline de Transferencia recibido
       cierre/                        cierre diario con columnas calculadas
-      pedidos/                       pedidos (nota), solo referencia
+      pedidos/                       pedidos (nota), solo lectura
       proveedores/                   CRUD de proveedores
       usuarios/                      CRUD de usuarios (solo ADMIN)
-      importar/                      importador .xlsx (Fase 2)
-  components/                        shadcn/ui + theme provider
+      configuracion/                 dia de corte del periodo contable
+  components/                        shadcn/ui + filtros compartidos + theme provider
   lib/
     db.ts                            singleton Prisma
     dates.ts                         helpers UTC + serial Excel → Date
-    format.ts                        formatCOP, formatPercent, formatShortDate
+    format.ts                        formatCOP, formatPercent, formatNumber
     format-relative.ts               formatDistanceToNow
     calc.ts                          motor de cálculo (testeado contra el Excel)
-    excel-parser.ts                  parser SheetJS (path y Buffer)
-    excel-staging.ts                 staging dir para uploads antes del commit
+    nav.ts                           catálogo del menú (fuente única para desktop y mobile)
+    search-params.ts                 resolución mes > rango > default
+    saldos.ts                        saldos iniciales acumulados por tienda
+    auth-guard.ts                    requireValidUser / requireAdmin / requireTienda
   server/actions/                    server actions por entidad
 prisma/
-  schema.prisma                      User, Proveedor, Gasto, Retiro, transferenciaDelDia,
-                                     CierreDiario, PedidoNota, ImportLog
-                                     (+ importId, snapshot)
-  seed.ts                            lee del Excel y replica los datos
+  schema.prisma                      Tienda, User, Proveedor, Gasto, Retiro,
+                                     TransferenciaDia, CierreDiario, PedidoNota
+  seed.ts                            genera datos de prueba deterministas
+  seed-data.ts                       generador de datos (12 meses, por semilla)
+  backup.ts                          backup JSON por tabla
   migrations/
+scripts/
+  backup.sh / restore.sh             backup y restore en CSV
 tests/
-  calc.test.ts                       6 tests de paridad contra el Excel
-  import.test.ts                     4 tests del flujo import (parser + revert)
+  calc.test.ts                       32 tests de paridad contra el Excel
+  search-params.test.ts              64 tests de resolución de filtros
+  seed.test.ts                       19 tests del generador y las guardas del seed
+  nav.test.ts                        2 tests del catálogo de navegación
 proxy.ts                             auth + RBAC (renombrado desde middleware en Next 16)
 auth.ts                              NextAuth config (Credentials, JWT, roles)
 next.config.ts                       habilita experimental.authInterrupts
 ```
-
-## Importador `.xlsx` (Fase 2)
-
-Solo accesible por ADMIN en `/importar`.
-
-**Flujo:**
-1. Admin sube un `.xlsx` → server action `parseImportAction` valida el archivo
-   (extensión, tamaño < 10 MB), lo guarda en un staging dir (`os.tmpdir()`)
-   con un ID derivado del hash del contenido, y devuelve un `ImportPreview`
-   con: totales por hoja, gastos por tipo (Caja/Efectivo), top 10 gastos,
-   y todas las advertencias (placeholders creados, días sin cierre, etc.).
-2. El admin revisa el preview. Si algo está mal, puede cancelar y subir otro.
-3. Click "Confirmar y reemplazar datos" → server action `commitImportAction`:
-   - Toma un snapshot de los datos actuales (gastos, retiros, transferencia, cierres,
-     pedidos) en el campo `ImportLog.snapshot` (Json).
-   - En una transacción Prisma: borra todo (excepto usuarios y proveedores),
-     crea el `ImportLog`, upsert de proveedores, inserta los nuevos registros
-     con `importId` apuntando al log.
-   - Borra el archivo staging.
-4. Cada import queda en el historial. Botón "Revertir" → `revertImportAction`:
-   restaura desde el snapshot, marca el log como `revertido`.
-
-**Advertencias automáticas:**
-- Para días donde el Cierre diario tiene gastos totales pero la hoja Gastos
-  no tiene NINGÚN registro, crea un gasto "Varios (importado)" con el total.
-- Si un día tiene gastos pero no tiene cierre, se reporta.
-
-**Restricciones:**
-- El Excel debe tener las mismas hojas que `Control_Caja_*.xlsx`:
-  Balance general, Gastos, Retiros, Transferencia, Cierre diario, Pedidos (nota).
-- Las hojas que no se encuentran se reportan como warning pero no abortan.
-- Tamaño máximo: 10 MB.
-- Si el archivo temporal expira (se reinicia el servidor), el admin verá
-  un mensaje claro pidiéndole re-subirlo.
 
 ## Motor de cálculo (`src/lib/calc.ts`)
 
@@ -168,8 +146,9 @@ Reglas (copiadas del Excel):
 
 - Gastos con `pagadoCon=CAJA` salen de la caja del día (no tocan el efectivo guardado).
 - Gastos con `pagadoCon=EFECTIVO` salen del efectivo acumulado.
+- Gastos con `pagadoCon=TRANSFERENCIA` salen del saldo Transferencia.
 - Retiros con `saleDe=EFECTIVO` salen del efectivo acumulado.
-- Retiros con `saleDe=NEQUI` salen del saldo Transferencia acumulado.
+- Retiros con `saleDe=TRANSFERENCIA` salen del saldo Transferencia acumulado.
 - `efectivoAcumulado(día) = anterior + guardado − gastosEfvo − retirosEfvo`.
 - `descuadre = efectivoRealContado − efectivoAcumulado` (solo si hay conteo real).
 
@@ -185,7 +164,8 @@ original. **No coinciden exactamente con los totales hardcodeados de la hoja
 inconsistencias con las transacciones. El sistema usa las transacciones como
 única fuente de verdad.
 
-Totales del seed (verificables con `pnpm test`):
+Totales de la fixture del Excel September 2026 (verificables con `pnpm test`,
+viven en `tests/calc.test.ts`):
 
 - Total gastos: **$2.750.878**
 - Retiros efectivo: $900.000 · Retiros Transferencia: $300.000
@@ -193,29 +173,37 @@ Totales del seed (verificables con `pnpm test`):
 - Punto más bajo del efectivo acumulado: $210.000 (Miércoles 02/09)
 - Descuadre Jueves 17/09: **−$93.777** (sobrante en libros vs conteo real de $438.000)
 
+El `pnpm db:seed` **no** replica el Excel: genera datos sintéticos
+deterministas (`prisma/seed-data.ts`) para 12 meses, con la misma semilla
+siempre produce los mismos números.
+
 ## Roles
 
-| Acción                          | ADMIN | CAJERO |
-| ------------------------------- | :---: | :----: |
-| Ver dashboard                   |   ✓   |   ✓    |
-| Crear / editar / borrar gastos  |   ✓   | solo del día actual, no borrar |
-| Crear / editar cierre diario    |   ✓   |   ✓    |
-| Crear / editar Transferencia del día    |   ✓   |   ✓    |
-| Crear retiros                   |   ✓   |   ✗    |
-| Gestionar proveedores / usuarios|   ✓   |   ✗    |
-| Ver / editar pedidos (nota)     |   ✓   |   ✗    |
-| Importar Excel                  |   ✓   |   ✗    |
+| Acción                                | ADMIN | CAJERO |
+| ------------------------------------- | :---: | :----: |
+| Ver dashboard                         |   ✓   |   ✓    |
+| Crear gastos                          |   ✓   |   ✓    |
+| Borrar / restaurar gastos             |   ✓   |   ✗    |
+| Crear / editar cierre diario          |   ✓   |   ✓    |
+| Borrar cierre diario                  |   ✓   |   ✗    |
+| Crear / editar Transferencia del día  |   ✓   |   ✓    |
+| Crear / borrar retiros                |   ✓   |   ✗    |
+| Gestionar proveedores / usuarios      |   ✓   |   ✗    |
+| Ver pedidos (nota)                    |   ✓   |   ✗    |
+| Configurar el día de corte            |   ✓   |   ✗    |
 
-El proxy (`src/proxy.ts`) chequea la sesión JWT y redirige a `/forbidden` cuando
-un cajero intenta entrar a una ruta solo-admin. Los server actions vuelven a
-chequear el rol antes de mutar la base.
+El proxy (`src/proxy.ts`) bloquea `/retiros`, `/pedidos`, `/proveedores`,
+`/usuarios` y `/configuracion` para el cajero y lo manda a `/forbidden`. Los
+server actions vuelven a chequear el rol antes de mutar la base.
+
+Los datos están aislados por tienda: cada registro operativo lleva `tiendaId`
+y todas las consultas lo filtran.
 
 ## Roadmap
 
 - **Fase 1 (MVP):** ✅ Schema, seed, auth, RBAC, CRUD completo, dashboard con cards y chart.
-- **Fase 2 (Importador):** ✅ UI para subir `.xlsx`, preview con totales, transacción atómica, snapshot para revertir.
-- **Fase 3:** Multi-tienda, PWA, export a Excel, reportes.
-- **Fase 4:** Integraciones (Transferencia API, facturación electrónica).
+- **Multi-tenant:** ✅ tabla `Tienda`, aislamiento por `tiendaId`, día de corte por tienda, alta pública de tienda.
+- **Pendiente:** export a Excel/CSV, PWA instalable + offline, API REST + JWT para la app móvil, reportes imprimibles, Transferencia API, auditoría de cambios, paginación real en `/gastos` y `/retiros`.
 
 ## Deploy a Vercel
 
