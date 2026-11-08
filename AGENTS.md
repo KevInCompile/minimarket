@@ -175,6 +175,10 @@ puros, con tests en `tests/cierre.test.ts`):
   - Un cierre **vacío** (recién creado, `cajaCierre`/`efectivoGuardado` en 0 y
     sin conteo físico) no sirve de antecedente: todavía no dice cuánto había
     en caja. `cajaApertura` tampoco cuenta para esa definición.
+- **Orden del listado**: las tarjetas se muestran del más nuevo al más viejo
+  (`ordenarPorFechaDescendente`). Solo cambia la presentación: la serie que
+  usan los cálculos sigue siendo ascendente, porque `ResumenPeriodo` usa
+  `serie[serie.length - 1]` como último día.
 
 ## Próximas fases
 

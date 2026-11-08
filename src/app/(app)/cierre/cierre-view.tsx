@@ -16,6 +16,7 @@ import { CierreCards } from "./cierre-cards";
 import { CierreFilters } from "./cierre-filters";
 import { ResumenPeriodo } from "./resumen-periodo";
 import { PageToolbar } from "@/components/page-toolbar";
+import { ordenarPorFechaDescendente } from "@/lib/cierre";
 import { toISODate } from "@/lib/dates";
 import type { CierreDiarioComputed } from "@/lib/calc";
 
@@ -92,7 +93,7 @@ export function CierreView({
       <ResumenPeriodo serie={serie} />
 
       <CierreCards
-        rows={serie.map((s) => {
+        rows={ordenarPorFechaDescendente(serie).map((s) => {
           const key = toISODate(s.fecha);
           // Un día que todavía no está cerrado usa la caja de cierre del
           // cierre anterior como apertura SUGERIDA. Es un default editable:

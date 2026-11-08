@@ -114,7 +114,8 @@ export default async function CierrePage({ searchParams }: Props) {
   }
   const pendientes = [...fechasConMovimiento]
     .filter((f) => !fechasConCierre.has(f))
-    .sort();
+    .sort()
+    .reverse();
 
   // La caja de apertura por defecto de un día es la caja de cierre del
   // cierre anterior: la plata de la caja no se reinicia sola. Solo aplica a
