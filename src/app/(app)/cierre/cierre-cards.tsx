@@ -26,6 +26,12 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 type RowView = {
   fecha: string;
   cajaApertura: number;
+  /**
+   * `cajaApertura` es una PROPUESTA (no un valor guardado): la caja de
+   * cierre del último cierre anterior. El input la pre-carga y el usuario
+   * la confirma al guardar.
+   */
+  cajaAperturaEsSugerida: boolean;
   cajaCierre: number;
   efectivoGuardado: number;
   efectivoRealContado: number | null;
@@ -279,6 +285,15 @@ function CierreCard({
                 <span className="tabular-nums font-medium">
                   {formatCOP(row.cajaApertura)}
                 </span>
+                {row.cajaAperturaEsSugerida && (
+                  <Badge
+                    variant="outline"
+                    className="ml-2 font-normal"
+                    title="Propuesta: la caja de cierre del día anterior. Todavía no está guardada."
+                  >
+                    Sugerido
+                  </Badge>
+                )}
                 {row.efectivoRealContado != null && (
                   <>
                     <span className="text-muted-foreground ml-4">Conteo real:</span>{" "}
@@ -323,12 +338,18 @@ function CierreCard({
                   name="cajaApertura"
                   label="Caja apertura"
                   defaultValue={row.cajaApertura}
-                  help="Plata que se dejó en caja para arrancar el día."
+                  idKey={fechaStr}
+                  help={
+                    row.cajaAperturaEsSugerida
+                      ? "Propuesta: la caja de cierre del día anterior. Cambiala si el día arrancó con otra plata."
+                      : "Plata que se dejó en caja para arrancar el día."
+                  }
                 />
                 <MoneyField
                   name="cajaCierre"
                   label="Caja cierre"
                   defaultValue={row.cajaCierre}
+                  idKey={fechaStr}
                   help="Lo que se contó al final del día."
                   highlight
                 />
@@ -336,6 +357,7 @@ function CierreCard({
                   name="efectivoGuardado"
                   label="Efectivo guardado"
                   defaultValue={row.efectivoGuardado}
+                  idKey={fechaStr}
                   help="Lo que se guardó aparte de la caja."
                   highlight
                 />
@@ -428,25 +450,25 @@ function MoneyField({
   name,
   label,
   defaultValue,
+  idKey,
   help,
   highlight,
 }: {
   name: string;
   label: string;
   defaultValue: number;
+  /** Clave única por fila (la fecha): evita ids duplicados en el DOM. */
+  idKey: string;
   help: string;
   highlight?: boolean;
 }) {
   return (
     <div className="space-y-1.5">
-      <Label
-        htmlFor={`${name}-${defaultValue}`}
-        className={highlight ? "font-semibold" : ""}
-      >
+      <Label htmlFor={`${name}-${idKey}`} className={highlight ? "font-semibold" : ""}>
         {label}
       </Label>
       <Input
-        id={`${name}-${defaultValue}`}
+        id={`${name}-${idKey}`}
         name={name}
         type="text"
         inputMode="numeric"

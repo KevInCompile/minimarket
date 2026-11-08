@@ -16,6 +16,7 @@ import { CierreCards } from "./cierre-cards";
 import { CierreFilters } from "./cierre-filters";
 import { ResumenPeriodo } from "./resumen-periodo";
 import { PageToolbar } from "@/components/page-toolbar";
+import { toISODate } from "@/lib/dates";
 import type { CierreDiarioComputed } from "@/lib/calc";
 
 type Pendiente = string;
@@ -23,6 +24,7 @@ type Pendiente = string;
 export function CierreView({
   serie,
   pendientes,
+  aperturasPorDefecto,
   desde,
   hasta,
   mes,
@@ -30,6 +32,12 @@ export function CierreView({
 }: {
   serie: CierreDiarioComputed[];
   pendientes: Pendiente[];
+  /**
+   * Caja de apertura SUGERIDA por día (YYYY-MM-DD), solo para los días que
+   * todavía NO tienen cierre: la caja de cierre del cierre anterior. Es un
+   * valor inicial editable, no un valor bloqueado.
+   */
+  aperturasPorDefecto: Record<string, number>;
   desde: Date;
   hasta: Date;
   mes: string | null;
@@ -60,7 +68,9 @@ export function CierreView({
                 <SheetTitle>Crear cierre</SheetTitle>
                 <SheetDescription>
                   Útil si quiere registrar un día festivo o con caja inicial $0
-                  antes de que lleguen los gastos.
+                  antes de que lleguen los gastos. La caja de apertura se
+                  propone con la caja de cierre del día anterior y queda
+                  editable.
                 </SheetDescription>
               </SheetHeader>
               <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -82,25 +92,36 @@ export function CierreView({
       <ResumenPeriodo serie={serie} />
 
       <CierreCards
-        rows={serie.map((s) => ({
-          fecha: s.fecha.toISOString(),
-          cajaApertura: s.cajaApertura,
-          cajaCierre: s.cajaCierre,
-          efectivoGuardado: s.efectivoGuardado,
-          efectivoRealContado: s.efectivoRealContado,
-          gastosCaja: s.gastosCaja,
-          gastosEfectivo: s.gastosEfectivo,
-          gastosTransferencia: s.gastosTransferencia,
-          totalGastos: s.totalGastos,
-          entradaEstimada: s.entradaEstimada,
-          retirosEfectivo: s.retirosEfectivo,
-          retirosTransferencia: s.retirosTransferencia,
-          transferenciaDia: s.transferenciaDia,
-          efectivoAcumulado: s.efectivoAcumulado,
-          transferenciaAcumulado: s.transferenciaAcumulado,
-          descuadre: s.descuadre,
-          totalVentaDelDia: s.totalVentaDelDia,
-        }))}
+        rows={serie.map((s) => {
+          const key = toISODate(s.fecha);
+          // Un día que todavía no está cerrado usa la caja de cierre del
+          // cierre anterior como apertura SUGERIDA. Es un default editable:
+          // el usuario puede cambiarla antes de guardar, y no se persiste
+          // sola (si se guardara, el resumen del período mostraría una
+          // "entrada estimada" negativa).
+          const sugerida = aperturasPorDefecto[key];
+          const esSugerida = sugerida !== undefined;
+          return {
+            fecha: s.fecha.toISOString(),
+            cajaApertura: esSugerida ? sugerida : s.cajaApertura,
+            cajaAperturaEsSugerida: esSugerida,
+            cajaCierre: s.cajaCierre,
+            efectivoGuardado: s.efectivoGuardado,
+            efectivoRealContado: s.efectivoRealContado,
+            gastosCaja: s.gastosCaja,
+            gastosEfectivo: s.gastosEfectivo,
+            gastosTransferencia: s.gastosTransferencia,
+            totalGastos: s.totalGastos,
+            entradaEstimada: s.entradaEstimada,
+            retirosEfectivo: s.retirosEfectivo,
+            retirosTransferencia: s.retirosTransferencia,
+            transferenciaDia: s.transferenciaDia,
+            efectivoAcumulado: s.efectivoAcumulado,
+            transferenciaAcumulado: s.transferenciaAcumulado,
+            descuadre: s.descuadre,
+            totalVentaDelDia: s.totalVentaDelDia,
+          };
+        })}
         pendientes={pendientes}
       />
 

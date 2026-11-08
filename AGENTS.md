@@ -159,6 +159,23 @@ Todas las columnas "computadas" (efectivo acumulado, Transferencia acumulado, to
 gastos del día, entrada estimada, descuadre) salen de
 `computeCierreDiario`/`serieCierres`/`balanceGeneral`.
 
+## Cierre diario (`/cierre`)
+
+Reglas que no viven en `src/lib/calc.ts` sino en `src/lib/cierre.ts` (helpers
+puros, con tests en `tests/cierre.test.ts`):
+
+- **Caja de apertura por defecto**: la plata de la caja no se reinicia sola.
+  Un día que todavía NO está cerrado propone como apertura la `cajaCierre` del
+  último cierre anterior que el usuario llenó (`cajaAperturaPorDefecto`).
+  - Es un **default editable**: se propone en el input de la tarjeta y el
+    usuario lo confirma al guardar.
+  - **No se persiste solo.** La fila que crea "Crear cierre" queda vacía; si
+    se guardara el default sin contar la caja, el resumen del período
+    mostraría una "entrada estimada" negativa.
+  - Un cierre **vacío** (recién creado, `cajaCierre`/`efectivoGuardado` en 0 y
+    sin conteo físico) no sirve de antecedente: todavía no dice cuánto había
+    en caja. `cajaApertura` tampoco cuenta para esa definición.
+
 ## Próximas fases
 
 - **Pendiente**: export a Excel/CSV, PWA instalable + offline, API REST + JWT

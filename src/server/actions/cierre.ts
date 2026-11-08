@@ -117,6 +117,11 @@ export async function crearCierreVacioAction(
   const existe = await prisma.cierreDiario.findFirst({ where: { fecha, tiendaId } });
   if (existe) return errState("Ya existe un cierre para esa fecha.");
 
+  // La fila queda VACÍA a propósito: la caja de apertura no se persiste
+  // sola. El default (la caja de cierre del cierre anterior) se propone en
+  // el editor de la tarjeta y el usuario lo confirma al guardar el día; si
+  // se guardara el default sin contar la caja, el resumen del período
+  // mostraría una "entrada estimada" negativa.
   await prisma.cierreDiario.create({
     data: {
       fecha,
