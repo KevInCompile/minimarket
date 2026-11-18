@@ -104,6 +104,7 @@ src/
       transferencia/                         tabla inline de Transferencia recibido
       cierre/                        cierre diario con columnas calculadas
       pedidos/                       pedidos (nota), solo lectura
+      prestamos/                     préstamos (control de plata prestada, solo ADMIN)
       proveedores/                   CRUD de proveedores
       usuarios/                      CRUD de usuarios (solo ADMIN)
       configuracion/                 dia de corte del periodo contable
@@ -114,6 +115,7 @@ src/
     format.ts                        formatCOP, formatPercent, formatNumber
     format-relative.ts               formatDistanceToNow
     calc.ts                          motor de cálculo (testeado contra el Excel)
+    prestamos.ts                    reglas del módulo de préstamos (testeadas)
     nav.ts                           catálogo del menú (fuente única para desktop y mobile)
     search-params.ts                 resolución mes > rango > default
     saldos.ts                        saldos iniciales acumulados por tienda
@@ -121,7 +123,8 @@ src/
   server/actions/                    server actions por entidad
 prisma/
   schema.prisma                      Tienda, User, Proveedor, Gasto, Retiro,
-                                     TransferenciaDia, CierreDiario, PedidoNota
+                                     TransferenciaDia, CierreDiario, PedidoNota,
+                                     Prestamo
   seed.ts                            genera datos de prueba deterministas
   seed-data.ts                       generador de datos (12 meses, por semilla)
   backup.ts                          backup JSON por tabla
@@ -133,6 +136,7 @@ tests/
   search-params.test.ts              64 tests de resolución de filtros
   seed.test.ts                       19 tests del generador y las guardas del seed
   nav.test.ts                        2 tests del catálogo de navegación
+  prestamos.test.ts                  24 tests de las reglas de préstamos
 next.config.ts                       habilita experimental.authInterrupts
 ```
 
@@ -193,14 +197,38 @@ siempre produce los mismos números.
 | Crear / borrar retiros                |   ✓   |   ✗    |
 | Gestionar proveedores / usuarios      |   ✓   |   ✗    |
 | Ver pedidos (nota)                    |   ✓   |   ✗    |
+| Ver / gestionar préstamos            |   ✓   |   ✗    |
 | Configurar el día de corte            |   ✓   |   ✗    |
 
 El proxy (`src/proxy.ts`) bloquea `/retiros`, `/pedidos`, `/proveedores`,
-`/usuarios` y `/configuracion` para el cajero y lo manda a `/forbidden`. Los
-server actions vuelven a chequear el rol antes de mutar la base.
+`/prestamos`, `/usuarios` y `/configuracion` para el cajero y lo manda a
+`/forbidden`. Los server actions vuelven a chequear el rol antes de mutar la
+base.
 
 Los datos están aislados por tienda: cada registro operativo lleva `tiendaId`
 y todas las consultas lo filtran.
+
+## Préstamos (`/prestamos`)
+
+Módulo de **control**, no de balance: registra plata que se le prestó a
+alguien y que hay que devolver. No crea gastos, ni retiros, ni movimientos:
+el balance se sigue cerrando con los movimientos reales.
+
+- **Solo ADMIN** (ruta en el proxy + `requireAdmin()` en las acciones).
+- **Beneficiario de texto libre**: no hace falta que la persona exista como
+  usuario del sistema.
+- **Pago de todo o nada**: se marca como pagado (guarda la fecha de pago) o
+  se vuelve a pendiente (borra esa fecha). No hay abonos parciales.
+- **Filtro por URL** `?estado=pendientes|pagados|todos` (por defecto
+  `todos`). Los pendientes se muestran primero y, dentro de cada grupo, del
+  más reciente al más viejo.
+- **Totales** de la lista: por cobrar, devuelto y total prestado.
+- **Aislamiento por tienda**: se filtra y se escribe siempre con el
+  `tiendaId` de la sesión.
+
+Las reglas puras viven en `src/lib/prestamos.ts` y están testeadas en
+`tests/prestamos.test.ts` (validación del formulario, filtro, totales y
+orden).
 
 ## Roadmap
 

@@ -121,6 +121,7 @@ comparten el mismo patrón de filtros vía URL, server-side:
 | `/retiros` | `tipo` (multi), `saleDe` (multi), `q` (texto en concepto/nota), `agrupar=1`. Ver `retiros-filtros-extra.tsx`. |
 | `/transferencia` | Sin filtros extra. Solo mes + fechas (un renglón por día). |
 | `/cierre` | Sin filtros extra. Solo mes + fechas (es una serie computada). |
+| `/prestamos` | `estado` (pendientes / pagados / todos). No usa el filtro de mes: es un control de deuda, no un flujo de caja. |
 
 **Agrupación por mes:**
 Cuando `?agrupar=1` está activo, las páginas `/gastos` y `/retiros`
@@ -179,6 +180,27 @@ puros, con tests en `tests/cierre.test.ts`):
   (`ordenarPorFechaDescendente`). Solo cambia la presentación: la serie que
   usan los cálculos sigue siendo ascendente, porque `ResumenPeriodo` usa
   `serie[serie.length - 1]` como último día.
+
+## Préstamos (`/prestamos`)
+
+Módulo nuevo, patrón para los que vengan. Es un **control**, no un flujo de
+caja: **no toca el balance** (no crea gastos ni retiros ni movimientos).
+
+- **Reglas puras** en `src/lib/prestamos.ts` (tests en
+  `tests/prestamos.test.ts`): `validaPrestamo`, `parseEstadoFiltro`,
+  `filtraPorEstado`, `totalesPrestamos`, `ordenaPrestamos`.
+- **Modelo** `Prestamo` en `prisma/schema.prisma`: `fecha`, `persona`
+  (texto libre, no es un `User`), `valor`, `nota`, `pagado`, `fechaPago`,
+  `tiendaId` y `userId` (quién lo registró).
+- **Solo ADMIN**: la ruta va en `ADMIN_ONLY_PREFIXES` de `src/proxy.ts` y
+  las actions de `src/server/actions/prestamos.ts` vuelven a pedir
+  `requireAdmin()`.
+- **Aislamiento**: se lee y se escribe con el `tiendaId` de la sesión; antes
+  de mutar se comprueba que el préstamo es de esa tienda.
+- **Pago de todo o nada**: marcar pagado guarda `fechaPago`; volver a
+  pendiente la borra. No hay abonos parciales (por ahora).
+- **Orden de la lista**: pendientes primero y, dentro de cada grupo, del
+  más reciente al más viejo (`ordenaPrestamos`).
 
 ## Próximas fases
 
