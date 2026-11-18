@@ -21,20 +21,24 @@ if [ -z "$DATABASE_URL" ]; then
   exit 1
 fi
 
+# `psql` no entiende los parámetros que Prisma mete en la URL (por ejemplo
+# `?schema=public`): los rechaza y aborta el backup. Se sacan.
+PSQL_URL="${DATABASE_URL%%\?*}"
+
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP_DIR="prisma/backups/backup-${TIMESTAMP}"
 mkdir -p "$BACKUP_DIR"
 
-TABLES=("User" "Proveedor" "Gasto" "Retiro" "NequiDelDia" "CierreDiario" "PedidoNota")
+TABLES=("User" "Tienda" "Proveedor" "Gasto" "Retiro" "TransferenciaDia" "CierreDiario" "PedidoNota")
 
 echo "📦 Backup a: $BACKUP_DIR"
 echo ""
 
 TOTAL=0
 for table in "${TABLES[@]}"; do
-  count=$(psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM public.\"$table\"" 2>/dev/null | tr -d ' ')
+  count=$(psql "$PSQL_URL" -t -c "SELECT COUNT(*) FROM public.\"$table\"" 2>/dev/null | tr -d ' ')
   if [ -n "$count" ] && [ "$count" != "0" ]; then
-    psql "$DATABASE_URL" -c "\\COPY public.\"$table\" TO '$BACKUP_DIR/$table.csv' WITH (FORMAT CSV, HEADER TRUE)" 2>/dev/null
+    psql "$PSQL_URL" -c "\\COPY public.\"$table\" TO '$BACKUP_DIR/$table.csv' WITH (FORMAT CSV, HEADER TRUE)" 2>/dev/null
     size=$(stat -f%z "$BACKUP_DIR/$table.csv" 2>/dev/null || echo "0")
     echo "  ✓ $table: $count filas ($size bytes)"
     TOTAL=$((TOTAL + count))
@@ -45,4 +49,4 @@ done
 
 echo ""
 echo "✓ Backup completo. Total: $TOTAL filas en $BACKUP_DIR"
-echo "  Para restaurar: psql \"\\\$DATABASE_URL\" -c \"\\\\COPY public.\\\"<tabla>\\\" FROM '$BACKUP_DIR/<tabla>.csv' WITH (FORMAT CSV, HEADER TRUE)\""
+echo "  Para restaurar: psql \"\\\$PSQL_URL\" -c \"\\\\COPY public.\\\"<tabla>\\\" FROM '$BACKUP_DIR/<tabla>.csv' WITH (FORMAT CSV, HEADER TRUE)\""

@@ -10,18 +10,23 @@ config();
 
 const TABLES = [
   "User",
+  "Tienda",
   "Proveedor",
   "Gasto",
   "Retiro",
-  "transferenciaDelDia",
+  "TransferenciaDia",
   "CierreDiario",
   "PedidoNota",
 ];
 
 async function main() {
+  const url = process.env.DATABASE_URL ?? "";
   const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
+    connectionString: url,
+    // Una base local no soporta SSL; Neon sí. El `sslmode` de la URL decide.
+    ssl: /sslmode=disable|localhost|127\.0\.0\.1/.test(url)
+      ? false
+      : { rejectUnauthorized: false },
   });
   await client.connect();
 
@@ -30,8 +35,18 @@ async function main() {
   const counts: Record<string, number> = {};
 
   for (const table of TABLES) {
+    // No todas las tablas tienen `createdAt` (CierreDiario no), así que el
+    // orden se arma según las columnas que existan.
+    const cols = await client.query(
+      `SELECT column_name FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = $1`,
+      [table]
+    );
+    const orden = cols.rows.some((c) => c.column_name === "createdAt")
+      ? 'ORDER BY "createdAt" ASC NULLS LAST'
+      : "";
     const result = await client.query(
-      `SELECT * FROM "${table}" ORDER BY "createdAt" ASC NULLS LAST`
+      `SELECT * FROM "${table}" ${orden}`
     );
     data[table] = result.rows.map((row) => {
       // Convertir Date a ISO string para JSON
