@@ -15,6 +15,7 @@ const ADMIN_ONLY_PREFIXES = [
   "/retiros",
   "/pedidos",
   "/proveedores",
+  "/prestamos",
   "/usuarios",
   "/configuracion",
 ];

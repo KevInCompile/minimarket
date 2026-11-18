@@ -19,6 +19,7 @@ import {
   Wallet,
   StickyNote,
   Truck,
+  HandCoins,
   Users,
   Settings,
   type LucideIcon,
@@ -110,6 +111,14 @@ export const NAV_SECTIONS: NavSection[] = [
         iconClass: "text-orange-600 dark:text-orange-400",
         adminOnly: true,
         keywords: ["proveedor", "proveedores", "suministro", "suministros", "acreedor"],
+      },
+      {
+        href: "/prestamos",
+        label: "Préstamos",
+        icon: HandCoins,
+        iconClass: "text-emerald-600 dark:text-emerald-400",
+        adminOnly: true,
+        keywords: ["prestamo", "prestamos", "prestado", "deuda", "devolver", "cobrar"],
       },
       {
         href: "/usuarios",
