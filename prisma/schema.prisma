@@ -54,13 +54,14 @@ model Tienda {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users        User[]
-  proveedores Proveedor[]
-  gastos      Gasto[]
-  retiros     Retiro[]
-  transferencias  TransferenciaDia[]
-  cierres     CierreDiario[]
-  pedidos     PedidoNota[]
+  users          User[]
+  proveedores    Proveedor[]
+  gastos         Gasto[]
+  retiros        Retiro[]
+  transferencias TransferenciaDia[]
+  cierres        CierreDiario[]
+  pedidos        PedidoNota[]
+  prestamos      Prestamo[]
 }
 
 model User {
@@ -74,10 +75,11 @@ model User {
   tienda       Tienda   @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
 
-  gastos        Gasto[]
-  retiros       Retiro[]
-  transferencias  TransferenciaDia[]
-  cierres       CierreDiario[]
+  gastos         Gasto[]
+  retiros        Retiro[]
+  transferencias TransferenciaDia[]
+  cierres        CierreDiario[]
+  prestamos      Prestamo[]
 
   @@index([tiendaId])
 }
@@ -118,18 +120,18 @@ model Gasto {
 }
 
 model Retiro {
-  id       String   @id @default(cuid())
-  fecha    DateTime @db.Date
-  tipo     TipoRetiro @default(OTRO)
-  concepto String
-  valor    Int
-  saleDe   SaleDe
-  nota     String?
-  tiendaId String
-  tienda   Tienda  @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
-  userId   String
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id        String     @id @default(cuid())
+  fecha     DateTime   @db.Date
+  tipo      TipoRetiro @default(OTRO)
+  concepto  String
+  valor     Int
+  saleDe    SaleDe
+  nota      String?
+  tiendaId  String
+  tienda    Tienda     @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
 
   @@index([fecha])
   @@index([userId])
@@ -173,7 +175,7 @@ model CierreDiario {
 }
 
 model PedidoNota {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   proveedorId String
   proveedor   Proveedor @relation(fields: [proveedorId], references: [id], onDelete: Cascade)
   valor       Int
@@ -181,8 +183,35 @@ model PedidoNota {
   estado      String?
   nota        String?
   tiendaId    String
-  tienda      Tienda   @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
+  tienda      Tienda    @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
 
   @@index([tiendaId])
+}
+
+/// Un préstamo de plata que se le hace a alguien.
+///
+/// Es SOLO un registro de control: no es un Gasto ni un Retiro, así que NO
+/// suma ni resta en el balance. Se marca como pagado cuando la plata vuelve.
+model Prestamo {
+  id        String    @id @default(cuid())
+  /// Día en que se Prestó la plata.
+  fecha     DateTime  @db.Date
+  /// A quién se le prestó (texto libre: puede ser cualquiera).
+  persona   String
+  valor     Int
+  nota      String?
+  /// `true` cuando el préstamo ya fue devuelto.
+  pagado    Boolean   @default(false)
+  /// Día en que se devolvió. Null mientras está pendiente.
+  fechaPago DateTime? @db.Date
+  tiendaId  String
+  tienda    Tienda    @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tiendaId])
+  @@index([fecha])
 }
