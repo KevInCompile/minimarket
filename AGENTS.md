@@ -35,6 +35,12 @@ pnpm db:backup      # backup de los datos a prisma/backups/ (CSV por tabla)
 pnpm lint           # ESLint
 ```
 
+**Después de una migración que agrega o cambia un modelo, hay que
+reiniciar el dev server.** El cliente Prisma generado se carga en memoria
+al arrancar: si el server sigue vivo con el cliente viejo, la propiedad
+nueva del modelo no existe y sale
+`TypeError: Cannot read properties of undefined (reading 'findMany')`.
+
 ## Backups de la base de datos
 
 **SIEMPRE hacer backup antes de cualquier wipe o migrate destructivo.** Los datos son reales y representan el trabajo del usuario.
