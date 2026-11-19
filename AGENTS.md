@@ -32,8 +32,17 @@ pnpm db:seed        # ejecuta prisma/seed.ts
 pnpm db:studio      # Prisma Studio
 pnpm db:reset       # drop + recreate + seed
 pnpm db:backup      # backup de los datos a prisma/backups/ (CSV por tabla)
+pnpm db:migrate     # aplica las migraciones pendientes (prisma migrate deploy)
 pnpm lint           # ESLint
 ```
+
+**En producción (Vercel + Neon) las migraciones son un paso aparte del
+build.** `postinstall` genera el cliente Prisma, pero la tabla nueva en la
+base no aparece hasta que se corre `prisma migrate deploy`. Con la URL
+pooled de Neon eso falla (PgBouncer no soporta las migraciones), por eso
+`prisma.config.ts` usa `DIRECT_URL` (conexión directa) cuando está definida
+y `DATABASE_URL` si no. El Build Command de Vercel debería ser
+`prisma migrate deploy && next build`.
 
 **Después de una migración que agrega o cambia un modelo, hay que
 reiniciar el dev server.** El cliente Prisma generado se carga en memoria

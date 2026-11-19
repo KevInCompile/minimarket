@@ -12,5 +12,16 @@ export default defineConfig({
   engine: "classic",
   datasource: {
     url: env("DATABASE_URL"),
+    // La CLI de migraciones usa `directUrl` cuando está definida.
+    //
+    // En Neon (producción) la URL que corre la app es la POOLED (PgBouncer):
+    // con pooler las migraciones fallan. Por eso `DIRECT_URL` apunta a la
+    // conexión directa y es la que usa `prisma migrate deploy`.
+    //
+    // Si `DIRECT_URL` no está definida se usa la misma `DATABASE_URL`, que es
+    // lo correcto en local (Postgres directo). Así ninguna variable es
+    // obligatoria y una URL pooled en producción falla de forma visible en
+    // vez de aplicar la migración a medias.
+    directUrl: process.env.DIRECT_URL ?? env("DATABASE_URL"),
   },
 });
